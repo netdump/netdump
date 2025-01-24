@@ -24,4 +24,4 @@
     } while (0);                                                                                                                        \
 
 
-#endif
+#endif      // __TRACE_H__
