@@ -19,9 +19,9 @@ LDFLAGS = -L ${NCURSESW_PATH}/lib
 
 
 LINKLIB = 
-LINKLIB += -lncursesw
 LINKLIB += -lmenuw
 LINKLIB += -lpanelw
+LINKLIB += -lncursesw
 
 
 LDFLAGS += $(LINKLIB)
