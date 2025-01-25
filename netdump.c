@@ -21,7 +21,8 @@
 
 int main(int argc, char ** argv) {
 
-
+    display_startup_TUI_showcase();
+    display_exit_TUI_showcase();
 
     return 0;
 }
