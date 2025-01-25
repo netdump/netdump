@@ -211,9 +211,9 @@ extern display_t G_display;
         wattrset(G_display.wins[1], A_NORMAL);                                                                                          \
         wclrtoeol(G_display.wins[1]);                                                                                                   \
         wattrset(G_display.wins[1], A_BOLD);                                                                                            \
-        wattron(G_display.wins[1], COLOR_PAIR((4)));                                                                                    \
+        wattron(G_display.wins[1], COLOR_PAIR((2)));                                                                                    \
         waddstr(G_display.wins[1], "Author: Nothing");                                                                                  \
-        wattroff(G_display.wins[1], COLOR_PAIR((4)));                                                                                   \
+        wattroff(G_display.wins[1], COLOR_PAIR((2)));                                                                                   \
         refresh();                                                                                                                      \
         wrefresh(G_display.wins[1]);                                                                                                    \
     } while (0);                                                                                                                        \
@@ -368,6 +368,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
             hide_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        update_panels();                                                                                                                \
+        doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
 
 
@@ -380,6 +382,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         for (i = 0; i < 3; i++) {                                                                                                       \
             hide_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        update_panels();                                                                                                                \
+        doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
 
 
@@ -392,6 +396,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         for (i = 3; i < 6; i++) {                                                                                                       \
             hide_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        update_panels();                                                                                                                \
+        doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
 
 
@@ -404,6 +410,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         for (i = 0; i < 3; i++) {                                                                                                       \
             show_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        update_panels();                                                                                                                \
+        doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
 
 
@@ -416,6 +424,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         for (i = 3; i < 6; i++) {                                                                                                       \
             show_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        update_panels();                                                                                                                \
+        doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
 
 
@@ -516,9 +526,9 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         display_show_wins_3_4_5();                                                                                                      \
         int ch = 0;                                                                                                                     \
         unsigned char count = 0;                                                                                                        \
-        while((ch = getch()) != KEY_F(1)) {	                                                                                            \
+        while((ch = getch()) != 80) {	                                                                                                \
             switch(ch) {	                                                                                                            \
-                case KEY_BTAB:                                                                                                          \
+                case 9:                                                                                                                 \
                     switch (((count % 3) + 3)) {                                                                                        \
                         case 3:                                                                                                         \
                             wmove(G_display.wins[3], 4, 2);                                                                             \
@@ -572,7 +582,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
                                                                                                                                         \
         display_apply_second_tui_wins_resources();                                                                                      \
                                                                                                                                         \
-        display_apply_first_tui_panels_resources();                                                                                     \
+        display_apply_second_tui_panels_resources();                                                                                    \
                                                                                                                                         \
         display_check_G_display();                                                                                                      \
                                                                                                                                         \
