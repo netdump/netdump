@@ -461,6 +461,24 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
+ * @brief Disable Cursor
+ */
+#define display_disable_cursor()                                                                                                        \
+    do {                                                                                                                                \
+        curs_set(0);                                                                                                                    \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Enable Cursor
+ */
+#define display_enable_cursor()                                                                                                         \
+    do {                                                                                                                                \
+        curs_set(1);                                                                                                                    \
+    } while (0);                                                                                                                        \
+
+
+/**
  * @brief Release members in global variables
  */
 #define display_release_G_display_member()                                                                                              \
@@ -545,6 +563,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
     do {                                                                                                                                \
         display_show_wins_3_4_5();                                                                                                      \
         display_set_wins_noecho_and_cbreak();                                                                                           \
+        display_disable_cursor();                                                                                                       \
         int ch = 0;                                                                                                                     \
         unsigned char count = 0;                                                                                                        \
         while((ch = getch()) != 80) {	                                                                                                \
@@ -571,6 +590,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         }                                                                                                                               \
         display_hide_wins_3_4_5();                                                                                                      \
         display_set_wins_echo_and_nocbreak();                                                                                           \
+        display_enable_cursor();                                                                                                        \
     } while (0);                                                                                                                        \
 
 
