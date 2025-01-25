@@ -485,8 +485,9 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
     do {                                                                                                                                \
         int i = 0;                                                                                                                      \
         for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
-            delwin(G_display.wins[i]);                                                                                                  \
             del_panel(G_display.panels[i]);                                                                                             \
+            update_panels();                                                                                                            \
+            delwin(G_display.wins[i]);                                                                                                  \
         }                                                                                                                               \
     } while (0);                                                                                                                        \
 
