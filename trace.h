@@ -20,7 +20,7 @@
 
 #define trace_log(fmt, ...)                                                                                                             \
     do {                                                                                                                                \
-        printf("[%s][%s:%d]"fmt, __TIME__, __func__, __LINE__, ##__VA_ARGS__);                                                          \
+        printf("[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);                                                      \
     } while (0);                                                                                                                        \
 
 
