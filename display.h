@@ -267,7 +267,7 @@ extern display_t G_display;
  * @param string: Contents of the title bar
  * @param color: Color attribute of the title bar content
  */
-int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color)
+int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
 
 /**
