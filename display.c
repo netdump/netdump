@@ -33,3 +33,42 @@ display_t G_display = {
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
+
+
+/**
+ * @brief Format the title bar title
+ * @param win: The window that is designated to format the input title
+ * @param starty: The starting position of the title bar relative to the window's Y coordinate
+ * @param startx: The starting position of the title bar relative to the window's X coordinate
+ * @param width: Width of the title bar
+ * @param string: Contents of the title bar
+ * @param color: Color attribute of the title bar content
+ */
+int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color) {
+
+    int length, x, y;
+	float temp;
+
+	if(win == NULL)
+		win = stdscr;
+
+	getyx(win, y, x);
+
+	if(startx != 0)
+		x = startx;
+	if(starty != 0)
+		y = starty;
+	if(width == 0)
+		width = 80;
+
+	length = strlen(string);
+	temp = (width - length) / 2;
+	x = startx + (int)temp;
+	wattron(win, color);
+	mvwprintw(win, y, x, "%s", string);
+	wattroff(win, color);
+	refresh();
+
+    return 0;
+}
+

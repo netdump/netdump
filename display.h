@@ -238,6 +238,175 @@ extern display_t G_display;
         wrefresh(G_display.wins[2]);                                                                                                    \
     } while (0);                                                                                                                        \
 
+
+/** Address bar width */
+#define LENGTHOFADDRESS         40
+/** Width of the protocol column */
+#define LENGTHOFPROTOCOL        9
+/** Width of the data length column */
+#define LENGTHOFDATALENGTH      7
+
+/** Source address bar title */
+#define WINTITLESOURCE          "Source"
+/** The title of the destination address bar */
+#define WINTITLEDESTINATION     "Destination"
+/** Title of the agreement column */
+#define WINTITLEPROTOCOL        "Protocol"
+/** Data length column header */
+#define WINTITLEDATALENGTH      "Length"
+/** Title of the information bar */
+#define WINTITLEINFORMATION     "Information"
+
+
+/**
+ * @brief Brief information display box
+ */
+#define display_draw_brief_information_box()                                                                                            \
+    do {                                                                                                                                \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+		box(G_display.wins[3], 0, 0);                                                                                                   \
+		wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        int line0 = 0, line1 = 1, line2 = 2;                                                                                            \
+        int starty = 1, startx = 1;                                                                                                     \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLESOURCE, COLOR_PAIR(4));             \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwaddch(G_display.wins[3], line2, 0, ACS_LTEE);                                                                                \
+        /** (LENGTHOFADDRESS - 1) change (LENGTHOFADDRESS) because of mark */                                                           \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS));                                                       \
+        startx += 1;    /** In order for the mark to be displayed */                                                                    \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFADDRESS;                                                                                                      \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLEDESTINATION, COLOR_PAIR(4));        \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                                   \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFADDRESS;                                                                                                      \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));          \
+        wattron(G_display.wins[3], COLOR_PAIR(1));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                                  \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                                \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                               \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFPROTOCOL - 1)), ACS_TTEE);                                                \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFPROTOCOL;                                                                                                     \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFDATALENGTH, WINTITLEDATALENGTH, COLOR_PAIR(4));      \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFDATALENGTH - 1));                                                \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFDATALENGTH - 1)), ACS_BTEE);                                              \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFDATALENGTH - 1)), ACS_VLINE);                                             \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFDATALENGTH - 1)), ACS_TTEE);                                              \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFDATALENGTH;                                                                                                   \
+        int width = COLS - startx;                                                                                                      \
+        display_format_set_window_title(G_display.wins[3], starty, startx, width, WINTITLEINFORMATION, COLOR_PAIR(4));                  \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (width - 1));                                                             \
+        mvwaddch(G_display.wins[3], line2, (COLS - 1), ACS_RTEE);                                                                       \
+        mvwaddch(G_display.wins[3], line1, (COLS - 1), ACS_VLINE);                                                                      \
+        mvwaddch(G_display.wins[3], line0, (COLS - 1), ACS_URCORNER);                                                                   \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        refresh();                                                                                                                      \
+        wrefresh(G_display.wins[3]);                                                                                                    \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Detailed information display box
+ */
+#define display_draw_more_information_box()                                                                                             \
+    do {                                                                                                                                \
+        wattron(G_display.wins[4], COLOR_PAIR(5));                                                                                      \
+		box(G_display.wins[4], 0, 0);                                                                                                   \
+		wattroff(G_display.wins[4], COLOR_PAIR(5));                                                                                     \
+		refresh();                                                                                                                      \
+		wrefresh(G_display.wins[4]);                                                                                                    \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Original hexadecimal information display box
+ */
+#define display_draw_raw_information_box()                                                                                              \
+    do {                                                                                                                                \
+        wattron(G_display.wins[5], COLOR_PAIR(6));                                                                                      \
+		box(G_display.wins[5], 0, 0);                                                                                                   \
+		wattroff(G_display.wins[5], COLOR_PAIR(6));                                                                                     \
+		refresh();                                                                                                                      \
+		wrefresh(G_display.wins[5]);                                                                                                    \
+    } while (0);
+
+
+/**
+ * @brief Hide All Windows
+ */
+#define display_hide_wins_all()                                                                                                         \
+    do {                                                                                                                                \
+        int i = 0;                                                                                                                      \
+        for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
+            hide_panel(G_display.panels[i]);                                                                                            \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Hide 0 1 2 Windows
+ */
+#define display_hide_wins_0_1_2()                                                                                                       \
+    do {                                                                                                                                \
+        int i = 0;                                                                                                                      \
+        for (i = 0; i < 3; i++) {                                                                                                       \
+            hide_panel(G_display.panels[i]);                                                                                            \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Hide 3 4 5 Windows
+ */
+#define display_hide_wins_3_4_5()                                                                                                       \
+    do {                                                                                                                                \
+        int i = 3;                                                                                                                      \
+        for (i = 3; i < 6; i++) {                                                                                                       \
+            hide_panel(G_display.panels[i]);                                                                                            \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Show 0 1 2 Windows
+ */
+#define display_show_wins_0_1_2()                                                                                                       \
+    do {                                                                                                                                \
+        int i = 0;                                                                                                                      \
+        for (i = 0; i < 3; i++) {                                                                                                       \
+            show_panel(G_display.panels[i]);                                                                                            \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Show 3 4 5 Windows
+ */
+#define display_show_wins_3_4_5()                                                                                                       \
+    do {                                                                                                                                \
+        int i = 3;                                                                                                                      \
+        for (i = 3; i < 6; i++) {                                                                                                       \
+            show_panel(G_display.panels[i]);                                                                                            \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
 /**
  * @brief Release members in global variables
  */
