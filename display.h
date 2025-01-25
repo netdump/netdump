@@ -557,6 +557,45 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
+ * @brief Select 3 windows
+ */
+#define display_select_3_windows()                                                                                                      \
+    do {                                                                                                                                \
+        wattron(G_display.wins[3], A_REVERSE);                                                                                          \
+        display_draw_brief_information_box();                                                                                           \
+        wattroff(G_display.wins[3], A_REVERSE);                                                                                         \
+        display_draw_more_information_box();                                                                                            \
+        display_draw_raw_information_box();                                                                                             \
+} while (0);                                                                                                                            \
+
+
+/**
+ * @brief Select 4 windows
+ */
+#define display_select_4_windows()                                                                                                      \
+    do {                                                                                                                                \
+        display_draw_brief_information_box();                                                                                           \
+        wattron(G_display.wins[4], A_REVERSE);                                                                                          \
+        display_draw_more_information_box();                                                                                            \
+        wattroff(G_display.wins[4], A_REVERSE);                                                                                         \
+        display_draw_raw_information_box();                                                                                             \
+} while (0);                                                                                                                            \
+
+
+/**
+ * @brief Select 5 windows  
+ */
+#define display_select_5_windows()                                                                                                      \
+    do {                                                                                                                                \
+        display_draw_brief_information_box();                                                                                           \
+        display_draw_more_information_box();                                                                                            \
+        wattron(G_display.wins[5], A_REVERSE);                                                                                          \
+        display_draw_raw_information_box();                                                                                             \
+        wattroff(G_display.wins[5], A_REVERSE);                                                                                         \
+} while (0);                                                                                                                            \
+
+
+/**
  * @brief Handle TUI second page
  */
 #define display_handle_TUI_second_page()                                                                                                \
@@ -571,13 +610,13 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
                 case 9:                                                                                                                 \
                     switch (((count % 3) + 3)) {                                                                                        \
                         case 3:                                                                                                         \
-                            wmove(G_display.wins[3], 4, 2);                                                                             \
+                            display_select_3_windows();                                                                                 \
                             break;                                                                                                      \
                         case 4:                                                                                                         \
-                            wmove(G_display.wins[4], 2, 2);                                                                             \
+                            display_select_4_windows();                                                                                 \
                             break;                                                                                                      \
                         case 5:                                                                                                         \
-                            wmove(G_display.wins[4], 2, 2);                                                                             \
+                            display_select_5_windows();                                                                                 \
                             break;                                                                                                      \
                         default:                                                                                                        \
                             break;                                                                                                      \
