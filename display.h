@@ -64,7 +64,7 @@ extern display_t G_display;
     do {                                                                                                                                \
         if (!has_colors()) {                                                                                                            \
             trace_log("Don't support color attribute");                                                                                 \
-            assert(1);                                                                                                                  \
+            exit(1);                                                                                                                    \
         }                                                                                                                               \
         start_color();                                                                                                                  \
     } while (0);                                                                                                                        \
@@ -408,6 +408,17 @@ extern display_t G_display;
 
 
 /**
+ * @brief Set the properties of the 3 4 5 window
+ */
+#define display_set_wins_3_4_5_property()                                                                                               \
+    do {                                                                                                                                \
+        keypad(G_display.wins[3], TRUE);                                                                                                \
+        keypad(G_display.wins[4], TRUE);                                                                                                \
+        keypad(G_display.wins[5], TRUE);                                                                                                \
+    } while (0);                                                                                                                        \
+
+
+/**
  * @brief Release members in global variables
  */
 #define display_release_G_display_member()                                                                                              \
@@ -427,5 +438,150 @@ extern display_t G_display;
     do {                                                                                                                                \
         endwin();                                                                                                                       \
     } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Exit TUI Showcase
+ */
+#define display_exit_TUI_showcase()                                                                                                     \
+    do {                                                                                                                                \
+        display_release_G_display_member();                                                                                             \
+        display_endwin();                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Handle TUI first page
+ */
+#define display_handle_TUI_first_page()                                                                                                 \
+    do {                                                                                                                                \
+        display_show_wins_0_1_2();                                                                                                      \
+        while (1) {                                                                                                                     \
+            wmove(G_display.wins[2], 1, 1);                                                                                             \
+            wattrset(G_display.wins[2], A_NORMAL);                                                                                      \
+            wclrtoeol(G_display.wins[2]);                                                                                               \
+            wattrset(G_display.wins[2], A_BOLD);                                                                                        \
+            wattron(G_display.wins[2], COLOR_PAIR((3)));                                                                                \
+            waddstr(G_display.wins[2], "Command: ");                                                                                    \
+            wattroff(G_display.wins[2], COLOR_PAIR((3)));                                                                               \
+            wattron(G_display.wins[2], COLOR_PAIR((2)));                                                                                \
+            box(G_display.wins[2], 0, 0);                                                                                               \
+            wattroff(G_display.wins[2], COLOR_PAIR((2)));                                                                               \
+            refresh();                                                                                                                  \
+            wrefresh(G_display.wins[2]);                                                                                                \
+            int code = OK;                                                                                                              \
+            char buffer[256] = {0};                                                                                                     \
+            code = wgetnstr(G_display.wins[2], buffer, 256);                                                                            \
+            if (code == ERR) {                                                                                                          \
+                display_exit_TUI_showcase();                                                                                            \
+                trace_log("Called wgetnstr error");                                                                                     \
+                exit(1);                                                                                                                \
+            }                                                                                                                           \
+            attroff(A_BOLD);                                                                                                            \
+            refresh();                                                                                                                  \
+            wrefresh(G_display.wins[2]);                                                                                                \
+            mvwprintw(stdscr, 0, 0, "%s\n", buffer);                                                                                    \
+            refresh();                                                                                                                  \
+            wrefresh(stdscr);                                                                                                           \
+            if (!strncmp("Quit", buffer, 4)) {                                                                                          \
+                display_exit_TUI_showcase();                                                                                            \
+                trace_log("Called wgetnstr error");                                                                                     \
+                exit(1);                                                                                                                \
+            }                                                                                                                           \
+            else {                                                                                                                      \
+                break;                                                                                                                  \
+            }                                                                                                                           \
+        }                                                                                                                               \
+        display_hide_wins_0_1_2();                                                                                                      \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Handle TUI second page
+ */
+#define display_handle_TUI_second_page()                                                                                                \
+    do {                                                                                                                                \
+        display_show_wins_3_4_5();                                                                                                      \
+        int ch = 0;                                                                                                                     \
+        unsigned char count = 0;                                                                                                        \
+        while((ch = getch()) != KEY_F(1)) {	                                                                                            \
+            switch(ch) {	                                                                                                            \
+                case KEY_BTAB:                                                                                                          \
+                    switch (((count % 3) + 3)) {                                                                                        \
+                        case 3:                                                                                                         \
+                            wmove(G_display.wins[3], 4, 2);                                                                             \
+                            break;                                                                                                      \
+                        case 4:                                                                                                         \
+                            wmove(G_display.wins[4], 2, 2);                                                                             \
+                            break;                                                                                                      \
+                        case 5:                                                                                                         \
+                            wmove(G_display.wins[4], 2, 2);                                                                             \
+                            break;                                                                                                      \
+                        default:                                                                                                        \
+                            break;                                                                                                      \
+                    }                                                                                                                   \
+                    break;                                                                                                              \
+                default:                                                                                                                \
+                    break;                                                                                                              \
+            }                                                                                                                           \
+            count ++;                                                                                                                   \
+        }                                                                                                                               \
+        display_hide_wins_3_4_5();                                                                                                      \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief TUI processing entry
+ */
+#define display_TUI_processing_entry()                                                                                                  \
+    do {                                                                                                                                \
+        while (1) {                                                                                                                     \
+            display_handle_TUI_first_page();                                                                                            \
+            display_handle_TUI_second_page();                                                                                           \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Startup TUI Showcase
+ */
+#define display_startup_TUI_showcase()                                                                                                  \
+    do {                                                                                                                                \
+                                                                                                                                        \
+        display_initialize_scr();                                                                                                       \
+                                                                                                                                        \
+        display_initialize_color();                                                                                                     \
+                                                                                                                                        \
+        display_initialize_color_pair();                                                                                                \
+                                                                                                                                        \
+        display_apply_first_tui_wins_resources();                                                                                       \
+                                                                                                                                        \
+        display_apply_first_tui_panels_resources();                                                                                     \
+                                                                                                                                        \
+        display_apply_second_tui_wins_resources();                                                                                      \
+                                                                                                                                        \
+        display_apply_first_tui_panels_resources();                                                                                     \
+                                                                                                                                        \
+        display_check_G_display();                                                                                                      \
+                                                                                                                                        \
+        display_set_wins_3_4_5_property();                                                                                              \
+                                                                                                                                        \
+        display_draw_netdump_ASCII_world();                                                                                             \
+                                                                                                                                        \
+        display_draw_author_information();                                                                                              \
+                                                                                                                                        \
+        display_draw_cmd_input_box();                                                                                                   \
+                                                                                                                                        \
+        display_draw_brief_information_box();                                                                                           \
+                                                                                                                                        \
+        display_draw_more_information_box();                                                                                            \
+                                                                                                                                        \
+        display_draw_raw_information_box();                                                                                             \
+                                                                                                                                        \
+        display_hide_wins_all();                                                                                                        \
+                                                                                                                                        \
+        display_TUI_processing_entry();                                                                                                 \
+    } while (0);                                                                                                                        \
+
 
 #endif  // __DISPLAY_H__
