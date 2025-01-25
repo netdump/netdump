@@ -302,7 +302,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
                                                                                                                                         \
         startx += LENGTHOFADDRESS;                                                                                                      \
         display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));          \
-        wattron(G_display.wins[3], COLOR_PAIR(1));                                                                                      \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
         mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                                  \
         mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                                \
         mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                               \
@@ -441,6 +441,26 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
+ * @brief Set the necho and cbreak attributes for the window
+ */
+#define display_set_wins_noecho_and_cbreak()                                                                                            \
+    do {                                                                                                                                \
+        cbreak();                                                                                                                       \
+	    noecho();                                                                                                                       \
+    } while (0);                                                                                                                        \
+
+
+/**
+ * @brief Set the echo and nocbreak attributes for the window
+ */
+#define display_set_wins_echo_and_nocbreak()                                                                                            \
+    do {                                                                                                                                \
+        nocbreak();                                                                                                                     \
+	    echo();                                                                                                                         \
+    } while (0);                                                                                                                        \
+
+
+/**
  * @brief Release members in global variables
  */
 #define display_release_G_display_member()                                                                                              \
@@ -524,6 +544,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 #define display_handle_TUI_second_page()                                                                                                \
     do {                                                                                                                                \
         display_show_wins_3_4_5();                                                                                                      \
+        display_set_wins_noecho_and_cbreak();                                                                                           \
         int ch = 0;                                                                                                                     \
         unsigned char count = 0;                                                                                                        \
         while((ch = getch()) != 80) {	                                                                                                \
@@ -549,6 +570,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             count ++;                                                                                                                   \
         }                                                                                                                               \
         display_hide_wins_3_4_5();                                                                                                      \
+        display_set_wins_echo_and_nocbreak();                                                                                           \
     } while (0);                                                                                                                        \
 
 
