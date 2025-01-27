@@ -53,7 +53,11 @@ extern display_t G_display;
  */
 #define display_initialize_scr()                                                                                                        \
     do {                                                                                                                                \
-        initscr();                                                                                                                      \
+        if(!(initscr())) {                                                                                                              \
+            trace_log("Can't initscr");                                                                                                 \
+            exit(1);                                                                                                                    \
+        }                                                                                                                               \
+                                                                                                                                        \
     } while (0);                                                                                                                        \
 
 
