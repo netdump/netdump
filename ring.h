@@ -206,7 +206,7 @@ typedef struct ring {
 #endif
 
 #ifdef RING_DEBUG
-	struct ring_debug_stats stats;
+	struct ring_debug_stats stats[MAX_LCORE];
 #endif
     void * mempool;
 
@@ -234,6 +234,7 @@ typedef struct ring {
  */
 #ifdef RING_DEBUG
 #define __ring_stat_ADD(r, name, n) do {		\
+		unsigned __lcore_id = lcore_id();		\
 		r->stats.name##_objs += n;	            \
 		r->stats.name##_bulk += 1;	            \
 	} while(0)
@@ -283,7 +284,7 @@ void ring_reset(ring_t *r);
 /**
  * Free the ring buffer
  */
-void ring_destroy(ring_t *r);
+void ring_destroy(ring_t *r, size_t ring_size);
 
 /**
  * Change the high water mark.
