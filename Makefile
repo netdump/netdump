@@ -10,6 +10,7 @@ NCURSESW_PATH = ./Third/ncursesw
 
 CFLAGS = -O0 -g
 CFLAGS += -Wall
+CFLAGS += -DTRACE
 CFLAGS += -I ./
 CFLAGS += -I ${NCURSESW_PATH}/include
 

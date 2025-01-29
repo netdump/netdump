@@ -19,9 +19,12 @@
 #include "display.h"
 #include "sigact.h"
 #include "common.h"
+#include "trace.h"
 
 
 int main(int argc, char ** argv) {
+
+    TRACE_STARTUP();
 
     sigact_register_signal_handle();
 
