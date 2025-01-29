@@ -33,8 +33,9 @@ uint32_t GCOREID = 0;
  */
 void nd_check_kernel_version(void) {
 
-    if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) 
+    if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) {
         fprintf(stderr, "Kernel version is less than 2.6.6\n");
-
+        exit(1);
+    }
     return ;
 }
