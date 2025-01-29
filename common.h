@@ -90,5 +90,18 @@ __extern_always_inline uint32_t lcore_id(void) {
 }
 
 
+/**
+ * @brief Check if the kernel version is greater than 2.6.6 
+ * @note
+ *  If the kernel version is less than 2.6.6, 
+ *  the program will exit because the program uses mq_open and other related APIs.
+ */
+void nd_check_kernel_version(void);
+
+
+/**
+ * @brief Check if the kernel version is greater than 2.6.6 
+ */
+#define ND_CHECK_KERNEL_VERSION()   do{nd_check_kernel_version();} while(0);
 
 #endif 
