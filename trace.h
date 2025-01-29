@@ -44,18 +44,30 @@ int32_t trace_startup(void);
 
 
 /**
+ * @brief TRACE log resource destruction
+ */
+void trace_resource_destruction(void);
+
+
+/**
+ * @brief Start tracing and logging
+ */
+#define TRACE_STARTUP()	do {trace_startup();} while (0);
+
+
+/**
+ * @brief TRACE log resource destruction
+ */
+#define TRACE_DESTRUCTION() do{trace_resource_destruction();} while(0);
+
+
+/**
  * @brief Logging
  */
 #define trace_log(fmt, ...)\
 	do {\
 		nd_tracef("[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
 	} while (0);\
-
-
-/**
- * Start tracing and logging
- */
-#define TRACE_STARTUP()	do {trace_startup();} while (0);
 	
 
 /**
@@ -160,6 +172,12 @@ int32_t trace_startup(void);
  * Start tracing and logging
  */
 #define TRACE_STARTUP () /* nothing */
+
+
+/**
+ * @brief TRACE log resource destruction
+ */
+#define TRACE_DESTRUCTION() /* nothing */
 
 
 /**

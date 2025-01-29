@@ -101,4 +101,20 @@ int32_t trace_startup (void) {
     return ND_OK;
 }
 
+
+/**
+ * @brief TRACE log resource destruction
+ */
+void trace_resource_destruction(void) {
+
+    TC("called { %s", __func__);
+
+    fflush(trace_G_log);
+
+    fclose(trace_G_log);
+
+    RVoid();
+}
+
+
 #endif
