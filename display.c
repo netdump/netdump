@@ -13,6 +13,15 @@
 
 #include "display.h"
 
+
+/**
+ * @brief The global flag of display tui, used to exit tui
+ * @note
+ * 	display_G_flag = 1; 
+ * 	indicates an exception occurs and the system needs to exit
+ */
+unsigned char display_G_flag = 0;
+
 /**
  * @brief Define a global variable to store the resources required by TUI
  * @note

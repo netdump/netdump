@@ -26,6 +26,14 @@
 
 
 /**
+ * @brief The global flag of display tui, used to exit tui
+ * @note
+ * 	display_G_flag = 1; 
+ * 	indicates an exception occurs and the system needs to exit
+ */
+extern unsigned char display_G_flag;
+
+/**
  * @brief The number of windows and panels used globally
  */
 #define display_PW_number               7
@@ -55,7 +63,7 @@ extern display_t G_display;
     do {                                                                                                                                \
         if(!(initscr())) {                                                                                                              \
             trace_log("Can't initscr");                                                                                                 \
-            abort();                                                                                                                    \
+            display_G_flag = 1;                                                                                                         \
         }                                                                                                                               \
                                                                                                                                         \
     } while (0);                                                                                                                        \
@@ -68,7 +76,7 @@ extern display_t G_display;
     do {                                                                                                                                \
         if (!has_colors()) {                                                                                                            \
             T("Don't support color attribute");                                                                                         \
-            abort();                                                                                                                    \
+            display_G_flag = 1;                                                                                                         \
         }                                                                                                                               \
         start_color();                                                                                                                  \
     } while (0);                                                                                                                        \
@@ -177,12 +185,14 @@ extern display_t G_display;
         int i = 0;                                                                                                                      \
         for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
             if (!(G_display.wins[i])) {                                                                                                 \
-                T("G_display.wins[%d]", i);                                                                                             \
-                assert((G_display.wins[i]) != NULL);                                                                                    \
+                T("G_display.wins[%d] is NULL", i);                                                                                     \
+                display_G_flag = 1;                                                                                                     \
+                break;                                                                                                                  \
             }                                                                                                                           \
             if (!(G_display.panels[i])) {                                                                                               \
-                T("G_display.panels[%d]", i);                                                                                           \
-                assert((G_display.panels[i]) != NULL);                                                                                  \
+                T("G_display.panels[%d] is NULL", i);                                                                                   \
+                display_G_flag = 1;                                                                                                     \
+                break;                                                                                                                  \
             }                                                                                                                           \
         }                                                                                                                               \
     } while (0);                                                                                                                        \
@@ -544,7 +554,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             if (code == ERR) {                                                                                                          \
                 /* display_exit_TUI_showcase(); */                                                                                      \
                 T("Called wgetnstr error");                                                                                             \
-                abort();                                                                                                                \
+                display_G_flag = 1;                                                                                                     \
+                break;                                                                                                                  \
             }                                                                                                                           \
             attroff(A_BOLD);                                                                                                            \
             refresh();                                                                                                                  \
@@ -555,7 +566,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             if (!strncmp("Quit", buffer, 4)) {                                                                                          \
                 /* display_exit_TUI_showcase(); */                                                                                      \
                 T("Recv Quit String also exit");                                                                                        \
-                abort();                                                                                                                \
+                display_G_flag = 1;                                                                                                     \
+                break;                                                                                                                  \
             }                                                                                                                           \
             else {                                                                                                                      \
                 break;                                                                                                                  \
@@ -649,6 +661,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
     do {                                                                                                                                \
         while (1) {                                                                                                                     \
             display_handle_TUI_first_page();                                                                                            \
+            if (display_G_flag) break;                                                                                                  \
             display_handle_TUI_second_page();                                                                                           \
         }                                                                                                                               \
     } while (0);                                                                                                                        \
@@ -662,7 +675,11 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
                                                                                                                                         \
         display_initialize_scr();                                                                                                       \
                                                                                                                                         \
+        if (display_G_flag) goto label;                                                                                                 \
+                                                                                                                                        \
         display_initialize_color();                                                                                                     \
+                                                                                                                                        \
+        if (display_G_flag) goto label;                                                                                                 \
                                                                                                                                         \
         display_initialize_color_pair();                                                                                                \
                                                                                                                                         \
@@ -675,6 +692,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         display_apply_second_tui_panels_resources();                                                                                    \
                                                                                                                                         \
         display_check_G_display();                                                                                                      \
+                                                                                                                                        \
+        if (display_G_flag) goto label;                                                                                                 \
                                                                                                                                         \
         display_set_wins_3_4_5_property();                                                                                              \
                                                                                                                                         \
@@ -693,6 +712,9 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
         display_hide_wins_all();                                                                                                        \
                                                                                                                                         \
         display_TUI_processing_entry();                                                                                                 \
+                                                                                                                                        \
+label:                                                                                                                                  \
+        display_exit_TUI_showcase();                                                                                                    \
     } while (0);                                                                                                                        \
 
 
