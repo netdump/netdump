@@ -115,6 +115,16 @@ void trace_resource_destruction(void);
 
 
 /**
+ * @brief Trace 'unsigned int' return-values
+ */
+#define RUInt(code)\
+    do {\
+        TC("return } %d", code);\
+        return code;\
+    } while (0);\
+
+
+/**
  * @brief Trace 'char*' return-values
  */
 #define RCharPtr(code)\
@@ -171,7 +181,7 @@ void trace_resource_destruction(void);
 /**
  * Start tracing and logging
  */
-#define TRACE_STARTUP () /* nothing */
+#define TRACE_STARTUP() /* nothing */
 
 
 /**
@@ -193,11 +203,12 @@ void trace_resource_destruction(void);
 #define RBool(code)		        return code
 #define RChar(code)		        return ((char) code)
 #define RInt(code)		        return code
+#define RUInt(code)             return code
 #define RCharPtr(code)			return code
 #define RConstCharPtr(code)		return code
 #define RConstVoidPtr(code)	    return code
 #define RVoidPtr(code)		    return code
-#define RVoid				    return
+#define RVoid()				    return
 
 
 /**
