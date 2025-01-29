@@ -43,17 +43,28 @@ void nd_tracef(const char *fmt, ...);
 int32_t trace_startup(void);
 
 
+/**
+ * @brief Logging
+ */
 #define trace_log(fmt, ...)\
 	do {\
 		nd_tracef("[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
 	} while (0);\
 
 
+/**
+ * Start tracing and logging
+ */
 #define TRACE_STARTUP()	do {trace_startup();} while (0);
 	
 
+/**
+ * @brief Re-definition of trace_log
+ */
 #define T	trace_log
 
+
+#ifdef TOPTRACE
 
 /**
  * @brief Trace 'bool' return-values
@@ -124,22 +135,45 @@ int32_t trace_startup(void);
         return code;\
     } while (0);\
 
+
+/**
+ * @brief Trace 'void' return-values
+ */
+#define RVoid()\
+	do {\
+        T("return }");\
+         return;\
+    } while (0);\
+
+#endif  /* TOPTRACE */
+
 #else /* !TRACE */
 
+
+/**
+ * Start tracing and logging
+ */
 #define TRACE_STARTUP () /* nothing */
 
+
+/**
+ * @brief Re-definition of trace_log
+ */
 #define T	trace_log
 
-#define returnBool(code)		return code
-#define returnChar(code)		return ((int8_t) code)
-#define returnCode(code)		return code
-#define returnPtr(code)			return code
-#define returnCPtr(code)		return code
-#define returnCVoidPtr(code)	return code
-#define returnVoidPtr(code)		return code
-#define returnVoid				return
+#define RBool(code)		        return code
+#define RChar(code)		        return ((char) code)
+#define RInt(code)		        return code
+#define RCharPtr(code)			return code
+#define RConstCharPtr(code)		return code
+#define RConstVoidPtr(code)	    return code
+#define RVoidPtr(code)		    return code
+#define RVoid				    return
 
 
+/**
+ * @brief Logging
+ */
 #define trace_log(fmt, ...)\
     do {\
         fprintf(stderr, "[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
