@@ -41,6 +41,7 @@ all: ${TARGET}
 
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+	$(RM) $(OBJS)
 
 
 %.o: %.c
