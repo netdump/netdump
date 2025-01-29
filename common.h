@@ -85,8 +85,10 @@ extern uint32_t GCOREID;
  * @brief Get the GCOREID of the current process
  */
 __extern_always_inline uint32_t lcore_id(void) {
+
+    TC("called { %s", __func__);
     
-    return GCOREID;
+    RUInt(GCOREID);
 }
 
 
