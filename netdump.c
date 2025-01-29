@@ -24,6 +24,8 @@
 
 int main(int argc, char ** argv) {
 
+    ND_CHECK_KERNEL_VERSION();
+
     TRACE_STARTUP();
 
     TC("Called { %s (%d, %p)", __func__, argc, argv);
