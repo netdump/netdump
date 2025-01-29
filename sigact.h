@@ -20,6 +20,8 @@
 #include <string.h>
 #include <signal.h>
 
+#include "common.h"
+
 /**
  * @brief Define signals and related signal processing functions and properties
  * @memberof sig The integer value of the signal

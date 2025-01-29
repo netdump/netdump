@@ -85,6 +85,25 @@ static sigact_t sigact[] = {
 
 
 /**
+ * @brief TUI shows process exit resource destruction
+ */
+extern void display_exit_resource_destruction();
+
+
+/**
+ * @brief addr2line useage
+ * 	addr2line -e <可执行文件> <内存地址>
+ * 	-e <可执行文件>：指定要进行符号解析的可执行文件（即包含调试符号的文件）
+ * 	<内存地址>：给定的内存地址，它通常是堆栈跟踪（stack trace）输出中的地址
+ * 	-f：在输出中包含函数名称。没有 -f 时，addr2line 只返回源文件的行号
+ * 	
+ * @example
+ * 	addr2line -e ./program -f 0x00400667
+ * 	addr2line -e ./program -f 0x00400667 0x00400512 0x0040043a
+ */
+
+
+/**
  * @brief Generate stack trace to file
  */
 static void sigact_Generate_stack_trace (void) {
@@ -116,6 +135,21 @@ void sigact_handle_crash (int signum) {
 
 	sigact_Generate_stack_trace();
 
+	unsigned int lCOREID = lcore_id();
+	switch (lCOREID) {
+		case GCOREID_DP:
+			display_exit_resource_destruction();
+			break;
+		case GCOREID_CP:
+			break;
+		case GCOREID_AA:
+			break;
+		default:
+			break;
+	}
+
+	TRACE_DESTRUCTION();
+
 	exit(1);
 
 	return ;
@@ -128,6 +162,21 @@ void sigact_handle_crash (int signum) {
  */
 void sigact_handle_quit (int signum) {
 
+	unsigned int lCOREID = lcore_id();
+	switch (lCOREID) {
+		case GCOREID_DP:
+			display_exit_resource_destruction();
+			break;
+		case GCOREID_CP:
+			break;
+		case GCOREID_AA:
+			break;
+		default:
+			break;
+	}
+
+	TRACE_DESTRUCTION();
+
 	exit(1);
 
 	return ;
@@ -139,6 +188,21 @@ void sigact_handle_quit (int signum) {
  * @param signum Signal number
  */
 void sigact_handle_child_quit (int signum) {
+
+	unsigned int lCOREID = lcore_id();
+	switch (lCOREID) {
+		case GCOREID_DP:
+			display_exit_resource_destruction();
+			break;
+		case GCOREID_CP:
+			break;
+		case GCOREID_AA:
+			break;
+		default:
+			break;
+	}
+
+	TRACE_DESTRUCTION();
 
 	exit(1);
 
