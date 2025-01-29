@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "sigact.h"
+#include "common.h"
+#include "trace.h"
 
 /**
  * Common signals that cause process crashes
@@ -98,7 +100,7 @@ static void sigact_Generate_stack_trace (void) {
 
 	int fd = open(SIGACT_STACK_INFO, O_RDWR |O_CREAT, 0666);
 
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    backtrace_symbols_fd(array, size, fd);
 
 	close(fd);
 
@@ -114,7 +116,7 @@ void sigact_handle_crash (int signum) {
 
 	sigact_Generate_stack_trace();
 
-	
+	exit(1);
 
 	return ;
 }
@@ -126,6 +128,7 @@ void sigact_handle_crash (int signum) {
  */
 void sigact_handle_quit (int signum) {
 
+	exit(1);
 
 	return ;
 }
@@ -137,6 +140,7 @@ void sigact_handle_quit (int signum) {
  */
 void sigact_handle_child_quit (int signum) {
 
+	exit(1);
 
 	return ;
 }
@@ -152,11 +156,11 @@ int sigact_register_signal_handle (void) {
 	for (i = 0; i < num; i++) {
 		if (((sigact[i].sig) != -1)) {
 			if (sigaction(sigact[i].sig, &(sigact[i].sa), NULL) < 0) {
-				return -1;
+				return ND_ERR;
 			}
 		}
 	}
 
-	return 0;
+	return ND_OK;
 }
 
