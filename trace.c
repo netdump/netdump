@@ -113,7 +113,7 @@ void trace_resource_destruction(void) {
 
     fclose(trace_G_log);
 
-    RVoid();
+    return ;
 }
 
 
