@@ -25,8 +25,9 @@
 
 #ifdef TRACE
 
-extern FILE * trace_G_log;
-
+/**
+ * @brief Log file format string
+ */
 #define TRACE_LOG_FILE_FMT		"tracelog_%d.log"
 
 
@@ -53,31 +54,75 @@ int32_t trace_startup(void);
 
 #define T	trace_log
 
-#define TRACE_RETURN(value,type)     	return _inside_tracef_##type((type)(value))
-#define TRACE_RETURN1(value,dst)     	return _nc_retrace_##dst(value)
+
+/**
+ * @brief Trace 'bool' return-values
+ */
+#define RBool(code)\
+    do {\
+        T("return } %s", code ? "TRUE" : "FALSE");\
+        return code;\
+    } while (0);\
 
 
-#define returnBits(code)		TRACE_RETURN(code,unsigned)
-#define returnBool(code)		TRACE_RETURN(code,bool)
-#define returnChar(code)		TRACE_RETURN(code,char)
-#define returnCode(code)		TRACE_RETURN(code,int)
-#define returnPtr(code)			TRACE_RETURN(code,ptr)
-
-#define returnCPtr(code)		TRACE_RETURN1(code,cptr)
-#define returnCVoidPtr(code)	TRACE_RETURN1(code,cvoid_ptr)
-#define returnVoidPtr(code)		TRACE_RETURN1(code,void_ptr)
-
-#define returnVoid			{ T((T_RETURN(""))); return; }
+/**
+ * @brief Trace 'char' return-values
+ */
+#define RChar(code)\
+    do {\
+        T("return } %c", code);\
+        return (char) code;\
+    } while (0);\
 
 
-extern bool     			_inside_tracef_bool(uint8_t code);
-extern int8_t             	_inside_tracef_char (int8_t);
-extern int32_t              _inside_tracef_int (int32_t);
-extern uint32_t         	_inside_tracef_unsigned (uint32_t);
-extern int8_t *           	_inside_tracef_ptr (int8_t *);
-extern const int8_t * 		_inside_tracef_cptr(const int8_t *code);
-extern void * 				_inside_tracef_void_ptr(void *code);
-extern const void * 		_inside_tracef_cvoid_ptr(const void *code);
+/**
+ * @brief Trace 'int' return-values
+ */
+#define RInt(code)\
+    do {\
+        T("return } %d", code);\
+        return code;\
+    } while (0);\
+
+
+/**
+ * @brief Trace 'char*' return-values
+ */
+#define RCharPtr(code)\
+    do {\
+        T("return } %p", code);\
+        return code;\
+    } while (0);\
+
+
+/**
+ * @brief Trace 'const char*' return-values
+ */
+#define RConstCharPtr(code)\
+    do {\
+        T("return } %p", code);\
+        return code;\
+    } while (0);\
+
+
+/**
+ * @brief Trace 'void*' return-values
+ */
+#define RVoidPtr(code)\
+    do {\
+        T("return } %p", code);\
+        return code;\
+    } while (0);\
+
+
+/**
+ * @brief Trace 'const void*' return-values
+ */
+#define RConstVoidPtr(code)\
+    do {\
+        T("return } %p", code);\
+        return code;\
+    } while (0);\
 
 #else /* !TRACE */
 
@@ -85,7 +130,6 @@ extern const void * 		_inside_tracef_cvoid_ptr(const void *code);
 
 #define T	trace_log
 
-#define returnBits(code)		return code
 #define returnBool(code)		return code
 #define returnChar(code)		return ((int8_t) code)
 #define returnCode(code)		return code
