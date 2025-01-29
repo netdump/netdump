@@ -66,12 +66,18 @@ int32_t trace_startup(void);
 
 #ifdef TOPTRACE
 
+
+/**
+ * @brief Re-definition of trace_log
+ */
+#define TC trace_log
+
 /**
  * @brief Trace 'bool' return-values
  */
 #define RBool(code)\
     do {\
-        T("return } %s", code ? "TRUE" : "FALSE");\
+        TC("return } %s", code ? "TRUE" : "FALSE");\
         return code;\
     } while (0);\
 
@@ -81,7 +87,7 @@ int32_t trace_startup(void);
  */
 #define RChar(code)\
     do {\
-        T("return } %c", code);\
+        TC("return } %c", code);\
         return (char) code;\
     } while (0);\
 
@@ -91,7 +97,7 @@ int32_t trace_startup(void);
  */
 #define RInt(code)\
     do {\
-        T("return } %d", code);\
+        TC("return } %d", code);\
         return code;\
     } while (0);\
 
@@ -101,7 +107,7 @@ int32_t trace_startup(void);
  */
 #define RCharPtr(code)\
     do {\
-        T("return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -111,7 +117,7 @@ int32_t trace_startup(void);
  */
 #define RConstCharPtr(code)\
     do {\
-        T("return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -121,7 +127,7 @@ int32_t trace_startup(void);
  */
 #define RVoidPtr(code)\
     do {\
-        T("return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -131,7 +137,7 @@ int32_t trace_startup(void);
  */
 #define RConstVoidPtr(code)\
     do {\
-        T("return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -141,7 +147,7 @@ int32_t trace_startup(void);
  */
 #define RVoid()\
 	do {\
-        T("return }");\
+        TC("return }");\
          return;\
     } while (0);\
 
@@ -160,6 +166,11 @@ int32_t trace_startup(void);
  * @brief Re-definition of trace_log
  */
 #define T	trace_log
+
+/**
+ * @brief Re-definition of trace_log
+ */
+#define TC /* nothing */
 
 #define RBool(code)		        return code
 #define RChar(code)		        return ((char) code)
