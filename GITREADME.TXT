@@ -73,5 +73,29 @@ git branch -d my_branch
 node_modules/
 
 
+/*----------------------------------------------------------------------*/
+
+# 提交代码时遇到的问题
+
+ERRMSG：
+{
+    git add trace.h 
+    error: insufficient permission for adding an object to repository database .git/objects
+    error: trace.h: failed to insert into database
+    error: unable to index file 'trace.h'
+    fatal: updating files failed
+}
+
+Solution
+{
+    1. 检查 .git 目录的权限
+    首先，检查 .git 目录及其子目录的权限。Git 会将对象存储在 .git/objects 目录中，如果该目录的权限设置不正确，Git 就无法写入。
+
+    你可以运行以下命令来检查并修复权限问题：ls -lR .git/objects
+
+    如果你看到 objects 目录或其中的文件没有写权限，使用 chmod 命令调整权限：chmod -R u+rw .git/
+
+    如果你需要更强的权限设置，可以使用：su; chown -R $(whoami):$(whoami) .git/
+}
 
 
