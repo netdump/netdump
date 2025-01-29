@@ -108,6 +108,8 @@ extern void display_exit_resource_destruction();
  */
 static void sigact_Generate_stack_trace (void) {
 
+	TC("Called { %s ()", __func__);
+
 	void *array[10];
     size_t size;
 
@@ -123,7 +125,7 @@ static void sigact_Generate_stack_trace (void) {
 
 	close(fd);
 
-	return ;
+	RVoid();
 }
 
 
@@ -132,6 +134,8 @@ static void sigact_Generate_stack_trace (void) {
  * @param signum Signal number
  */
 void sigact_handle_crash (int signum) {
+
+	TC("Called { %s(%d)", __func__, signum);
 
 	sigact_Generate_stack_trace();
 
@@ -152,7 +156,7 @@ void sigact_handle_crash (int signum) {
 
 	exit(1);
 
-	return ;
+	RVoid();
 }
 
 
@@ -162,6 +166,8 @@ void sigact_handle_crash (int signum) {
  */
 void sigact_handle_quit (int signum) {
 
+	TC("Called { %s(%d)", __func__, signum);
+
 	unsigned int lCOREID = lcore_id();
 	switch (lCOREID) {
 		case GCOREID_DP:
@@ -179,7 +185,7 @@ void sigact_handle_quit (int signum) {
 
 	exit(1);
 
-	return ;
+	RVoid();
 }
 
 
@@ -189,6 +195,8 @@ void sigact_handle_quit (int signum) {
  */
 void sigact_handle_child_quit (int signum) {
 
+	TC("Called { %s(%d)", __func__, signum);
+
 	unsigned int lCOREID = lcore_id();
 	switch (lCOREID) {
 		case GCOREID_DP:
@@ -206,7 +214,7 @@ void sigact_handle_child_quit (int signum) {
 
 	exit(1);
 
-	return ;
+	RVoid();
 }
 
 
@@ -214,6 +222,8 @@ void sigact_handle_child_quit (int signum) {
  * @brief Register signal processing
  */
 int sigact_register_signal_handle (void) {
+
+	TC("Called { %s(void)", __func__);
 
 	int i = 0, num = (sizeof(sigact) / sizeof(sigact_t));
 
@@ -225,6 +235,6 @@ int sigact_register_signal_handle (void) {
 		}
 	}
 
-	return ND_OK;
+	RInt(ND_OK);
 }
 
