@@ -67,7 +67,7 @@ extern display_t G_display;
 #define display_initialize_color()                                                                                                      \
     do {                                                                                                                                \
         if (!has_colors()) {                                                                                                            \
-            trace_log("Don't support color attribute");                                                                                 \
+            T("Don't support color attribute");                                                                                         \
             exit(1);                                                                                                                    \
         }                                                                                                                               \
         start_color();                                                                                                                  \
@@ -177,11 +177,11 @@ extern display_t G_display;
         int i = 0;                                                                                                                      \
         for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
             if (!(G_display.wins[i])) {                                                                                                 \
-                trace_log("G_display.wins[%d]", i);                                                                                     \
+                T("G_display.wins[%d]", i);                                                                                             \
                 assert((G_display.wins[i]) != NULL);                                                                                    \
             }                                                                                                                           \
             if (!(G_display.panels[i])) {                                                                                               \
-                trace_log("G_display.panels[%d]", i);                                                                                   \
+                T("G_display.panels[%d]", i);                                                                                           \
                 assert((G_display.panels[i]) != NULL);                                                                                  \
             }                                                                                                                           \
         }                                                                                                                               \
@@ -539,7 +539,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             code = wgetnstr(G_display.wins[2], buffer, 256);                                                                            \
             if (code == ERR) {                                                                                                          \
                 display_exit_TUI_showcase();                                                                                            \
-                trace_log("Called wgetnstr error");                                                                                     \
+                T("Called wgetnstr error");                                                                                             \
                 exit(1);                                                                                                                \
             }                                                                                                                           \
             attroff(A_BOLD);                                                                                                            \
@@ -550,7 +550,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             wrefresh(stdscr);                                                                                                           \
             if (!strncmp("Quit", buffer, 4)) {                                                                                          \
                 display_exit_TUI_showcase();                                                                                            \
-                trace_log("Called wgetnstr error");                                                                                     \
+                T("Called wgetnstr error");                                                                                             \
                 exit(1);                                                                                                                \
             }                                                                                                                           \
             else {                                                                                                                      \

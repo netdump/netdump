@@ -46,6 +46,8 @@ display_t G_display = {
  */
 int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color) {
 
+	TC("Called { %s (%p, %d, %d, %d, %s, %u)", __func__, win, starty, startx, width, string, color);
+
     int length, x, y;
 	float temp;
 
@@ -69,7 +71,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 	wattroff(win, color);
 	refresh();
 
-    return 0;
+	RInt(0);
 }
 
 
