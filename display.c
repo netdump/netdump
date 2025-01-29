@@ -72,3 +72,15 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
     return 0;
 }
 
+
+/**
+ * @brief TUI shows process exit resource destruction
+ */
+void display_exit_resource_destruction () {
+
+	TC("called { %s", __func__);
+
+	display_exit_TUI_showcase();
+
+	RVoid();
+}

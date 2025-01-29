@@ -692,4 +692,10 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
     } while (0);                                                                                                                        \
 
 
+/**
+ * @brief TUI shows process exit resource destruction
+ */
+extern void display_exit_resource_destruction ();
+
+
 #endif  // __DISPLAY_H__
