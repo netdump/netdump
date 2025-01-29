@@ -86,9 +86,7 @@ extern uint32_t GCOREID;
  */
 __extern_always_inline uint32_t lcore_id(void) {
 
-    TC("called { %s", __func__);
-    
-    RUInt(GCOREID);
+    return GCOREID;
 }
 
 
