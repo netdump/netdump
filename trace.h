@@ -66,7 +66,7 @@ void trace_resource_destruction(void);
  */
 #define trace_log(fmt, ...)\
 	do {\
-		nd_tracef("[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
+		nd_tracef("[%s][%s:%d]"fmt"\n", __TIME__, __FILE__, __LINE__, ##__VA_ARGS__);\
 	} while (0);\
 	
 
