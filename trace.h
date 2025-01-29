@@ -28,7 +28,7 @@
 /**
  * @brief Log file format string
  */
-#define TRACE_LOG_FILE_FMT		"tracelog_%d.log"
+#define TRACE_LOG_FILE_FMT		"trace_%d.log"
 
 
 /**
