@@ -16,7 +16,7 @@
 
 /**
  * @file
- * RTE Ring
+ * Ring
  *
  * The Ring Manager is a fixed-size queue, implemented as a table of
  * pointers. Head and tail pointers are modified atomically, allowing
@@ -47,7 +47,7 @@ extern "C" {
 #include <pthread.h>
 
 #ifndef NAMESIZE
-#define NAMESIZE 32 /**< The maximum length of a ring name. */
+#define NAMESIZE 64 /**< The maximum length of a ring name. */
 #endif
 
 #ifndef RING_CACHE_LINE_SIZE
@@ -149,23 +149,6 @@ enum ring_queue_behavior {
 	RING_QUEUE_VARIABLE   /* Enq/Deq as many items a possible from ring */
 };
 
-#ifdef RING_DEBUG
-/**
- * A structure that stores the ring statistics (per-lcore).
- */
-struct ring_debug_stats {
-	uint64_t enq_success_bulk; /**< Successful enqueues number. */
-	uint64_t enq_success_objs; /**< Objects successfully enqueued. */
-	uint64_t enq_quota_bulk;   /**< Successful enqueues above watermark. */
-	uint64_t enq_quota_objs;   /**< Objects enqueued above watermark. */
-	uint64_t enq_fail_bulk;    /**< Failed enqueues number. */
-	uint64_t enq_fail_objs;    /**< Objects that failed to be enqueued. */
-	uint64_t deq_success_bulk; /**< Successful dequeues number. */
-	uint64_t deq_success_objs; /**< Objects successfully dequeued. */
-	uint64_t deq_fail_bulk;    /**< Failed dequeues number. */
-	uint64_t deq_fail_objs;    /**< Objects that failed to be dequeued. */
-} __ring_cache_aligned;
-#endif
 
 /**
  * An RTE ring structure.
@@ -179,8 +162,9 @@ struct ring_debug_stats {
  */
 typedef struct ring {
 	char name[NAMESIZE];                /**< Name of the ring. */
-	int flags;                          /**< Flags supplied at creation. */
-	int elemt_size;                     /**< Flags supplied at creation. */
+	uint32_t flags;                     /**< Flags supplied at creation. */
+	uint32_t count;                     /**< Flags supplied at creation. */
+	void * memory;
 
 	/** Ring producer status. */
 	struct prod {
@@ -199,16 +183,7 @@ typedef struct ring {
 		uint32_t mask;           /**< Mask (size-1) of ring. */
 		volatile uint32_t head;  /**< Consumer head. */
 		volatile uint32_t tail;  /**< Consumer tail. */
-#ifdef RING_SPLIT_PROD_CONS
 	} cons __ring_cache_aligned;
-#else
-	} cons;
-#endif
-
-#ifdef RING_DEBUG
-	struct ring_debug_stats stats[MAX_LCORE];
-#endif
-    void * mempool;
 
 	void * ring[0] __ring_cache_aligned; /**< Memory space of ring starts here.
 	 	 	 	 	 	 	 	 	 	 * not volatile so need to be careful
@@ -223,24 +198,6 @@ typedef struct ring {
 #define RING_QUOT_EXCEED (1 << 31)  /**< Quota exceed for burst ops */
 #define RING_SZ_MASK  (unsigned)(0x0fffffff) /**< Ring size mask */
 
-/**
- * @internal When debug is enabled, store ring statistics.
- * @param r
- *   A pointer to the ring.
- * @param name
- *   The name of the statistics field to increment in the ring.
- * @param n
- *   The number to add to the object-oriented statistics.
- */
-#ifdef RING_DEBUG
-#define __ring_stat_ADD(r, name, n) do {		\
-		unsigned __lcore_id = lcore_id();		\
-		r->stats.name##_objs += n;	            \
-		r->stats.name##_bulk += 1;	            \
-	} while(0)
-#else
-#define __ring_stat_ADD(r, name, n) do {} while(0)
-#endif
 
 /**
  * Create a new ring named *name* in memory.
@@ -253,7 +210,9 @@ typedef struct ring {
  *
  * @param name
  *   The name of the ring.
- * @param count
+ * @param base_addr 
+ *   Starting base address
+ * @param count 
  *   The size of the ring (must be a power of 2).
  * @param flags
  *   An OR of the following:
@@ -274,17 +233,17 @@ typedef struct ring {
  *    - EEXIST - a memzone with the same name already exists
  *    - ENOMEM - no appropriate memory area found in which to create memzone
  */
-ring_t * ring_create(const char * name, int count);
+ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flags);
+
 
 /**
- * Reset the ring
+ * @brief Destroy the ring queue
+ * @param ring 
+ * 	 The address of the ring queue
+ * @param count 
+ * 	 The size of the ring (must be a power of 2).
  */
-void ring_reset(ring_t *r);
-
-/**
- * Free the ring buffer
- */
-void ring_destroy(ring_t *r, size_t ring_size);
+void ring_free(ring_t *ring, int count);
 
 /**
  * Change the high water mark.
@@ -423,13 +382,11 @@ __ring_mp_do_enqueue(ring_t *r, void *const *obj_table,
 		/* check that we have enough room in ring */
 		if (unlikely(n > free_entries)) {
 			if (behavior == RING_QUEUE_FIXED) {
-				__ring_stat_ADD(r, enq_fail, n);
 				return -ENOBUFS;
 			}
 			else {
 				/* No free entry available */
 				if (unlikely(free_entries == 0)) {
-					__ring_stat_ADD(r, enq_fail, n);
 					return 0;
 				}
 
@@ -450,11 +407,9 @@ __ring_mp_do_enqueue(ring_t *r, void *const *obj_table,
 	if (unlikely(((mask + 1) - free_entries + n) > r->prod.watermark)) {
 		ret = (behavior == RING_QUEUE_FIXED) ? -EDQUOT :
 				(int)(n | RING_QUOT_EXCEED);
-		__ring_stat_ADD(r, enq_quota, n);
 	}
 	else {
 		ret = (behavior == RING_QUEUE_FIXED) ? 0 : n;
-		__ring_stat_ADD(r, enq_success, n);
 	}
 
 	/*
@@ -511,13 +466,11 @@ __ring_sp_do_enqueue(ring_t *r, void * const *obj_table,
 	/* check that we have enough room in ring */
 	if (unlikely(n > free_entries)) {
 		if (behavior == RING_QUEUE_FIXED) {
-			__ring_stat_ADD(r, enq_fail, n);
 			return -ENOBUFS;
 		}
 		else {
 			/* No free entry available */
 			if (unlikely(free_entries == 0)) {
-				__ring_stat_ADD(r, enq_fail, n);
 				return 0;
 			}
 
@@ -536,11 +489,9 @@ __ring_sp_do_enqueue(ring_t *r, void * const *obj_table,
 	if (unlikely(((mask + 1) - free_entries + n) > r->prod.watermark)) {
 		ret = (behavior == RING_QUEUE_FIXED) ? -EDQUOT :
 			(int)(n | RING_QUOT_EXCEED);
-		__ring_stat_ADD(r, enq_quota, n);
 	}
 	else {
 		ret = (behavior == RING_QUEUE_FIXED) ? 0 : n;
-		__ring_stat_ADD(r, enq_success, n);
 	}
 
 	r->prod.tail = prod_next;
@@ -602,12 +553,10 @@ __ring_mc_do_dequeue(ring_t *r, void **obj_table,
 		/* Set the actual entries for dequeue */
 		if (n > entries) {
 			if (behavior == RING_QUEUE_FIXED) {
-				__ring_stat_ADD(r, deq_fail, n);
 				return -ENOENT;
 			}
 			else {
 				if (unlikely(entries == 0)){
-					__ring_stat_ADD(r, deq_fail, n);
 					return 0;
 				}
 
@@ -631,7 +580,6 @@ __ring_mc_do_dequeue(ring_t *r, void **obj_table,
 	while (unlikely(r->cons.tail != cons_head))
 		ue_pause();
 
-	__ring_stat_ADD(r, deq_success, n);
 	r->cons.tail = cons_next;
 
 	return behavior == RING_QUEUE_FIXED ? 0 : n;
@@ -679,12 +627,10 @@ __ring_sc_do_dequeue(ring_t *r, void **obj_table,
 
 	if (n > entries) {
 		if (behavior == RING_QUEUE_FIXED) {
-			__ring_stat_ADD(r, deq_fail, n);
 			return -ENOENT;
 		}
 		else {
 			if (unlikely(entries == 0)){
-				__ring_stat_ADD(r, deq_fail, n);
 				return 0;
 			}
 
@@ -699,7 +645,6 @@ __ring_sc_do_dequeue(ring_t *r, void **obj_table,
 	DEQUEUE_PTRS();
 	COMPILER_BARRIER();
 
-	__ring_stat_ADD(r, deq_success, n);
 	r->cons.tail = cons_next;
 	return behavior == RING_QUEUE_FIXED ? 0 : n;
 }
@@ -1059,12 +1004,16 @@ void ring_list_dump(void);
  *
  * @param name
  *   The name of the ring.
+ * @param base_addr 
+ * 	 Starting base address
+ * @param count 
+ * 	 The size of the ring (must be a power of 2).
  * @return
  *   The pointer to the ring matching the name, or NULL if not found,
  *   with ue_errno set appropriately. Possible ue_errno values include:
  *    - ENOENT - required entry not available to return.
  */
-ring_t * ring_lookup(const char *name);
+ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count);
 
 /**
  * Enqueue several objects on the ring (multi-producers safe).
