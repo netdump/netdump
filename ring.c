@@ -31,6 +31,12 @@
 
 
 /**
+ * @brief true if x is a power of 2
+ */
+#define POWEROF2(x) ((((x)-1) & (x)) == 0)
+
+
+/**
  * @brief It is to page align the incoming address addr
  * @param addr 
  * 	 Addresses that need to be aligned
@@ -162,6 +168,11 @@ ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flag
 
 	TC("Called { %s(%s, %p, %d, %d)", __func__, name, base_addr, count, flags);
 
+	if (unlikely((!(POWEROF2(count))))) {
+		T("errmsg: POWEROF2(%d) is False", count);
+		RVoidPtr(NULL);
+	}
+
 	int fd = -1;
 	if (unlikely(fd = open(name, O_RDWR |O_CREAT, 0666)) < 0) {
 		T("errmsg: %s", strerror(errno));
@@ -175,11 +186,14 @@ ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flag
 		RVoidPtr(NULL);
 	}
 
-    uintptr_t map_addr =  align_address (base_addr);
-	ring_t * ring = (ring_t*)mmap((void *)map_addr, 
+	T("infomsg: align_address(%p) : %p", base_addr, (align_address(base_addr)));
+
+	ring_t * ring = (ring_t*)mmap(
+				(void *)(align_address(base_addr)), 
 				(count * (sizeof(void *)) + sizeof(ring_t)), 
 				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, 
-				fd , 0);
+				fd , 0
+			);
 
 	if(unlikely(ring == MAP_FAILED)) {
 		close(fd);
@@ -228,17 +242,25 @@ ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count)
     
 	TC("Called { %s(%s, %p, %d)", __func__, name, base_addr, count);
 
+	if (unlikely((!(POWEROF2(count))))) {
+		T("errmsg: POWEROF2(%d) is False", count);
+		RVoidPtr(NULL);
+	}
+
 	int fd = -1;
     if (unlikely((fd = open(name, O_RDWR, 0666)) == -1)) {
 		T("errmsg: %s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
-    uintptr_t map_addr =  align_address (base_addr);
-    ring_t * ring = (ring_t*)mmap((void *)map_addr, 
+	T("infomsg: align_address(%p) : %p", base_addr, (align_address(base_addr)));
+
+    ring_t * ring = (ring_t*)mmap(
+				(void *)(align_address(base_addr)), 
 				(count * (sizeof(void *)) + sizeof(ring_t)), 
 				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, 
-				fd , 0);
+				fd , 0
+			);
 
     if(unlikely((ring == MAP_FAILED) || (ring == NULL))){
 		T("errmsg: %s", strerror(errno));
@@ -255,19 +277,17 @@ ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count)
  * @brief Destroy the ring queue
  * @param ring 
  * 	 The address of the ring queue
- * @param count 
- * 	 The size of the ring (must be a power of 2).
  */
-void ring_free(ring_t *ring, int count) {
+void ring_free(ring_t *ring) {
 
-	TC("Called { %s(%p, %d)", __func__, ring, count);
+	TC("Called { %s(%p)", __func__, ring);
 
-	if (unlikely((!ring) || (count <= 0))) {
-		T("errmsg: ring: %p; count %d", ring, count);
+	if (unlikely((!ring))) {
+		T("errmsg: ring: %p", ring);
 		RVoid();
 	}
 
-    munmap(ring, (count * (sizeof(void *)) + sizeof(ring_t)));
+    munmap(ring, (ring->count * (sizeof(void *)) + sizeof(ring_t)));
 
 	RVoid();
 }

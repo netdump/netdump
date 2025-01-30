@@ -240,10 +240,8 @@ ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flag
  * @brief Destroy the ring queue
  * @param ring 
  * 	 The address of the ring queue
- * @param count 
- * 	 The size of the ring (must be a power of 2).
  */
-void ring_free(ring_t *ring, int count);
+void ring_free(ring_t *ring);
 
 /**
  * Change the high water mark.
@@ -995,7 +993,7 @@ ring_free_count(const ring_t *r)
 }
 
 /**
- * Dump the status of all rings on the console
+ * @brief Dump the status of all rings on the console
  */
 void ring_list_dump(void);
 
