@@ -191,6 +191,15 @@ void trace_resource_destruction(void);
 
 
 /**
+ * @brief Logging
+ */
+#define trace_log(fmt, ...)\
+    do {\
+        fprintf(stderr, "[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
+    } while (0);\
+
+
+/**
  * @brief Re-definition of trace_log
  */
 #define T	trace_log
@@ -209,15 +218,6 @@ void trace_resource_destruction(void);
 #define RConstVoidPtr(code)	    return code
 #define RVoidPtr(code)		    return code
 #define RVoid()				    return
-
-
-/**
- * @brief Logging
- */
-#define trace_log(fmt, ...)\
-    do {\
-        fprintf(stderr, "[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
-    } while (0);\
 
 
 #endif /* TRACE/!TRACE */

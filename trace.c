@@ -20,8 +20,9 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "trace.h"
+
 #include "common.h"
+#include "trace.h"
 
 #ifdef TRACE
 
