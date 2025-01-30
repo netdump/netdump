@@ -24,10 +24,18 @@
 #include <sys/fcntl.h>
 #include <inttypes.h>
 #include <errno.h>
+
 #include "ring.h"
+#include "common.h"
 
 #define RING_BASE_ADDR   0x6ee000000000
 
+
+/**
+ * @brief It is to page align the incoming address addr
+ * @param addr Addresses that need to be aligned
+ * @return Returns a page-aligned address
+ */
 static uintptr_t align_address(uintptr_t addr)
 {
     long page_size = sysconf(_SC_PAGESIZE); 
@@ -39,12 +47,11 @@ static uintptr_t align_address(uintptr_t addr)
     return (addr + page_size - 1) & ~(page_size - 1);
 }
 
-/*
- * change the high water mark. If *count* is 0, water marking is
- * disabled
+
+/**
+ * @brief change the high water mark. If *count* is 0, water marking is disabled
  */
-int
-ring_set_water_mark(ring_t *r, unsigned count)
+int ring_set_water_mark(ring_t *r, unsigned count)
 {
 	if (count >= r->prod.size)
 		return -EINVAL;
@@ -57,9 +64,11 @@ ring_set_water_mark(ring_t *r, unsigned count)
 	return 0;
 }
 
-/* dump the status of the ring on the console */
-void
-ring_dump(const ring_t *r)
+
+/**
+ * @brief dump the status of the ring on the console
+ */
+void ring_dump(const ring_t *r)
 {
 #ifdef RING_DEBUG
 	ring_t_debug_stats sum;
@@ -111,18 +120,25 @@ ring_dump(const ring_t *r)
 #endif
 }
 
-void
-ring_reset(ring_t *r)
+
+/**
+ * @brief Set the ring to empty
+ */
+void ring_reset(ring_t *r)
 {
 	r->prod.head = r->cons.head = 0;
 	r->prod.tail = r->cons.tail = 0;
+
+	return ;
 }
 
-/*
- * alloc and init ring
- *
- * @return 
- *   0 is success, less than 0 is failed
+
+/**
+ * @brief alloc and init ring
+ * @param name The name of the ring queue
+ * @param elemt_size The size of each element in the circular queue
+ * @param count The number of elements in the circular queue
+ * @return 0 is success, less than 0 is failed
  */
 ring_t* ring_init(const char * name, int elemt_size, int count)
 {
@@ -178,6 +194,12 @@ ring_t* ring_init(const char * name, int elemt_size, int count)
     return ring;
 }
 
+
+/**
+ * @brief Find the specified ring queue
+ * @param name The name of the ring queue
+ * @return Returns the address of the circular queue on success, NULL on failure
+ */
 ring_t* ring_lookup(const char *name)
 {
     int fd = 0;
@@ -220,6 +242,13 @@ ring_t* ring_lookup(const char *name)
     return ring;
 }
 
+
+/**
+ * @brief Creating a Ring Queue
+ * @param name The name of the ring queue
+ * @param count The number of elements in the circular queue
+ * @return Returns the address of the circular queue on success, NULL on failure
+ */
 ring_t* ring_create(const char * name, int count){
     if (access(name, F_OK)) {
         return ring_init(name, sizeof(void *), count);
@@ -229,6 +258,12 @@ ring_t* ring_create(const char * name, int count){
     }
 }
 
+
+/**
+ * @brief Destroy the ring queue
+ * @param r The address of the ring queue
+ * @param ring_size The size of the ring queue
+ */
 void ring_destroy(ring_t *r, size_t ring_size) {
     if (r) {
         munmap(r, ring_size);
