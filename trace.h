@@ -21,14 +21,17 @@
 #include "common.h"
 
 
-// "called {"
+/**
+ * @brief File stream pointer for global logging
+ */
+extern FILE * trace_G_log;
 
 #ifdef TRACE
 
 /**
  * @brief Log file format string
  */
-#define TRACE_LOG_FILE_FMT		"trace_%d.log"
+#define TRACE_LOG_FILE_FMT		"trace%d.log"
 
 
 /**

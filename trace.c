@@ -24,12 +24,14 @@
 #include "common.h"
 #include "trace.h"
 
-#ifdef TRACE
 
 /**
  * @brief File stream pointer for global logging
  */
 FILE * trace_G_log = NULL;
+
+
+#ifdef TRACE
 
 
 /**
