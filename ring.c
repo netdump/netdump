@@ -34,7 +34,9 @@
  * @brief 
  * 	true if x is a power of 2
  */
+#ifndef POWEROF2
 #define POWEROF2(x) ((((x)-1) & (x)) == 0)
+#endif /* POWEROF2 */
 
 
 /**
