@@ -47,6 +47,29 @@ void nd_check_kernel_version(void) {
 
 /**
  * @brief 
+ * 	It is to page align the incoming address addr
+ * @param addr 
+ * 	 Addresses that need to be aligned
+ * @return 
+ * 	Returns a page-aligned address
+ */
+uintptr_t align_address(uintptr_t addr)
+{
+	TC("Called { %s(%p)", __func__, addr);
+
+    long page_size = sysconf(_SC_PAGESIZE); 
+
+    if (unlikely(page_size == -1)) {
+		T("errmsg: %s", strerror(errno));
+        page_size = 4096;
+	}
+
+	RVoidPtr(((addr + page_size - 1) & ~(page_size - 1)));
+}
+
+
+/**
+ * @brief 
  *  Check if the directory exists and create it if it does not exist
  * @param fpath
  *  File path pointer
@@ -193,4 +216,61 @@ int nd_check_fpath (char * fname) {
         RInt(ND_ERR);
 
     RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Call the mmap function to open up memory space
+ * @param name
+ *  The name of the file
+ * @param baseaddr
+ *  Starting base address
+ * @param memspace
+ *  The size of each memory block
+ * @param count
+ *  Number of memory blocks
+ * @return 
+ *  Returns the address of the allocated space if successful, 
+ *  otherwise returns NULL
+ */
+void * nd_called_open_mmap_openup_memory (
+    const char * name, void * baseaddr, unsigned int memspace, unsigned int count) {
+
+    TC("Called { %s(%s, %p, %u, %u)", __func__, name, baseaddr, memspace, count);
+
+    if (unlikely((!(POWEROF2(count))))) {
+		T("errmsg: POWEROF2(%d) is False", count);
+		RVoidPtr(NULL);
+	}
+
+    int fd = -1;
+	if (unlikely((fd = open(name, O_RDWR |O_CREAT, 0666)) < 0)) {
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+    if(unlikely(ftruncate(fd, (count * memspace)) == -1)){
+		close(fd);
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+	T("infomsg: align_address(%p) : %p", baseaddr, (align_address((uintptr_t)baseaddr)));
+
+    void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
+				PROT_READ | PROT_WRITE, MAP_SHARED, fd , 0);
+
+	if(unlikely((p == MAP_FAILED))) {
+		close(fd);
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+	if (unlikely((!p))) {
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+    RVoidPtr((p));
 }

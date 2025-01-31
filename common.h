@@ -18,6 +18,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <stdarg.h>
+#include <sys/sysinfo.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/fcntl.h>
 
 /**
  * @brief 
@@ -161,6 +168,26 @@ void nd_check_kernel_version(void);
 
 /**
  * @brief 
+ * 	true if x is a power of 2
+ */
+#ifndef POWEROF2
+#define POWEROF2(x) ((((x)-1) & (x)) == 0)
+#endif /* POWEROF2 */
+
+
+/**
+ * @brief 
+ * 	It is to page align the incoming address addr
+ * @param addr 
+ * 	 Addresses that need to be aligned
+ * @return 
+ * 	Returns a page-aligned address
+ */
+uintptr_t align_address(uintptr_t addr);
+
+
+/**
+ * @brief 
  *  The maximum space occupied by the communication file name
  */
 #define COMM_NAMESIZE	256
@@ -220,5 +247,24 @@ typedef struct {
  *  if failed, it returns ND_ERR
  */
 int nd_check_fpath (char * fname);
+
+
+/**
+ * @brief
+ *  Call the mmap function to open up memory space
+ * @param name
+ *  The name of the file
+ * @param baseaddr
+ *  Starting base address
+ * @param memspace
+ *  The size of each memory block
+ * @param count
+ *  Number of memory blocks
+ * @return 
+ *  Returns the address of the allocated space if successful, 
+ *  otherwise returns NULL
+ */
+void * nd_called_open_mmap_openup_memory (
+	const char * name, void * baseaddr, unsigned int memspace, unsigned int count);
 
 #endif 
