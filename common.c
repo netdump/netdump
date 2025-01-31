@@ -30,6 +30,13 @@ uint32_t GCOREID = 0;
 
 /**
  * @brief 
+ *  Array storing the pid value of the child process
+ */
+pid_t childpid[3] = {0, 0, 0};
+
+
+/**
+ * @brief 
  *  Check if the kernel version is greater than 2.6.6 
  * @note
  *  If the kernel version is less than 2.6.6, 

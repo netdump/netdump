@@ -122,6 +122,20 @@ __extern_always_inline uint32_t lcore_id(void) {
 
 /**
  * @brief 
+ *  Array storing the pid value of the child process
+ */
+extern pid_t childpid[3];
+
+
+/**
+ * @brief 
+ * 	Define a function pointer to use when creating a process
+ */
+typedef int (*funcpointer) (unsigned int, const char *, void *);
+
+
+/**
+ * @brief 
  *  Check if the kernel version is greater than 2.6.6 
  * @note
  *  If the kernel version is less than 2.6.6, 
