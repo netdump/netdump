@@ -33,7 +33,7 @@ int main(int argc, char ** argv) {
 
     if(unlikely((msgcomm_startup()) == ND_ERR)) {
         T("Msgcomm startup failed");
-        goto label2;
+        goto label1;
     }
 
     msgcomm_infodump();

@@ -55,8 +55,8 @@ void trace_resource_destruction(void);
 #define TRACE_STARTUP()\
     do {\
         if (unlikely((trace_startup()) == ND_ERR)) {\
-            fprintf(stderr, "Trace Startup failed");
-            exit(1);
+            fprintf(stderr, "Trace Startup failed");\
+            exit(1);\
         }\
     } while (0);\
 
