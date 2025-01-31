@@ -74,8 +74,9 @@ int analysis_loop (void) {
 
     TC("Called { %s(void)", __func__);
 
-
-
+    while (1) {
+        nd_delay_microsecond(10000);
+    }
 
     RInt(ND_OK);
 }
