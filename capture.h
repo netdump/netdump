@@ -21,6 +21,8 @@
 #include <sys/prctl.h>
 #include "common.h"
 #include "trace.h"
+#include "sigact.h"
+
 
 /**
  * @brief 
