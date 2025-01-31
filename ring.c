@@ -221,7 +221,7 @@ void ring_free(ring_t *ring) {
 		RVoid();
 	}
 
-    munmap(ring, (ring->count * (sizeof(void *)) + sizeof(ring_t)));
+    munmap(ring, (ring->count * sizeof(ring_t)));
 
 	RVoid();
 }
