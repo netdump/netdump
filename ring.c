@@ -122,7 +122,7 @@ void ring_dump(const ring_t *r)
  *
  * @param name
  *   The name of the ring.
- * @param base_addr 
+ * @param baseaddr 
  *   Starting base address
  * @param count 
  *   The size of the ring (must be a power of 2).
@@ -145,46 +145,16 @@ void ring_dump(const ring_t *r)
  *    - EEXIST - a memzone with the same name already exists
  *    - ENOMEM - no appropriate memory area found in which to create memzone
  */
-ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flags)
+ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags)
 {
 
-	TC("Called { %s(%s, %p, %d, %d)", __func__, name, base_addr, count, flags);
+	TC("Called { %s(%s, %p, %d, %d)", __func__, name, baseaddr, count, flags);
 
-	if (unlikely((!(POWEROF2(count))))) {
-		T("errmsg: POWEROF2(%d) is False", count);
-		RVoidPtr(NULL);
-	}
-
-	int fd = -1;
-	if (unlikely(fd = open(name, O_RDWR |O_CREAT, 0666)) < 0) {
-		T("errmsg: %s", strerror(errno));
-		RVoidPtr(NULL);
-	}
-
-
-	if(unlikely(ftruncate(fd, (count * (sizeof(void *)) + sizeof(ring_t))) == -1)){
-		close(fd);
-		T("errmsg: %s", strerror(errno));
-		RVoidPtr(NULL);
-	}
-
-	T("infomsg: align_address(%p) : %p", base_addr, (align_address(base_addr)));
-
-	ring_t * ring = (ring_t*)mmap(
-				(void *)(align_address(base_addr)), 
-				(count * (sizeof(void *)) + sizeof(ring_t)), 
-				PROT_READ | PROT_WRITE, MAP_SHARED, 
-				fd , 0
-			);
-
-	if(unlikely(ring == MAP_FAILED)) {
-		close(fd);
-		T("errmsg: %s", strerror(errno));
-		RVoidPtr(NULL);
-	}
+	ring_t * ring = (ring_t *) nd_called_open_mmap_openup_memory (
+			name, (void *)baseaddr, (unsigned int)(sizeof(ring_t)), count);
 
 	if (unlikely(!ring)) {
-		T("errmsg: %s", strerror(errno));
+		T("errmsg: ring is null");
 		RVoidPtr(NULL);
 	}
 
@@ -210,7 +180,7 @@ ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flag
  *
  * @param name
  *   The name of the ring.
- * @param base_addr 
+ * @param baseaddr 
  * 	 Starting base address
  * @param count 
  * 	 The size of the ring (must be a power of 2).
@@ -219,38 +189,19 @@ ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flag
  *   with ue_errno set appropriately. Possible ue_errno values include:
  *    - ENOENT - required entry not available to return.
  */
-ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count)
+ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
 {
     
-	TC("Called { %s(%s, %p, %d)", __func__, name, base_addr, count);
+	TC("Called { %s(%s, %p, %d)", __func__, name, baseaddr, count);
 
-	if (unlikely((!(POWEROF2(count))))) {
-		T("errmsg: POWEROF2(%d) is False", count);
+	ring_t * ring = (ring_t*) nd_called_mmap_lookup_memory (
+			name, (void *)baseaddr, (unsigned int)(sizeof(ring_t)), count);
+
+	if (unlikely(!ring)) {
+		T("errmsg: ring is null");
 		RVoidPtr(NULL);
 	}
 
-	int fd = -1;
-    if (unlikely((fd = open(name, O_RDWR, 0666)) == -1)) {
-		T("errmsg: %s", strerror(errno));
-		RVoidPtr(NULL);
-	}
-
-	T("infomsg: align_address(%p) : %p", base_addr, (align_address(base_addr)));
-
-    ring_t * ring = (ring_t*)mmap(
-				(void *)(align_address(base_addr)), 
-				(count * (sizeof(void *)) + sizeof(ring_t)), 
-				PROT_READ | PROT_WRITE, MAP_SHARED, 
-				fd , 0
-			);
-
-    if(unlikely((ring == MAP_FAILED) || (ring == NULL))){
-		T("errmsg: %s", strerror(errno));
-		RVoidPtr(NULL);
-	}
-
-    close(fd);
-    
     RVoidPtr(ring);
 }
 

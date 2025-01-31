@@ -210,7 +210,7 @@ typedef struct ring {
  *
  * @param name
  *   The name of the ring.
- * @param base_addr 
+ * @param baseaddr 
  *   Starting base address
  * @param count 
  *   The size of the ring (must be a power of 2).
@@ -233,7 +233,7 @@ typedef struct ring {
  *    - EEXIST - a memzone with the same name already exists
  *    - ENOMEM - no appropriate memory area found in which to create memzone
  */
-ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flags);
+ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags);
 
 
 /**
@@ -1002,7 +1002,7 @@ void ring_list_dump(void);
  *
  * @param name
  *   The name of the ring.
- * @param base_addr 
+ * @param baseaddr 
  * 	 Starting base address
  * @param count 
  * 	 The size of the ring (must be a power of 2).
@@ -1011,7 +1011,7 @@ void ring_list_dump(void);
  *   with ue_errno set appropriately. Possible ue_errno values include:
  *    - ENOENT - required entry not available to return.
  */
-ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count);
+ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count);
 
 /**
  * Enqueue several objects on the ring (multi-producers safe).
