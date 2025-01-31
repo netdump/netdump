@@ -14,14 +14,20 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /**
- * @brief Major version number
+ * @brief 
+ *  Major version number
  */
 #define NETDUMP_MAJOR_VERSION           0x0001U
 #define MAJOR_V                         NETDUMP_MAJOR_VERSION
 /**
- * @brief Subversion number
+ * @brief 
+ *  Subversion number
  */
 #define NETDUMP_SUB_VERSION             0x0001U
 #define SUB_V                           NETDUMP_SUB_VERSION
@@ -60,7 +66,12 @@ typedef unsigned long long  uint64_t;
 
 
 /**
- * @brief Error Code
+ * @brief 
+ *  Error Code
+ * @memberof ND_OK
+ *  Indicates success
+ * @memberof ND_ERR
+ *  Indicates failure
  */
 enum {
     ND_OK,
@@ -68,6 +79,16 @@ enum {
 };
 
 
+/**
+ * @brief
+ *  The ID of each process
+ * @memberof GCOREID_DP
+ *  DISPLAY PROCESS ID
+ * @memberof GCOREID_CP
+ *  CAPTURE PROCESS ID
+ * @memberof GCOREID_AA
+ *  ANALYSIS PROCESS ID
+ */
 /** DISPLAY PROCESS ID */
 #define GCOREID_DP      0U
 /** CAPTURE PROCESS ID */
@@ -77,12 +98,14 @@ enum {
 
 
 /**
- * @brief Global process number
+ * @brief 
+ *  Global process number
  */
 extern uint32_t GCOREID;
 
 /**
- * @brief Get the GCOREID of the current process
+ * @brief 
+ *  Get the GCOREID of the current process
  */
 __extern_always_inline uint32_t lcore_id(void) {
 
@@ -91,7 +114,8 @@ __extern_always_inline uint32_t lcore_id(void) {
 
 
 /**
- * @brief Check if the kernel version is greater than 2.6.6 
+ * @brief 
+ *  Check if the kernel version is greater than 2.6.6 
  * @note
  *  If the kernel version is less than 2.6.6, 
  *  the program will exit because the program uses mq_open and other related APIs.
@@ -100,7 +124,8 @@ void nd_check_kernel_version(void);
 
 
 /**
- * @brief Check if the kernel version is greater than 2.6.6 
+ * @brief 
+ *  Check if the kernel version is greater than 2.6.6 
  */
 #define ND_CHECK_KERNEL_VERSION()   do{nd_check_kernel_version();} while(0);
 
@@ -134,5 +159,66 @@ void nd_check_kernel_version(void);
 #endif /* unlikely */
 
 
+/**
+ * @brief 
+ *  The maximum space occupied by the communication file name
+ */
+#define COMM_NAMESIZE	256
+
+
+/**
+ * @brief 
+ *  Common structures for communication
+ * @memberof ring
+ *  A circular queue for storing communication data during communication
+ * @memberof _ring
+ *  A circular queue that stores unused data space during communication
+ * @memberof memery
+ *  The memory start address corresponding to the ring
+ * @memberof _memery
+ *  The memory start address corresponding to the _ring
+ * @memberof baseaddr
+ *  The base address used when the ring is initialized
+ * @memberof _baseaddr
+ *  The base address used when the _ring is initialized
+ * @memberof count
+ *  The number of elements in the circular queue
+ * @memberof name
+ *  The file name corresponding to ring
+ * @memberof _name
+ *  The file name corresponding to _ring
+ */
+typedef struct {
+	
+    void * ring;
+	void * _ring;
+
+	void * memery;
+	void * _memery;
+	
+	void * baseaddr;
+	void * _baseaddr;
+
+    unsigned long long count;
+	
+	char name[COMM_NAMESIZE];
+	char _name[COMM_NAMESIZE];
+
+} comm_t;
+
+
+/**
+ * @brief 
+ *  Check if the directory containing the file name exists; 
+ *  Check if the directory containing the file name is writable; 
+ *  Check if the directory containing the file name is readable; 
+ *  Delete the file if it exists
+ * @param fname
+ *  The file name to be checked
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int nd_check_fpath (char * fname);
 
 #endif 
