@@ -23,6 +23,7 @@
 #include "sigact.h"
 #include "common.h"
 #include "trace.h"
+#include "msgcomm.h"
 
 /**
  * Common signals that cause process crashes
@@ -143,6 +144,7 @@ void sigact_handle_crash (int signum) {
 	switch (lCOREID) {
 		case GCOREID_DP:
 			display_exit_resource_destruction();
+			msgcomm_ending();
 			break;
 		case GCOREID_CP:
 			break;
@@ -172,6 +174,7 @@ void sigact_handle_quit (int signum) {
 	switch (lCOREID) {
 		case GCOREID_DP:
 			display_exit_resource_destruction();
+			msgcomm_ending();
 			break;
 		case GCOREID_CP:
 			break;
@@ -201,6 +204,7 @@ void sigact_handle_child_quit (int signum) {
 	switch (lCOREID) {
 		case GCOREID_DP:
 			display_exit_resource_destruction();
+			msgcomm_ending();
 			break;
 		case GCOREID_CP:
 			break;
