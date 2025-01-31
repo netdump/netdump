@@ -200,10 +200,6 @@ uintptr_t align_address(uintptr_t addr);
  *  A circular queue for storing communication data during communication
  * @memberof _ring
  *  A circular queue that stores unused data space during communication
- * @memberof memery
- *  The memory start address corresponding to the ring
- * @memberof _memery
- *  The memory start address corresponding to the _ring
  * @memberof baseaddr
  *  The base address used when the ring is initialized
  * @memberof _baseaddr
@@ -219,9 +215,6 @@ typedef struct {
 	
     void * ring;
 	void * _ring;
-
-	void * memery;
-	void * _memery;
 	
 	void * baseaddr;
 	void * _baseaddr;

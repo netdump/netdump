@@ -268,6 +268,7 @@ void * nd_called_open_mmap_openup_memory (
 	}
 
 	if (unlikely((!p))) {
+        close(fd);
 		T("errmsg: %s", strerror(errno));
 		RVoidPtr(NULL);
 	}
@@ -315,6 +316,7 @@ void * nd_called_mmap_lookup_memory (
 				PROT_READ | PROT_WRITE, MAP_SHARED, fd , 0);
 
     if(unlikely((p == MAP_FAILED) || (p == NULL))){
+        close(fd);
 		T("errmsg: %s", strerror(errno));
 		RVoidPtr(NULL);
 	}
