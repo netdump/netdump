@@ -24,7 +24,7 @@
  * @memberof [0]    0TO1
  * @memberof [1]    1TO0
  */
-msgcomm_t msgcomm[] = {
+static msgcomm_t msgcomm[] = {
     {
         .comm.ring = NULL,
         .comm._ring = NULL,
@@ -416,4 +416,36 @@ int msgcomm_detection(unsigned int dir) {
     unsigned int nums = ring_count(ring);
 
     RInt(nums);
+}
+
+
+/**
+ * @brief
+ *  Global variable msgcomm member information output
+ */
+void msgcomm_infodump(void) {
+
+    TC("Called { %s()", __func__);
+
+    int i = 0;
+    for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
+        T("msgcomm[%d]", i);
+        T("msgcomm[%d].comm.name: %s", i, msgcomm[i].comm.name);
+        T("msgcomm[%d].comm.baseaddr: %p", i, msgcomm[i].comm.baseaddr);
+        T("msgcomm[%d].comm.ring: %p", i, msgcomm[i].comm.ring);
+        
+        T("msgcomm[%d].comm._name: %s", i, msgcomm[i].comm._name);
+        T("msgcomm[%d].comm._baseaddr: %p", i, msgcomm[i].comm._baseaddr);
+        T("msgcomm[%d].comm._ring: %p", i, msgcomm[i].comm._ring);
+        
+        T("msgcomm[%d].comm.count: %u", i, msgcomm[i].comm.count);
+
+        T("msgcomm[%d].msg.name: %s", i, msgcomm[i].msg.name);
+        T("msgcomm[%d].msg.baseaddr: %p", i, msgcomm[i].msg.baseaddr);
+        T("msgcomm[%d].msg.memory: %p", i, msgcomm[i].msg.memory);
+        T("msgcomm[%d].msg.memspace: %u", i, msgcomm[i].msg.memspace);
+        T("msgcomm[%d].msg.dir: %u", i, msgcomm[i].msg.dir);
+    }
+
+    RVoid();
 }

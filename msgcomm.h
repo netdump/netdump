@@ -136,7 +136,7 @@ enum {
  * @memberof MSGCOMM_BLOCK_NUMBERS
  * 	Number of memory block elements
  */
-#define MSGCOMM_BLOCK_NUMBERS					8
+#define MSGCOMM_BLOCK_NUMBERS					64
 #define MSGCOMM_MEMORY_SPACE					1024
 
 
@@ -180,5 +180,52 @@ int msgcomm_startup(void);
  */
 void msgcomm_ending(void);
 
+
+/**
+ * @brief 
+ *  Message communication module sends messages
+ * @param dir
+ *  Message direction
+ * @param msgtype
+ *  Message Type
+ * @param msg
+ *  Message content
+ * @param length
+ *  Message length
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, int length);
+
+
+/**
+ * @brief 
+ *  Message communication module receives messages
+ * @param 
+ *  Message direction
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int msgcomm_recvmsg(unsigned int dir, message_t * message);
+
+
+/**
+ * @brief
+ *  Check whether there is a message in the specified direction
+ * @param dir
+ *  Message direction
+ * @return
+ *  If it exists, it returns the number of messages.
+ */
+int msgcomm_detection(unsigned int dir);
+
+
+/**
+ * @brief
+ *  Global variable msgcomm member information output
+ */
+void msgcomm_infodump(void);
 
 #endif  // __MSGCOMM_H__
