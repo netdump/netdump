@@ -40,29 +40,6 @@
 
 
 /**
- * @brief 
- * 	It is to page align the incoming address addr
- * @param addr 
- * 	 Addresses that need to be aligned
- * @return 
- * 	Returns a page-aligned address
- */
-static uintptr_t align_address(uintptr_t addr)
-{
-	TC("Called { %s(%p)", __func__, addr);
-
-    long page_size = sysconf(_SC_PAGESIZE); 
-
-    if (unlikely(page_size == -1)) {
-		T("errmsg: %s", strerror(errno));
-        page_size = 4096;
-	}
-
-	RVoidPtr(((addr + page_size - 1) & ~(page_size - 1)));
-}
-
-
-/**
  * Change the high water mark.
  *
  * If *count* is 0, water marking is disabled. Otherwise, it is set to the
