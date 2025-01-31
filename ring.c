@@ -31,16 +31,19 @@
 
 
 /**
- * @brief true if x is a power of 2
+ * @brief 
+ * 	true if x is a power of 2
  */
 #define POWEROF2(x) ((((x)-1) & (x)) == 0)
 
 
 /**
- * @brief It is to page align the incoming address addr
+ * @brief 
+ * 	It is to page align the incoming address addr
  * @param addr 
  * 	 Addresses that need to be aligned
- * @return Returns a page-aligned address
+ * @return 
+ * 	Returns a page-aligned address
  */
 static uintptr_t align_address(uintptr_t addr)
 {
@@ -191,7 +194,7 @@ ring_t * ring_create(const char * name, uintptr_t base_addr, int count, int flag
 	ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(base_addr)), 
 				(count * (sizeof(void *)) + sizeof(ring_t)), 
-				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, 
+				PROT_READ | PROT_WRITE, MAP_SHARED, 
 				fd , 0
 			);
 
@@ -258,7 +261,7 @@ ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count)
     ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(base_addr)), 
 				(count * (sizeof(void *)) + sizeof(ring_t)), 
-				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, 
+				PROT_READ | PROT_WRITE, MAP_SHARED, 
 				fd , 0
 			);
 
@@ -274,9 +277,10 @@ ring_t * ring_lookup(const char *name, uintptr_t base_addr, int count)
 
 
 /**
- * @brief Destroy the ring queue
+ * @brief 
+ * 	Destroy the ring queue
  * @param ring 
- * 	 The address of the ring queue
+ * 	The address of the ring queue
  */
 void ring_free(ring_t *ring) {
 
