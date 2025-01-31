@@ -272,5 +272,54 @@ void * nd_called_open_mmap_openup_memory (
 		RVoidPtr(NULL);
 	}
 
+    close(fd);
+
+    RVoidPtr((p));
+}
+
+
+/**
+ * @brief
+ *  Call the mmap function to look up memory space
+ * @param name
+ *  The name of the file
+ * @param baseaddr
+ *  Starting base address
+ * @param memspace
+ *  The size of each memory block
+ * @param count
+ *  Number of memory blocks
+ * @return 
+ *  Returns the address of the allocated space if successful, 
+ *  otherwise returns NULL
+ */
+void * nd_called_mmap_lookup_memory (
+    const char * name, void * baseaddr, unsigned int memspace, unsigned int count) {
+
+    TC("Called { %s(%s, %p, %u, %u)", __func__, name, baseaddr, memspace, count);
+
+    if (unlikely((!(POWEROF2(count))))) {
+		T("errmsg: POWEROF2(%d) is False", count);
+		RVoidPtr(NULL);
+	}
+
+	int fd = -1;
+    if (unlikely((fd = open(name, O_RDWR, 0666)) == -1)) {
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+	T("infomsg: align_address(%p) : %p", baseaddr, (align_address((uintptr_t)baseaddr)));
+
+    void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
+				PROT_READ | PROT_WRITE, MAP_SHARED, fd , 0);
+
+    if(unlikely((p == MAP_FAILED) || (p == NULL))){
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+    close(fd);
+
     RVoidPtr((p));
 }

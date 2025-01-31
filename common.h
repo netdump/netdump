@@ -267,4 +267,23 @@ int nd_check_fpath (char * fname);
 void * nd_called_open_mmap_openup_memory (
 	const char * name, void * baseaddr, unsigned int memspace, unsigned int count);
 
+
+/**
+ * @brief
+ *  Call the mmap function to look up memory space
+ * @param name
+ *  The name of the file
+ * @param baseaddr
+ *  Starting base address
+ * @param memspace
+ *  The size of each memory block
+ * @param count
+ *  Number of memory blocks
+ * @return 
+ *  Returns the address of the allocated space if successful, 
+ *  otherwise returns NULL
+ */
+void * nd_called_mmap_lookup_memory (
+	const char * name, void * baseaddr, unsigned int memspace, unsigned int count);
+
 #endif 
