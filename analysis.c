@@ -15,9 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 #include "analysis.h"
-#include "common.h"
-#include "trace.h"
+
 
 
 /**
@@ -35,6 +35,30 @@
  */
 int analysis_main (unsigned int COREID, const char * pname, void * param) {
 
+    GCOREID = COREID;
+
+    if (trace_G_log) {
+        fclose(trace_G_log);
+    }
+
+    TRACE_STARTUP();
+
+    TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
+
+    if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
+        T("Prctl set name(%s) failed", pname);
+        goto label1;
+    }
+
+    if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
+        T("Register signal handle failed");
+        goto label1;
+    }
+
+
+label1:
+
+    TRACE_DESTRUCTION();
 
     RInt(ND_OK);
 }
