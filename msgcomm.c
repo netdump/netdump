@@ -135,19 +135,25 @@ static int msgcomm_ending_msgcomm(msgcomm_t * vmsgcomm) {
     if (unlikely((!(vmsgcomm->comm.ring)))) {
         T("errmsg: vmsgcomm->comm.ring is null");
     }
-    ring_free(vmsgcomm->comm.ring);
+    else {
+        ring_free(vmsgcomm->comm.ring);
+    }
     unlink(vmsgcomm->comm.name);
 
     if (unlikely((!(vmsgcomm->comm._ring)))) {
         T("errmsg: vmsgcomm->comm._ring is null");
     }
-    ring_free(vmsgcomm->comm._ring);
+    else {
+        ring_free(vmsgcomm->comm._ring);
+    }
     unlink(vmsgcomm->comm._name);
 
     if (unlikely((!(vmsgcomm->msg.memory)))) {
         T("errmsg: vmsgcomm->msg.memory is null");
     }
-    ring_free(vmsgcomm->msg.memory);
+    else {
+        munmap(vmsgcomm->msg.memory, (vmsgcomm->msg.memspace * vmsgcomm->comm.count));
+    }
     unlink(vmsgcomm->msg.name);
 
     RInt(ND_OK);
@@ -170,9 +176,9 @@ static int msgcomm_enq_ring(msgcomm_t * vmsgcomm) {
     ring_t * ring = (ring_t *)(vmsgcomm->comm._ring);
 
     int i = 0;
-    for (i = 0; i < vmsgcomm->comm.count; i++) {
+    for (i = 0; i < (vmsgcomm->comm.count - 1); i++) {
         if (unlikely((ring_enqueue(ring, (void *)(vmsgcomm->msg.memory + (i * vmsgcomm->msg.memspace))) != 0))) {
-            T("called ring_enqueue failed");
+            T("called ring_enqueue failed;[i: %d]", i);
             RInt(ND_ERR);
         }
     }
