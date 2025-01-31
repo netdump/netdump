@@ -39,4 +39,14 @@
  */
 int capture_main (unsigned int COREID, const char * pname, void * param);
 
+
+/**
+ * @brief
+ *  The main loop of the packet capture process
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int capture_loop (void);
+
 #endif  // __CAPTURE_H__

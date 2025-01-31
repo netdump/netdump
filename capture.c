@@ -50,10 +50,29 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
+    if (unlikely((capture_loop()) == ND_ERR)) {
+        T("Analysis loop startup failed");
+        goto label1;
+    }
 
 label1:
 
     TRACE_DESTRUCTION();
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  The main loop of the packet capture process
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int capture_loop (void) {
+
+    TC("Called { %s(void)", __func__);
 
     RInt(ND_OK);
 }
