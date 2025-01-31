@@ -40,4 +40,14 @@
  */
 int analysis_main (unsigned int COREID, const char * pname, void * param);
 
+
+/**
+ * @brief 
+ *  The main loop of the packet parsing process
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int analysis_loop (void);
+
 #endif  // __ANALYSIS_H__
