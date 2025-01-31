@@ -51,6 +51,9 @@ int main(int argc, char ** argv) {
 
     display_startup_TUI_showcase();
 
+    kill(childpid[GCOREID_CP], SIGTERM);
+    kill(childpid[GCOREID_AA], SIGTERM);
+
 label2:
 
     msgcomm_ending();
