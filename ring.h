@@ -165,7 +165,6 @@ typedef struct ring {
 	char name[NAMESIZE];                /**< Name of the ring. */
 	uint32_t flags;                     /**< Flags supplied at creation. */
 	uint32_t count;                     /**< Flags supplied at creation. */
-	void * memory;
 
 	/** Ring producer status. */
 	struct prod {
