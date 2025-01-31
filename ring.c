@@ -173,7 +173,7 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 	ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(baseaddr)), 
 				(count * (sizeof(void *)) + sizeof(ring_t)), 
-				PROT_READ | PROT_WRITE, MAP_SHARED, 
+				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, 
 				fd , 0
 			);
 
@@ -241,7 +241,7 @@ ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
     ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(baseaddr)), 
 				(count * (sizeof(void *)) + sizeof(ring_t)), 
-				PROT_READ | PROT_WRITE, MAP_SHARED, 
+				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, 
 				fd , 0
 			);
 
