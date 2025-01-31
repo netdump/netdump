@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 #include "common.h"
 #include "trace.h"
 
