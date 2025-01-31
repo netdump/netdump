@@ -293,4 +293,13 @@ void * nd_called_open_mmap_openup_memory (
 void * nd_called_mmap_lookup_memory (
 	const char * name, void * baseaddr, unsigned int memspace, unsigned int count);
 
+
+/**
+ * @brief 
+ *  Use the select function to achieve millisecond delay
+ * @param microseconds
+ *  Delay in microseconds
+ */
+void nd_delay_microsecond (unsigned long microseconds);
+
 #endif 

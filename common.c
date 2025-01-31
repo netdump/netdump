@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <linux/version.h>
 #include "trace.h"
 #include "common.h"
@@ -331,4 +332,24 @@ void * nd_called_mmap_lookup_memory (
     close(fd);
 
     RVoidPtr((p));
+}
+
+
+/**
+ * @brief 
+ *  Use the select function to achieve millisecond delay
+ * @param microseconds
+ *  Delay in microseconds
+ */
+void nd_delay_microsecond (unsigned long microseconds) {
+
+    TC("Called { %s(%lu)", __func__, microseconds);
+
+    struct timeval timeout = {0, microseconds};
+    
+    if (unlikely(((select(0, NULL, NULL, NULL, &timeout)) == -1))) {
+        T("errmsg: %s", strerror(errno));
+    }
+
+    RInt(ND_OK);
 }
