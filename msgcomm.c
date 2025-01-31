@@ -178,7 +178,7 @@ static int msgcomm_enq_ring(msgcomm_t * vmsgcomm) {
     int i = 0;
     for (i = 0; i < (vmsgcomm->comm.count - 1); i++) {
         if (unlikely((ring_enqueue(ring, (void *)(vmsgcomm->msg.memory + (i * vmsgcomm->msg.memspace))) != 0))) {
-            T("called ring_enqueue failed;[i: %d]", i);
+            T("errmsg: called ring_enqueue failed;[i: %d]", i);
             RInt(ND_ERR);
         }
     }
@@ -435,7 +435,7 @@ void msgcomm_infodump(void) {
 
     int i = 0;
     for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
-        T("msgcomm[%d]", i);
+        T("infomsg: msgcomm[%d]", i);
         T("msgcomm[%d].comm.name: %s", i, msgcomm[i].comm.name);
         T("msgcomm[%d].comm.baseaddr: %p", i, msgcomm[i].comm.baseaddr);
         T("msgcomm[%d].comm.ring: %p", i, msgcomm[i].comm.ring);

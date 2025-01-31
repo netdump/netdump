@@ -27,25 +27,25 @@ int main(int argc, char ** argv) {
     TC("Called { %s (%d, %p)", __func__, argc, argv);
 
     if(unlikely((msgcomm_startup()) == ND_ERR)) {
-        T("Msgcomm startup failed");
+        T("errmsg: Msgcomm startup failed");
         goto label1;
     }
 
     msgcomm_infodump();
 
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
-        T("Fork Capture failed");
+        T("errmsg: Fork Capture failed");
         goto label2;
     }
 
     if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
-        T("Fork Analysis failed");
+        T("errmsg: Fork Analysis failed");
         kill(childpid[GCOREID_CP], SIGTERM);
         goto label2;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
-        T("Register signal handle failed");
+        T("errmsg: Register signal handle failed");
         goto label2;
     }
 
