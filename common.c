@@ -259,7 +259,7 @@ void * nd_called_open_mmap_openup_memory (
 	T("infomsg: align_address(%p) : %p", baseaddr, (align_address((uintptr_t)baseaddr)));
 
     void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
-				PROT_READ | PROT_WRITE, MAP_SHARED, fd , 0);
+				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd , 0);
 
 	if(unlikely((p == MAP_FAILED))) {
 		close(fd);
@@ -313,7 +313,7 @@ void * nd_called_mmap_lookup_memory (
 	T("infomsg: align_address(%p) : %p", baseaddr, (align_address((uintptr_t)baseaddr)));
 
     void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
-				PROT_READ | PROT_WRITE, MAP_SHARED, fd , 0);
+				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd , 0);
 
     if(unlikely((p == MAP_FAILED) || (p == NULL))){
         close(fd);
