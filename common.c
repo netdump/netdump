@@ -351,5 +351,5 @@ void nd_delay_microsecond (unsigned long microseconds) {
         T("errmsg: %s", strerror(errno));
     }
 
-    RInt(ND_OK);
+    RVoid();
 }
