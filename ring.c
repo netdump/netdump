@@ -150,11 +150,42 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 
 	TC("Called { %s(%s, %p, %d, %d)", __func__, name, baseaddr, count, flags);
 
-	ring_t * ring = (ring_t *) nd_called_open_mmap_openup_memory (
-			name, (void *)baseaddr, (unsigned int)(sizeof(ring_t)), count);
+	if (unlikely((!(POWEROF2(count))))) {
+		T("errmsg: POWEROF2(%d) is False", count);
+		RVoidPtr(NULL);
+	}
+
+	int fd = -1;
+	if (unlikely(fd = open(name, O_RDWR |O_CREAT, 0666)) < 0) {
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+
+	if(unlikely(ftruncate(fd, (count * (sizeof(void *)) + sizeof(ring_t))) == -1)){
+		close(fd);
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+	T("infomsg: align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
+
+	ring_t * ring = (ring_t*)mmap(
+				(void *)(align_address(baseaddr)), 
+				(count * (sizeof(void *)) + sizeof(ring_t)), 
+				PROT_READ | PROT_WRITE, MAP_SHARED, 
+				fd , 0
+			);
+
+	if(unlikely(ring == MAP_FAILED)) {
+		close(fd);
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
 
 	if (unlikely(!ring)) {
-		T("errmsg: ring is null");
+		close(fd);
+		T("errmsg: %s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
@@ -194,13 +225,33 @@ ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
     
 	TC("Called { %s(%s, %p, %d)", __func__, name, baseaddr, count);
 
-	ring_t * ring = (ring_t*) nd_called_mmap_lookup_memory (
-			name, (void *)baseaddr, (unsigned int)(sizeof(ring_t)), count);
-
-	if (unlikely(!ring)) {
-		T("errmsg: ring is null");
+	if (unlikely((!(POWEROF2(count))))) {
+		T("errmsg: POWEROF2(%d) is False", count);
 		RVoidPtr(NULL);
 	}
+
+	int fd = -1;
+    if (unlikely((fd = open(name, O_RDWR, 0666)) == -1)) {
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+	T("infomsg: align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
+
+    ring_t * ring = (ring_t*)mmap(
+				(void *)(align_address(baseaddr)), 
+				(count * (sizeof(void *)) + sizeof(ring_t)), 
+				PROT_READ | PROT_WRITE, MAP_SHARED, 
+				fd , 0
+			);
+
+    if(unlikely((ring == MAP_FAILED) || (ring == NULL))){
+		close(fd);
+		T("errmsg: %s", strerror(errno));
+		RVoidPtr(NULL);
+	}
+
+    close(fd);
 
     RVoidPtr(ring);
 }
@@ -221,7 +272,7 @@ void ring_free(ring_t *ring) {
 		RVoid();
 	}
 
-    munmap(ring, (ring->count * sizeof(ring_t)));
+    munmap(ring, (ring->count * (sizeof(void *)) + sizeof(ring_t)));
 
 	RVoid();
 }
