@@ -56,6 +56,34 @@ extern "C" {
 #define __ring_cache_aligned __attribute__((__aligned__(RING_CACHE_LINE_SIZE)))
 #endif
 
+/**
+ * Check if a branch is likely to be taken.
+ *
+ * This compiler builtin allows the developer to indicate if a branch is
+ * likely to be taken. Example:
+ *
+ *   if (likely(x > 1))
+ *      do_stuff();
+ *
+ */
+#ifndef likely
+#define likely(x)  __builtin_expect((x),1)
+#endif /* likely */
+
+/**
+ * Check if a branch is unlikely to be taken.
+ *
+ * This compiler builtin allows the developer to indicate if a branch is
+ * unlikely to be taken. Example:
+ *
+ *   if (unlikely(x < 1))
+ *      do_stuff();
+ *
+ */
+#ifndef unlikely
+#define unlikely(x)  __builtin_expect((x),0)
+#endif /* unlikely */
+
 #ifdef __SSE2__
 #include <emmintrin.h>
 /**
