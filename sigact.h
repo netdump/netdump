@@ -23,9 +23,12 @@
 #include "common.h"
 
 /**
- * @brief Define signals and related signal processing functions and properties
- * @memberof sig The integer value of the signal
- * @memberof sa Variables of type struct sigaction
+ * @brief 
+ * 	Define signals and related signal processing functions and properties
+ * @memberof 
+ * 	sig The integer value of the signal
+ * @memberof 
+ * 	sa Variables of type struct sigaction
  */
 typedef struct {
 
@@ -39,28 +42,35 @@ typedef struct {
 
 
 /**
- * @brief The processing process receives the child process exit signal
- * @param signum Signal number
+ * @brief 
+ * 	The processing process receives the child process exit signal
+ * @param signum 
+ * 	Signal number
  */
 void sigact_handle_child_quit (int signum);
 
 
 /**
- * @brief The process received an exit signal
- * @param signum Signal number
+ * @brief 
+ * 	The process received an exit signal
+ * @param signum 
+ * 	Signal number
  */
 void sigact_handle_quit (int signum);
 
 
 /**
- * @brief Handling signals that cause program crashes
- * @param signum Signal number
+ * @brief 
+ * 	Handling signals that cause program crashes
+ * @param signum 
+ * 	Signal number
  */
 void sigact_handle_crash (int signum);
 
 
 /**
- * @brief Register signal processing
+ * @brief 
+ * 	Register signal processing
  */
 int sigact_register_signal_handle (void);
 

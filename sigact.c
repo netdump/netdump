@@ -86,13 +86,15 @@ static sigact_t sigact[] = {
 
 
 /**
- * @brief TUI shows process exit resource destruction
+ * @brief 
+ * 	TUI shows process exit resource destruction
  */
 extern void display_exit_resource_destruction();
 
 
 /**
- * @brief addr2line useage
+ * @brief 
+ * 	addr2line useage
  * 	addr2line -e <可执行文件> <内存地址>
  * 	-e <可执行文件>：指定要进行符号解析的可执行文件（即包含调试符号的文件）
  * 	<内存地址>：给定的内存地址，它通常是堆栈跟踪（stack trace）输出中的地址
@@ -105,7 +107,8 @@ extern void display_exit_resource_destruction();
 
 
 /**
- * @brief Generate stack trace to file
+ * @brief 
+ * 	Generate stack trace to file
  */
 static void sigact_Generate_stack_trace (void) {
 
@@ -131,8 +134,10 @@ static void sigact_Generate_stack_trace (void) {
 
 
 /**
- * @brief Handling signals that cause program crashes
- * @param signum Signal number
+ * @brief 
+ * 	Handling signals that cause program crashes
+ * @param signum 
+ * 	Signal number
  */
 void sigact_handle_crash (int signum) {
 
@@ -163,8 +168,10 @@ void sigact_handle_crash (int signum) {
 
 
 /**
- * @brief The process received an exit signal
- * @param signum Signal number
+ * @brief 
+ * 	The process received an exit signal
+ * @param signum 
+ * 	Signal number
  */
 void sigact_handle_quit (int signum) {
 
@@ -193,8 +200,10 @@ void sigact_handle_quit (int signum) {
 
 
 /**
- * @brief The processing process receives the child process exit signal
- * @param signum Signal number
+ * @brief 
+ * 	The processing process receives the child process exit signal
+ * @param signum 
+ * 	Signal number
  */
 void sigact_handle_child_quit (int signum) {
 
@@ -223,7 +232,8 @@ void sigact_handle_child_quit (int signum) {
 
 
 /**
- * @brief Register signal processing
+ * @brief 
+ * 	Register signal processing
  */
 int sigact_register_signal_handle (void) {
 
