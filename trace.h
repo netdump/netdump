@@ -22,38 +22,45 @@
 
 
 /**
- * @brief File stream pointer for global logging
+ * @brief 
+ *  File stream pointer for global logging
  */
 extern FILE * trace_G_log;
 
 #ifdef TRACE
 
 /**
- * @brief Log file format string
+ * @brief 
+ *  Log file format string
  */
 #define TRACE_LOG_FILE_FMT		"trace%d.log"
 
 
 /**
- * @brief Logging
- * @brief fmt Formatting parameters
+ * @brief 
+ *  Logging
+ * @brief 
+ *  fmt Formatting parameters
  */
 void nd_tracef(const char *fmt, ...);
 
 /**
- * @brief Start logging and initialize the global file stream
+ * @brief 
+ *  Start logging and initialize the global file stream
  */
 int32_t trace_startup(void);
 
 
 /**
- * @brief TRACE log resource destruction
+ * @brief 
+ *  TRACE log resource destruction
  */
 void trace_resource_destruction(void);
 
 
 /**
- * @brief Start tracing and logging
+ * @brief 
+ *  Start tracing and logging
  */
 #define TRACE_STARTUP()\
     do {\
@@ -65,13 +72,15 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief TRACE log resource destruction
+ * @brief 
+ *  TRACE log resource destruction
  */
 #define TRACE_DESTRUCTION() do{trace_resource_destruction();} while(0);
 
 
 /**
- * @brief Logging
+ * @brief 
+ *  Logging
  */
 #define trace_log(fmt, ...)\
 	do {\
@@ -80,7 +89,8 @@ void trace_resource_destruction(void);
 	
 
 /**
- * @brief Re-definition of trace_log
+ * @brief 
+ *  Re-definition of trace_log
  */
 #define T	trace_log
 
@@ -89,12 +99,14 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Re-definition of trace_log
+ * @brief 
+ *  Re-definition of trace_log
  */
 #define TC trace_log
 
 /**
- * @brief Trace 'bool' return-values
+ * @brief 
+ *  Trace 'bool' return-values
  */
 #define RBool(code)\
     do {\
@@ -104,7 +116,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'char' return-values
+ * @brief 
+ *  Trace 'char' return-values
  */
 #define RChar(code)\
     do {\
@@ -114,7 +127,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'int' return-values
+ * @brief 
+ *  Trace 'int' return-values
  */
 #define RInt(code)\
     do {\
@@ -124,7 +138,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'unsigned int' return-values
+ * @brief 
+ *  Trace 'unsigned int' return-values
  */
 #define RUInt(code)\
     do {\
@@ -134,7 +149,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'char*' return-values
+ * @brief 
+ *  Trace 'char*' return-values
  */
 #define RCharPtr(code)\
     do {\
@@ -144,7 +160,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'const char*' return-values
+ * @brief 
+ *  Trace 'const char*' return-values
  */
 #define RConstCharPtr(code)\
     do {\
@@ -154,7 +171,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'void*' return-values
+ * @brief 
+ *  Trace 'void*' return-values
  */
 #define RVoidPtr(code)\
     do {\
@@ -164,7 +182,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'const void*' return-values
+ * @brief 
+ *  Trace 'const void*' return-values
  */
 #define RConstVoidPtr(code)\
     do {\
@@ -174,7 +193,8 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Trace 'void' return-values
+ * @brief 
+ *  Trace 'void' return-values
  */
 #define RVoid()\
 	do {\
@@ -188,19 +208,22 @@ void trace_resource_destruction(void);
 
 
 /**
- * Start tracing and logging
+ * @brief 
+ *  Start tracing and logging
  */
 #define TRACE_STARTUP() /* nothing */
 
 
 /**
- * @brief TRACE log resource destruction
+ * @brief 
+ *  TRACE log resource destruction
  */
 #define TRACE_DESTRUCTION() /* nothing */
 
 
 /**
- * @brief Logging
+ * @brief 
+ *  Logging
  */
 #define trace_log(fmt, ...)\
     do {\
@@ -209,12 +232,14 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief Re-definition of trace_log
+ * @brief 
+ *  Re-definition of trace_log
  */
 #define T	trace_log
 
 /**
- * @brief Re-definition of trace_log
+ * @brief 
+ *  Re-definition of trace_log
  */
 #define TC /* nothing */
 

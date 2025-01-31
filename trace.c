@@ -26,7 +26,8 @@
 
 
 /**
- * @brief File stream pointer for global logging
+ * @brief 
+ *  File stream pointer for global logging
  */
 FILE * trace_G_log = NULL;
 
@@ -35,8 +36,10 @@ FILE * trace_G_log = NULL;
 
 
 /**
- * @brief Logging
- * @brief fmt Formatting parameters
+ * @brief 
+ *  Logging
+ * @brief 
+ *  fmt Formatting parameters
  */
 void nd_tracef(const char *fmt, ...) {
 
@@ -53,7 +56,8 @@ void nd_tracef(const char *fmt, ...) {
 
 
 /**
- * @brief Start logging and initialize the global file stream
+ * @brief 
+ *  Start logging and initialize the global file stream
  */
 int32_t trace_startup (void) {
 
@@ -106,7 +110,8 @@ int32_t trace_startup (void) {
 
 
 /**
- * @brief TRACE log resource destruction
+ * @brief 
+ *  TRACE log resource destruction
  */
 void trace_resource_destruction(void) {
 
