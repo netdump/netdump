@@ -123,11 +123,11 @@ enum {
  *  memery 1TO0 base address
  */
 #define MSGCOMM_BASE_ADDR_RING0TO1              (void *)(0x6EE000000000)
-#define MSGCOMM_BASE_ADDR__RING0TO1             (void *)(0x6EE001048510)
-#define MSGCOMM_BASE_ADDR_MEM0TO1               (void *)(0x6EE002090A20)
-#define MSGCOMM_BASE_ADDR_RING1TO0              (void *)(0x6EE0030D8F30)
-#define MSGCOMM_BASE_ADDR__RING1TO0             (void *)(0x6EE004121440)
-#define MSGCOMM_BASE_ADDR_MEM1TO0               (void *)(0x6EE005169950)
+#define MSGCOMM_BASE_ADDR__RING0TO1             (void *)(0x6EE001049000)
+#define MSGCOMM_BASE_ADDR_MEM0TO1               (void *)(0x6EE002091000)
+#define MSGCOMM_BASE_ADDR_RING1TO0              (void *)(0x6EE0030d9000)
+#define MSGCOMM_BASE_ADDR__RING1TO0             (void *)(0x6EE004122000)
+#define MSGCOMM_BASE_ADDR_MEM1TO0               (void *)(0x6EE00516a000)
 
 
 /**
