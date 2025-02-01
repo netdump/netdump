@@ -487,7 +487,7 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
  */
 unsigned int msgcomm_detection(unsigned int dir) {
 
-    TC("Called { %s(%u)", __func__, dir);
+    //TC("Called { %s(%u)", __func__, dir);
 
     ring_t * ring = NULL;
 
@@ -503,7 +503,7 @@ unsigned int msgcomm_detection(unsigned int dir) {
             RInt(ND_ERR);
     }
 
-    T("infomsg: ring: %p;", ring);
+    //T("infomsg: ring: %p;", ring);
 
     if (unlikely((!ring))) {
         T("errmsg: ring: %p; _ring: %p", ring);
@@ -512,7 +512,8 @@ unsigned int msgcomm_detection(unsigned int dir) {
 
     unsigned int nums = ring_count(ring);
 
-    RInt(nums);
+    //RInt(nums);
+    return nums;
 }
 
 
@@ -582,17 +583,11 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
 
     unsigned int rdir = (dir == MSGCOMM_DIR_0TO1) ? MSGCOMM_DIR_1TO0 : MSGCOMM_DIR_0TO1;
 
-    long timeout = 1;
-    int i = 0, count = 1000;
-    for (i = 0; i < count; i++) {
+    
+    while (1) {
         if (msgcomm_detection(rdir)) 
             break;
-        nd_delay_microsecond(timeout);
-    }
-
-    if (count == 1000) {
-        T("errmsg: ACK timeout");
-        RInt(ND_ERR);
+        nd_delay_microsecond(1000);
     }
 
     message_t message;
@@ -630,9 +625,10 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
         RInt(ND_ERR);
     }
 
-    if (!(msgcomm_detection(dir))) {
-        T("infomsg: No message can be received");
-        RInt(ND_ERR);
+    while (1) {
+        if (msgcomm_detection(dir)) {
+            break;
+        }
     }
 
     if (unlikely((msgcomm_recvmsg(dir, message)) == ND_ERR)) {
