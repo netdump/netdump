@@ -120,6 +120,51 @@ static int msgcomm_init_msgcomm(msgcomm_t * vmsgcomm) {
 
 
 /**
+ * 
+ */
+static int msgcomm_lookup_msgcomm(msgcomm_t * vmsgcomm) {
+
+    TC("Called { %s(%p)", __func__, vmsgcomm);
+
+    vmsgcomm->comm.ring = ring_lookup (
+        vmsgcomm->comm.name, 
+        (uintptr_t)(vmsgcomm->comm.baseaddr), 
+        vmsgcomm->comm.count
+    );
+
+    if (unlikely((!(vmsgcomm->comm.ring)))) {
+        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        RInt(ND_ERR);
+    }
+
+    vmsgcomm->comm._ring = ring_lookup (
+        vmsgcomm->comm._name, 
+        (uintptr_t)(vmsgcomm->comm._baseaddr), 
+        vmsgcomm->comm.count
+    );
+
+    if (unlikely((!(vmsgcomm->comm._ring)))) {
+        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        RInt(ND_ERR);
+    }
+    
+    vmsgcomm->msg.memory = nd_called_mmap_lookup_memory (
+        vmsgcomm->msg.name,
+        vmsgcomm->msg.baseaddr,
+        vmsgcomm->msg.memspace,
+        vmsgcomm->comm.count
+    );
+
+    if (unlikely((!(vmsgcomm->msg.memory)))) {
+        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        RInt(ND_ERR);
+    }
+
+    RInt(ND_OK);
+}
+
+
+/**
  * @brief 
  *  Destroy msgcomm_t structure members
  * @param vmsgcomm
@@ -183,10 +228,13 @@ static int msgcomm_enq_ring(msgcomm_t * vmsgcomm) {
         }
     }
 
+    T("infomsg: ring_count(ring) = %u", ring_count(ring));
+
     RInt(ND_OK);
 }
 
 
+#if 0
 /**
  * @brief
  *  Filling Address
@@ -221,6 +269,7 @@ static int msgcomm_filladdr(unsigned int dir, ring_t **ring) {
 
     RInt(ND_OK);
 }
+#endif
 
 
 /**
@@ -241,6 +290,27 @@ int msgcomm_startup(void) {
             RInt(ND_ERR);
 
         if (unlikely(((msgcomm_enq_ring(&(msgcomm[i]))) == ND_ERR)))
+            RInt(ND_ERR);
+    }
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief 
+ *  Child process lookup memory space
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR 
+ */
+int msgcomm_lookup (void) {
+
+    TC("Called { %s(void)", __func__);
+
+    int i = 0;
+    for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
+        if (unlikely(((msgcomm_lookup_msgcomm(&(msgcomm[i]))) == ND_ERR)))
             RInt(ND_ERR);
     }
 
@@ -284,21 +354,23 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
 
     TC("Called { %s(%u, %u, %s, %d)", __func__, dir, msgtype, msg, length);
 
-    if (unlikely((!msg))) {
-        T("errmsg: msg is null");
-    }
-
     ring_t * _ring = NULL, * ring = NULL;
 
-    if (unlikely(msgcomm_filladdr(dir, &ring) == ND_ERR)) {
-        T("errmsg: called msgcomm_filladdr failed");
-        RInt(ND_ERR);
+    switch (dir) {
+        case MSGCOMM_DIR_0TO1:
+            ring = msgcomm[0].comm.ring;
+            _ring = msgcomm[0].comm._ring;
+            break;
+        case MSGCOMM_DIR_1TO0:
+            ring = msgcomm[1].comm.ring;
+            _ring = msgcomm[1].comm._ring;
+            break;
+        default:
+            T("errmsg: msg dir error; dir: %u", dir);
+            RInt(ND_ERR);
     }
 
-    if (unlikely(msgcomm_filladdr(dir, &_ring) == ND_ERR)) {
-        T("errmsg: called msgcomm_filladdr failed");
-        RInt(ND_ERR);
-    }
+    T("infomsg: ring: %p; _ring: %p", ring, _ring);
 
     if (unlikely((!ring) || (!_ring))) {
         T("errmsg: ring: %p; _ring: %p", ring, _ring);
@@ -320,7 +392,8 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
     message->dir = dir;
     message->msgtype = msgtype;
     message->length = length;
-    memcpy(message->msg, msg, length);
+    if (msg)
+        memcpy(message->msg, msg, length);
     
     if (unlikely((ring_enqueue(ring, obj) != 0))) {
         T("errmsg: called ring_enqueue failed");
@@ -355,15 +428,21 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
 
     ring_t * _ring = NULL, * ring = NULL;
 
-    if (unlikely(msgcomm_filladdr(dir, &ring) == ND_ERR)) {
-        T("errmsg: called msgcomm_filladdr failed");
-        RInt(ND_ERR);
+    switch (dir) {
+        case MSGCOMM_DIR_0TO1:
+            ring = msgcomm[0].comm.ring;
+            _ring = msgcomm[0].comm._ring;
+            break;
+        case MSGCOMM_DIR_1TO0:
+            ring = msgcomm[1].comm.ring;
+            _ring = msgcomm[1].comm._ring;
+            break;
+        default:
+            T("errmsg: msg dir error; dir: %u", dir);
+            RInt(ND_ERR);
     }
 
-    if (unlikely(msgcomm_filladdr(dir, &_ring) == ND_ERR)) {
-        T("errmsg: called msgcomm_filladdr failed");
-        RInt(ND_ERR);
-    }
+    T("infomsg: ring: %p; _ring: %p", ring, _ring);
 
     if (unlikely((!ring) || (!_ring))) {
         T("errmsg: ring: %p; _ring: %p", ring, _ring);
@@ -412,10 +491,19 @@ unsigned int msgcomm_detection(unsigned int dir) {
 
     ring_t * ring = NULL;
 
-    if (unlikely(msgcomm_filladdr(dir, &ring) == ND_ERR)) {
-        T("errmsg: called msgcomm_filladdr failed");
-        RInt(0);
+    switch (dir) {
+        case MSGCOMM_DIR_0TO1:
+            ring = msgcomm[0].comm.ring;
+            break;
+        case MSGCOMM_DIR_1TO0:
+            ring = msgcomm[1].comm.ring;
+            break;
+        default:
+            T("errmsg: msg dir error; dir: %u", dir);
+            RInt(ND_ERR);
     }
+
+    T("infomsg: ring: %p;", ring);
 
     if (unlikely((!ring))) {
         T("errmsg: ring: %p; _ring: %p", ring);
@@ -481,7 +569,7 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
 
     if (unlikely(( 
         ((dir != MSGCOMM_DIR_0TO1) && (dir != MSGCOMM_DIR_1TO0)) || 
-        (msgtype < 0xF0 || msgtype > 0xF3) || (!msg) || (length < 0)
+        (msgtype < 0xF0 || msgtype > 0xF3) || (length < 0)
     ))) {
         T("errmsg: Param is error");
         RInt(ND_ERR);
