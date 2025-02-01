@@ -148,7 +148,7 @@ void sigact_handle_crash (int signum) {
 
 	unsigned int lCOREID = lcore_id();
 
-	T("lCOREID: %u", lCOREID);
+	T("infomsg: lCOREID: %u", lCOREID);
 
 	if (GCOREID_DP == lCOREID) {
 		display_exit_resource_destruction();
@@ -175,7 +175,7 @@ void sigact_handle_quit (int signum) {
 
 	unsigned int lCOREID = lcore_id();
 
-	T("lCOREID: %u", lCOREID);
+	T("infomsg: lCOREID: %u", lCOREID);
 
 	if (GCOREID_DP == lCOREID) {
 		display_exit_resource_destruction();
@@ -232,17 +232,17 @@ void sigact_handle_child_quit (int signum) {
 	if (pid > 0) {
 		if (WIFEXITED(status)) {
 
-			T("Child process %d exited with status %d", pid, WEXITSTATUS(status));
+			T("infomsg: Child process %d exited with status %d", pid, WEXITSTATUS(status));
 			sigact_general_code (pid);
 
 		} else if (WIFSIGNALED(status)) {
 
-			T("Child process %d exited due to signal %d", pid, WTERMSIG(status));
+			T("infomsg: Child process %d exited due to signal %d", pid, WTERMSIG(status));
 			sigact_general_code (pid);
 
 		} else {
 
-			T("Child process %d exited abnormally", pid);
+			T("infomsg: Child process %d exited abnormally", pid);
 			sigact_general_code (pid);
 			
 		}
