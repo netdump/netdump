@@ -403,7 +403,7 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
  * @return
  *  If it exists, it returns the number of messages.
  */
-int msgcomm_detection(unsigned int dir) {
+unsigned int msgcomm_detection(unsigned int dir) {
 
     TC("Called { %s(%u)", __func__, dir);
 
