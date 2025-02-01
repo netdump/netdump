@@ -502,9 +502,11 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             if (G_display.panels[i]) {                                                                                                  \
                 del_panel(G_display.panels[i]);                                                                                         \
                 update_panels();                                                                                                        \
+                G_display.panels[i] = NULL;                                                                                             \
             }                                                                                                                           \
             if (G_display.wins[i]) {                                                                                                    \
                 delwin(G_display.wins[i]);                                                                                              \
+                G_display.wins[i] = NULL;                                                                                               \
             }                                                                                                                           \
         }                                                                                                                               \
     } while (0);                                                                                                                        \
