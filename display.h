@@ -26,7 +26,8 @@
 
 
 /**
- * @brief The global flag of display tui, used to exit tui
+ * @brief 
+ *  The global flag of display tui, used to exit tui
  * @note
  * 	display_G_flag = 1; 
  * 	indicates an exception occurs and the system needs to exit
@@ -34,15 +35,19 @@
 extern unsigned char display_G_flag;
 
 /**
- * @brief The number of windows and panels used globally
+ * @brief 
+ *  The number of windows and panels used globally
  */
 #define display_PW_number               7
 
 
 /**
- * @brief Stores resources required by the TUI 
- * @param wins: Window resources required by the TUI 
- * @param panels: Panel resources required by the TUI 
+ * @brief 
+ *  Stores resources required by the TUI 
+ * @param wins: 
+ *  Window resources required by the TUI 
+ * @param panels: 
+ *  Panel resources required by the TUI 
  */
 typedef struct {
 
@@ -57,7 +62,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Called ncurses initscr initialize environment
+ * @brief 
+ *  Called ncurses initscr initialize environment
  */
 #define display_initialize_scr()                                                                                                        \
     do {                                                                                                                                \
@@ -70,7 +76,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Check whether the color attribute can be used and enable the color attribute
+ * @brief 
+ *  Check whether the color attribute can be used and enable the color attribute
  */
 #define display_initialize_color()                                                                                                      \
     do {                                                                                                                                \
@@ -83,7 +90,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Set color pair
+ * @brief 
+ *  Set color pair
  */
 #define display_initialize_color_pair()                                                                                                 \
     do {                                                                                                                                \
@@ -97,7 +105,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Apply for window resources for the first page
+ * @brief 
+ *  Apply for window resources for the first page
  */
 #define display_apply_first_tui_wins_resources()                                                                                        \
     do {                                                                                                                                \
@@ -125,7 +134,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Apply for panel resources for the first page
+ * @brief 
+ *  Apply for panel resources for the first page
  */
 #define display_apply_first_tui_panels_resources()                                                                                      \
     do {                                                                                                                                \
@@ -136,7 +146,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Apply for window resources for the second page
+ * @brief 
+ *  Apply for window resources for the second page
  */
 #define display_apply_second_tui_wins_resources()                                                                                       \
     do {                                                                                                                                \
@@ -167,7 +178,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Apply for panel resources for the second page
+ * @brief 
+ *  Apply for panel resources for the second page
  */
 #define display_apply_second_tui_panels_resources()                                                                                     \
     do {                                                                                                                                \
@@ -178,7 +190,8 @@ extern display_t G_display;
 
 
 /**
- * @brief Check if a member of a global variable is NULL
+ * @brief 
+ *  Check if a member of a global variable is NULL
  */
 #define display_check_G_display()                                                                                                       \
     do {                                                                                                                                \
@@ -199,7 +212,8 @@ extern display_t G_display;
 
 
 /**
- * @brief draw netdump ASCII world
+ * @brief 
+ *  draw netdump ASCII world
  */
 #define display_draw_netdump_ASCII_world()                                                                                              \
     do {                                                                                                                                \
@@ -217,7 +231,8 @@ extern display_t G_display;
 
 
 /**
- * @brief draw Information of author
+ * @brief 
+ *  draw Information of author
  */
 #define display_draw_author_information()                                                                                               \
     do {                                                                                                                                \
@@ -234,7 +249,8 @@ extern display_t G_display;
 
 
 /**
- * @brief draw Command input box
+ * @brief 
+ *  draw Command input box
  */
 #define display_draw_cmd_input_box()                                                                                                    \
     do {                                                                                                                                \
@@ -273,19 +289,27 @@ extern display_t G_display;
 
 
 /**
- * @brief Format the title bar title
- * @param win: The window that is designated to format the input title
- * @param starty: The starting position of the title bar relative to the window's Y coordinate
- * @param startx: The starting position of the title bar relative to the window's X coordinate
- * @param width: Width of the title bar
- * @param string: Contents of the title bar
- * @param color: Color attribute of the title bar content
+ * @brief 
+ *  Format the title bar title
+ * @param win: 
+ *  The window that is designated to format the input title
+ * @param starty: 
+ *  The starting position of the title bar relative to the window's Y coordinate
+ * @param startx: 
+ *  The starting position of the title bar relative to the window's X coordinate
+ * @param width: 
+ *  Width of the title bar
+ * @param string: 
+ *  Contents of the title bar
+ * @param color: 
+ *  Color attribute of the title bar content
  */
 int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
 
 /**
- * @brief Brief information display box
+ * @brief 
+ *  Brief information display box
  */
 #define display_draw_brief_information_box()                                                                                            \
     do {                                                                                                                                \
@@ -348,7 +372,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Detailed information display box
+ * @brief 
+ *  Detailed information display box
  */
 #define display_draw_more_information_box()                                                                                             \
     do {                                                                                                                                \
@@ -361,7 +386,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Original hexadecimal information display box
+ * @brief 
+ *  Original hexadecimal information display box
  */
 #define display_draw_raw_information_box()                                                                                              \
     do {                                                                                                                                \
@@ -374,7 +400,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Hide All Windows
+ * @brief 
+ *  Hide All Windows
  */
 #define display_hide_wins_all()                                                                                                         \
     do {                                                                                                                                \
@@ -388,7 +415,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Hide 0 1 2 Windows
+ * @brief 
+ *  Hide 0 1 2 Windows
  */
 #define display_hide_wins_0_1_2()                                                                                                       \
     do {                                                                                                                                \
@@ -402,7 +430,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Hide 3 4 5 Windows
+ * @brief 
+ *  Hide 3 4 5 Windows
  */
 #define display_hide_wins_3_4_5()                                                                                                       \
     do {                                                                                                                                \
@@ -416,7 +445,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Show 0 1 2 Windows
+ * @brief 
+ *  Show 0 1 2 Windows
  */
 #define display_show_wins_0_1_2()                                                                                                       \
     do {                                                                                                                                \
@@ -430,7 +460,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Show 3 4 5 Windows
+ * @brief 
+ *  Show 3 4 5 Windows
  */
 #define display_show_wins_3_4_5()                                                                                                       \
     do {                                                                                                                                \
@@ -444,7 +475,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Set the properties of the 3 4 5 window
+ * @brief 
+ *  Set the properties of the 3 4 5 window
  */
 #define display_set_wins_3_4_5_property()                                                                                               \
     do {                                                                                                                                \
@@ -455,7 +487,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Set the necho and cbreak attributes for the window
+ * @brief 
+ *  Set the necho and cbreak attributes for the window
  */
 #define display_set_wins_noecho_and_cbreak()                                                                                            \
     do {                                                                                                                                \
@@ -465,7 +498,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Set the echo and nocbreak attributes for the window
+ * @brief 
+ *  Set the echo and nocbreak attributes for the window
  */
 #define display_set_wins_echo_and_nocbreak()                                                                                            \
     do {                                                                                                                                \
@@ -475,7 +509,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Disable Cursor
+ * @brief 
+ *  Disable Cursor
  */
 #define display_disable_cursor()                                                                                                        \
     do {                                                                                                                                \
@@ -484,7 +519,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Enable Cursor
+ * @brief 
+ *  Enable Cursor
  */
 #define display_enable_cursor()                                                                                                         \
     do {                                                                                                                                \
@@ -493,7 +529,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Release members in global variables
+ * @brief 
+ *  Release members in global variables
  */
 #define display_release_G_display_member()                                                                                              \
     do {                                                                                                                                \
@@ -513,7 +550,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Called ncurses endwin end Environment
+ * @brief 
+ *  Called ncurses endwin end Environment
  */
 #define display_endwin()                                                                                                                \
     do {                                                                                                                                \
@@ -522,7 +560,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Exit TUI Showcase
+ * @brief 
+ *  Exit TUI Showcase
  */
 #define display_exit_TUI_showcase()                                                                                                     \
     do {                                                                                                                                \
@@ -532,7 +571,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Handle TUI first page
+ * @brief 
+ *  Handle TUI first page
  */
 #define display_handle_TUI_first_page()                                                                                                 \
     do {                                                                                                                                \
@@ -580,7 +620,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Select 3 windows
+ * @brief 
+ *  Select 3 windows
  */
 #define display_select_3_windows()                                                                                                      \
     do {                                                                                                                                \
@@ -593,7 +634,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Select 4 windows
+ * @brief 
+ *  Select 4 windows
  */
 #define display_select_4_windows()                                                                                                      \
     do {                                                                                                                                \
@@ -606,7 +648,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Select 5 windows  
+ * @brief 
+ *  Select 5 windows  
  */
 #define display_select_5_windows()                                                                                                      \
     do {                                                                                                                                \
@@ -619,7 +662,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Handle TUI second page
+ * @brief 
+ *  Handle TUI second page
  */
 #define display_handle_TUI_second_page()                                                                                                \
     do {                                                                                                                                \
@@ -657,7 +701,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief TUI processing entry
+ * @brief 
+ *  TUI processing entry
  */
 #define display_TUI_processing_entry()                                                                                                  \
     do {                                                                                                                                \
@@ -670,7 +715,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief Startup TUI Showcase
+ * @brief 
+ *  Startup TUI Showcase
  */
 #define display_startup_TUI_showcase()                                                                                                  \
     do {                                                                                                                                \
@@ -721,7 +767,8 @@ label:                                                                          
 
 
 /**
- * @brief TUI shows process exit resource destruction
+ * @brief 
+ *  TUI shows process exit resource destruction
  */
 extern void display_exit_resource_destruction ();
 

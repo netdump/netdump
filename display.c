@@ -23,7 +23,8 @@
 unsigned char display_G_flag = 0;
 
 /**
- * @brief Define a global variable to store the resources required by TUI
+ * @brief 
+ * 	Define a global variable to store the resources required by TUI
  * @note
  *  G_display.wins[0]: Netdump ASCII world
  *  G_display.wins[1]: Information of author
@@ -45,13 +46,20 @@ display_t G_display = {
 
 
 /**
- * @brief Format the title bar title
- * @param win: The window that is designated to format the input title
- * @param starty: The starting position of the title bar relative to the window's Y coordinate
- * @param startx: The starting position of the title bar relative to the window's X coordinate
- * @param width: Width of the title bar
- * @param string: Contents of the title bar
- * @param color: Color attribute of the title bar content
+ * @brief 
+ * 	Format the title bar title
+ * @param win: 
+ * 	The window that is designated to format the input title
+ * @param starty: 
+ * 	The starting position of the title bar relative to the window's Y coordinate
+ * @param startx: 
+ * 	The starting position of the title bar relative to the window's X coordinate
+ * @param width: 
+ * 	Width of the title bar
+ * @param string: 
+ * 	Contents of the title bar
+ * @param color: 
+ * 	Color attribute of the title bar content
  */
 int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color) {
 
@@ -85,7 +93,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
 
 
 /**
- * @brief TUI shows process exit resource destruction
+ * @brief 
+ * 	TUI shows process exit resource destruction
  */
 void display_exit_resource_destruction () {
 
