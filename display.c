@@ -12,6 +12,7 @@
  */
 
 #include "display.h"
+#include "msgcomm.h"
 
 
 /**
@@ -103,4 +104,61 @@ void display_exit_resource_destruction () {
 	display_exit_TUI_showcase();
 
 	RVoid();
+}
+
+
+/**
+ * @brief 
+ * 	The display process communicates with the capture process
+ * @param command
+ * 	Pointer to the message content
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int display_cmd_to_capture (const char * command) {
+
+	TC("Called { %s()", __func__);
+
+	if (unlikely((!command))) {
+		T("errmsg: param error");
+		RInt(ND_ERR);
+	}
+
+	if ( unlikely(
+		((msgcomm_message_send(MSGCOMM_DIR_0TO1, MSGCOMM_CMD, command, strlen(command))) == ND_ERR)
+	))
+	{
+		T("errmsg: msgcomm message send failed");
+		RInt(ND_ERR);
+	}
+
+	RInt(ND_OK);
+}
+
+
+/**
+ * @brief 
+ * 	Receive messages from the capture process
+ * @param message
+ * 	Storing Messages
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int display_reply_from_capture (message_t * message) {
+
+	TC("Called { %s(%p)", __func__, message);
+
+	if (unlikely((!message))) {
+        T("errmsg: param error");
+        RInt(ND_ERR);
+    }
+
+    if (unlikely((msgcomm_message_recv(MSGCOMM_DIR_1TO0, message)) == ND_ERR)) {
+        T("errmsg: msgcomm message recv failed");
+        RInt(ND_ERR);
+    }
+
+	RInt(ND_OK);
 }
