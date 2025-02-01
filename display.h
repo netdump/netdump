@@ -23,6 +23,7 @@
 #include "ncurses.h"
 
 #include "trace.h"
+#include "msgcomm.h"
 
 
 /**
@@ -59,6 +60,30 @@ typedef struct {
 
 /** For external use */
 extern display_t G_display;
+
+
+/**
+ * @brief 
+ * 	The display process communicates with the capture process
+ * @param command
+ * 	Pointer to the message content
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int display_cmd_to_capture (const char * command);
+
+
+/**
+ * @brief 
+ * 	Receive messages from the capture process
+ * @param message
+ * 	Storing Messages
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int display_reply_from_capture (message_t * message);
 
 
 /**
@@ -591,8 +616,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
             refresh();                                                                                                                  \
             wrefresh(G_display.wins[2]);                                                                                                \
             int code = OK;                                                                                                              \
-            char buffer[256] = {0};                                                                                                     \
-            code = wgetnstr(G_display.wins[2], buffer, 256);                                                                            \
+            char buffer[1008] = {0};                                                                                                    \
+            code = wgetnstr(G_display.wins[2], buffer, 1008);                                                                           \
             if (code == ERR) {                                                                                                          \
                 /* display_exit_TUI_showcase(); */                                                                                      \
                 T("Called wgetnstr error");                                                                                             \
@@ -612,6 +637,26 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
                 break;                                                                                                                  \
             }                                                                                                                           \
             else {                                                                                                                      \
+                if (unlikely(((display_cmd_to_capture((const char *)(buffer))) == ND_ERR))) {                                           \
+                    T("errmsg: display cmd to capture failed");                                                                         \
+                    continue;                                                                                                           \
+                }                                                                                                                       \
+                char space[1024] = {0};                                                                                                 \
+                message_t * message = (message_t *)(space);                                                                             \
+                if (unlikely(((display_reply_from_capture(message)) == ND_ERR))) {                                                      \
+                    T("errmsg: display reply from capture failed");                                                                     \
+                    continue;                                                                                                           \
+                }                                                                                                                       \
+                T("infomsg:     ");                                                                                                     \
+                T("infomsg: message->dir: %u", message->dir);                                                                           \
+                T("infomsg: message->msgtype: %u", message->msgtype);                                                                   \
+                T("infomsg: message->length: %u", message->length);                                                                     \
+                T("infomsg: message->msg: %s", message->msg);                                                                           \
+                if (message->msgtype != MSGCOMM_SUC) {                                                                                  \
+                    /* add a win to show error msg */                                                                                   \
+                    T("infomsg: %s", message->msg);                                                                                     \
+                    continue;                                                                                                           \
+                }                                                                                                                       \
                 break;                                                                                                                  \
             }                                                                                                                           \
         }                                                                                                                               \
