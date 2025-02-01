@@ -51,8 +51,7 @@ int main(int argc, char ** argv) {
 
     display_startup_TUI_showcase();
 
-    kill(childpid[GCOREID_CP], SIGTERM);
-    kill(childpid[GCOREID_AA], SIGTERM);
+    netdump_kill();
 
 label2:
 
@@ -95,4 +94,31 @@ int netdump_fork(unsigned int COREID, const char * pname, funcpointer func) {
     }
 
     RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Killing a child process
+ */
+void netdump_kill(void) {
+
+    TC("Called { %s(void)", __func__);
+
+    if (childpid[GCOREID_CP]) {
+        kill(childpid[GCOREID_CP], SIGTERM);
+        nd_delay_microsecond(10000);
+    }
+
+    if (childpid[GCOREID_AA]) {
+        kill(childpid[GCOREID_AA], SIGTERM);
+        nd_delay_microsecond(10000);
+    }
+
+    if ((childpid[GCOREID_CP] == 0) && (childpid[GCOREID_AA] == 0)) {
+        kill(getpid(), SIGTERM);
+        nd_delay_microsecond(10000);
+    }
+
+    RVoid();
 }

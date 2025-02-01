@@ -45,4 +45,10 @@
 int netdump_fork(unsigned int COREID, const char * pname, funcpointer func);
 
 
+/**
+ * @brief
+ *  Killing a child process
+ */
+void netdump_kill(void);
+
 #endif  // __NETDUMP_H__
