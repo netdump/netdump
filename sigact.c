@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <execinfo.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include "sigact.h"
 #include "common.h"
@@ -146,22 +147,17 @@ void sigact_handle_crash (int signum) {
 	sigact_Generate_stack_trace();
 
 	unsigned int lCOREID = lcore_id();
-	switch (lCOREID) {
-		case GCOREID_DP:
-			display_exit_resource_destruction();
-			msgcomm_ending();
-			break;
-		case GCOREID_CP:
-			break;
-		case GCOREID_AA:
-			break;
-		default:
-			break;
+
+	T("lCOREID: %u", lCOREID);
+
+	if (GCOREID_DP == lCOREID) {
+		display_exit_resource_destruction();
+		msgcomm_ending();
 	}
 
 	TRACE_DESTRUCTION();
 
-	exit(1);
+	exit(signum);
 
 	RVoid();
 }
@@ -178,22 +174,17 @@ void sigact_handle_quit (int signum) {
 	TC("Called { %s(%d)", __func__, signum);
 
 	unsigned int lCOREID = lcore_id();
-	switch (lCOREID) {
-		case GCOREID_DP:
-			display_exit_resource_destruction();
-			msgcomm_ending();
-			break;
-		case GCOREID_CP:
-			break;
-		case GCOREID_AA:
-			break;
-		default:
-			break;
+
+	T("lCOREID: %u", lCOREID);
+
+	if (GCOREID_DP == lCOREID) {
+		display_exit_resource_destruction();
+		msgcomm_ending();
 	}
 
 	TRACE_DESTRUCTION();
 
-	exit(1);
+	exit(signum);
 
 	RVoid();
 }
@@ -209,23 +200,45 @@ void sigact_handle_child_quit (int signum) {
 
 	TC("Called { %s(%d)", __func__, signum);
 
-	unsigned int lCOREID = lcore_id();
-	switch (lCOREID) {
-		case GCOREID_DP:
-			display_exit_resource_destruction();
-			msgcomm_ending();
-			break;
-		case GCOREID_CP:
-			break;
-		case GCOREID_AA:
-			break;
-		default:
-			break;
+	int status;
+	pid_t pid = wait(&status);
+	if (pid > 0) {
+		if (WIFEXITED(status)) {
+			T("Child process %d exited with status %d", pid, WEXITSTATUS(status));
+		} else if (WIFSIGNALED(status)) {
+			T("Child process %d exited due to signal %d", pid, WTERMSIG(status));
+			if (pid == childpid[GCOREID_CP]) {
+				childpid[GCOREID_CP] = 0;
+				if (childpid[GCOREID_AA]) {
+					kill(childpid[GCOREID_AA], SIGTERM);
+				}
+			}
+			if (pid == childpid[GCOREID_AA]) {
+				childpid[GCOREID_AA] = 0;
+				if (childpid[GCOREID_CP]) {
+					kill(childpid[GCOREID_CP], SIGTERM);
+				}
+			}
+		} else {
+			T("Child process %d exited abnormally", pid);
+			if (pid == childpid[GCOREID_CP]) {
+				childpid[GCOREID_CP] = 0;
+				if (childpid[GCOREID_AA]) {
+					kill(childpid[GCOREID_AA], SIGTERM);
+				}
+			}
+			if (pid == childpid[GCOREID_AA]) {
+				childpid[GCOREID_AA] = 0;
+				if (childpid[GCOREID_CP]) {
+					kill(childpid[GCOREID_CP], SIGTERM);
+				}
+			}
+		}
 	}
 
-	TRACE_DESTRUCTION();
-
-	exit(1);
+	if ((childpid[GCOREID_CP] == 0) && (childpid[GCOREID_AA] == 0)) {
+        kill(getpid(), SIGTERM);
+    }
 
 	RVoid();
 }
