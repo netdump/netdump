@@ -22,6 +22,7 @@
 #include "common.h"
 #include "trace.h"
 #include "sigact.h"
+#include "msgcomm.h"
 
 
 /**
