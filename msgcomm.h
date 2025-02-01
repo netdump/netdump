@@ -248,4 +248,18 @@ void msgcomm_infodump(void);
  */
 int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * msg, int length);
 
+
+/**
+ * @brief 
+ *  Calling this interface can complete a message reception.
+ * @param 
+ *  Message direction
+ * @param message
+ *  The message to be sent
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int msgcomm_message_recv (unsigned int dir, message_t * message);
+
 #endif  // __MSGCOMM_H__
