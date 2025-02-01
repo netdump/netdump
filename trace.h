@@ -202,6 +202,25 @@ void trace_resource_destruction(void);
          return;\
     } while (0);\
 
+#else
+
+/**
+ * @brief 
+ *  Re-definition of trace_log
+ */
+#define TC /* nothing */
+
+#define RBool(code)		        return code
+#define RChar(code)		        return ((char) code)
+#define RInt(code)		        return code
+#define RUInt(code)             return code
+#define RCharPtr(code)			return code
+#define RConstCharPtr(code)		return code
+#define RConstVoidPtr(code)	    return code
+#define RVoidPtr(code)		    return code
+#define RVoid()				    return
+
+
 #endif  /* TOPTRACE */
 
 #else /* !TRACE */
