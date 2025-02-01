@@ -50,4 +50,30 @@ int capture_main (unsigned int COREID, const char * pname, void * param);
  */
 int capture_loop (void);
 
+
+/**
+ * @brief 
+ *  Capture process and display process information exchange
+ * @param message
+ *  Storing received messages
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int capture_cmd_from_display (message_t * message);
+
+
+/**
+ * @brief 
+ *  The capture process responds to the dispaly process
+ * @param msgtype
+ *  Message Type
+ * @param reply
+ *  Response message content
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int capture_reply_to_display (unsigned int msgtype, const char * reply);
+
 #endif  // __CAPTURE_H__
