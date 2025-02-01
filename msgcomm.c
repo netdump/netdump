@@ -338,6 +338,8 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
  *  Message communication module receives messages
  * @param 
  *  Message direction
+ * @param message
+ *  The message to be sent
  * @return 
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
@@ -385,7 +387,8 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
     message->dir = tmp->dir;
     message->msgtype = tmp->msgtype;
     message->length = tmp->length;
-    memcpy(message->msg, tmp->msg, tmp->length);
+    if (tmp->length) 
+        memcpy(message->msg, tmp->msg, tmp->length);
 
     if (unlikely((ring_enqueue(_ring, obj) != 0))) {
         T("errmsg: called ring_enqueue failed");
@@ -454,4 +457,115 @@ void msgcomm_infodump(void) {
     }
 
     RVoid();
+}
+
+
+/**
+ * @brief 
+ *  Calling this interface can complete a message sending
+ * @param dir
+ *  Message direction
+ * @param msgtype
+ *  Message Type
+ * @param msg
+ *  Message content
+ * @param length
+ *  Message length
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * msg, int length) {
+
+    TC("Called { %s(%u, %u, %s, %d)", __func__, dir, msgtype, msg, length);
+
+    if (unlikely(( 
+        ((dir != MSGCOMM_DIR_0TO1) && (dir != MSGCOMM_DIR_1TO0)) || 
+        (msgtype < 0xF0 || msgtype > 0xF3) || (!msg) || (length < 0)
+    ))) {
+        T("errmsg: Param is error");
+        RInt(ND_ERR);
+    }
+
+    if (unlikely((msgcomm_sendmsg(dir, msgtype, msg, length)) == ND_ERR)) {
+        T("errmsg: msgcomm_sendmsg error");
+        RInt(ND_ERR);
+    }
+
+    unsigned int rdir = (dir == MSGCOMM_DIR_0TO1) ? MSGCOMM_DIR_1TO0 : MSGCOMM_DIR_0TO1;
+
+    long timeout = 1;
+    int i = 0, count = 1000;
+    for (i = 0; i < count; i++) {
+        if (msgcomm_detection(rdir)) 
+            break;
+        nd_delay_microsecond(timeout);
+    }
+
+    if (count == 1000) {
+        T("errmsg: ACK timeout");
+        RInt(ND_ERR);
+    }
+
+    message_t message;
+    if (unlikely((msgcomm_recvmsg(rdir, &message)) == ND_ERR)) {
+        T("errmsg: msgcomm_recvmsg failed");
+        RInt(ND_ERR);
+    }
+
+    if(unlikely((message.msgtype != 0xF1U))) {
+        T("errmsg: message.msgtype is not ack");
+        RInt(ND_ERR);
+    }
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief 
+ *  Calling this interface can complete a message reception.
+ * @param 
+ *  Message direction
+ * @param message
+ *  The message to be sent
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int msgcomm_message_recv (unsigned int dir, message_t * message) {
+
+    TC("Called { %s(%u, %p)", __func__, dir, message);
+
+    if (unlikely(!message)) {
+        T("errmsg: param error");
+        RInt(ND_ERR);
+    }
+
+    if (!(msgcomm_detection(dir))) {
+        T("infomsg: No message can be received");
+        RInt(ND_ERR);
+    }
+
+    if (unlikely((msgcomm_recvmsg(dir, message)) == ND_ERR)) {
+        T("errmsg: msgcomm_recvmsg failed");
+        RInt(ND_ERR);
+    }
+
+    if (unlikely(
+        ((message->dir != MSGCOMM_DIR_0TO1 && message->dir != MSGCOMM_DIR_1TO0) ||
+        (message->msgtype > 0xF3u || message->msgtype < 0xF0u)))
+    ) {
+        T("errmsg: message is error");
+        RInt(ND_ERR);
+    }
+
+    unsigned int sdir = (dir == MSGCOMM_DIR_0TO1) ? MSGCOMM_DIR_1TO0 : MSGCOMM_DIR_0TO1;
+
+    if (unlikely((msgcomm_sendmsg(sdir, MSGCOMM_ACK, NULL, 0)) == ND_ERR)) {
+        T("errmsg: ACK send failed");
+        RInt(ND_ERR);
+    }
+
+    RInt(ND_OK);
 }

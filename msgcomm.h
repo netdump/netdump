@@ -204,6 +204,8 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
  *  Message communication module receives messages
  * @param 
  *  Message direction
+ * @param message
+ *  The message to be sent
  * @return 
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
@@ -227,5 +229,23 @@ unsigned int msgcomm_detection(unsigned int dir);
  *  Global variable msgcomm member information output
  */
 void msgcomm_infodump(void);
+
+
+/**
+ * @brief 
+ *  Calling this interface can complete a message transmission.
+ * @param dir
+ *  Message direction
+ * @param msgtype
+ *  Message Type
+ * @param msg
+ *  Message content
+ * @param length
+ *  Message length
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * msg, int length);
 
 #endif  // __MSGCOMM_H__
