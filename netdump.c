@@ -33,6 +33,8 @@ int main(int argc, char ** argv) {
 
     msgcomm_infodump();
 
+    fflush(trace_G_log);
+
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
         T("errmsg: Fork Capture failed");
         goto label2;
