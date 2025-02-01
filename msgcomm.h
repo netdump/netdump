@@ -262,4 +262,14 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
  */
 int msgcomm_message_recv (unsigned int dir, message_t * message);
 
+
+/**
+ * @brief 
+ *  Child process lookup memory space
+ * @return
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR 
+ */
+int msgcomm_lookup (void);
+
 #endif  // __MSGCOMM_H__
