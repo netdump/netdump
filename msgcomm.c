@@ -282,7 +282,7 @@ void msgcomm_ending(void) {
  */
 int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, int length) {
 
-    TC("Called { %s(%u, %u, %s)", __func__, dir, msgtype, msg);
+    TC("Called { %s(%u, %u, %s, %d)", __func__, dir, msgtype, msg, length);
 
     if (unlikely((!msg))) {
         T("errmsg: msg is null");
