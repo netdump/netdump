@@ -343,7 +343,7 @@ void * nd_called_mmap_lookup_memory (
  */
 void nd_delay_microsecond (unsigned long microseconds) {
 
-    TC("Called { %s(%lu)", __func__, microseconds);
+    //TC("Called { %s(%lu)", __func__, microseconds);
 
     struct timeval timeout = {0, microseconds};
     
@@ -351,5 +351,5 @@ void nd_delay_microsecond (unsigned long microseconds) {
         T("errmsg: %s", strerror(errno));
     }
 
-    RVoid();
+    //RVoid();
 }
