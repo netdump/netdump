@@ -192,6 +192,33 @@ void sigact_handle_quit (int signum) {
 
 /**
  * @brief 
+ * 	Generic processing code for child process exit signal
+ * @param pid
+ * 	Child process pid
+ */
+static void sigact_general_code (pid_t pid) {
+
+	TC("Called { %s(%d)", __func__, pid);
+
+	if (pid == childpid[GCOREID_CP]) {
+		childpid[GCOREID_CP] = 0;
+		if (childpid[GCOREID_AA]) {
+			kill(childpid[GCOREID_AA], SIGTERM);
+		}
+	}
+	if (pid == childpid[GCOREID_AA]) {
+		childpid[GCOREID_AA] = 0;
+		if (childpid[GCOREID_CP]) {
+			kill(childpid[GCOREID_CP], SIGTERM);
+		}
+	}
+
+	RVoid();
+}
+
+
+/**
+ * @brief 
  * 	The processing process receives the child process exit signal
  * @param signum 
  * 	Signal number
@@ -204,35 +231,20 @@ void sigact_handle_child_quit (int signum) {
 	pid_t pid = wait(&status);
 	if (pid > 0) {
 		if (WIFEXITED(status)) {
+
 			T("Child process %d exited with status %d", pid, WEXITSTATUS(status));
+			sigact_general_code (pid);
+
 		} else if (WIFSIGNALED(status)) {
+
 			T("Child process %d exited due to signal %d", pid, WTERMSIG(status));
-			if (pid == childpid[GCOREID_CP]) {
-				childpid[GCOREID_CP] = 0;
-				if (childpid[GCOREID_AA]) {
-					kill(childpid[GCOREID_AA], SIGTERM);
-				}
-			}
-			if (pid == childpid[GCOREID_AA]) {
-				childpid[GCOREID_AA] = 0;
-				if (childpid[GCOREID_CP]) {
-					kill(childpid[GCOREID_CP], SIGTERM);
-				}
-			}
+			sigact_general_code (pid);
+
 		} else {
+
 			T("Child process %d exited abnormally", pid);
-			if (pid == childpid[GCOREID_CP]) {
-				childpid[GCOREID_CP] = 0;
-				if (childpid[GCOREID_AA]) {
-					kill(childpid[GCOREID_AA], SIGTERM);
-				}
-			}
-			if (pid == childpid[GCOREID_AA]) {
-				childpid[GCOREID_AA] = 0;
-				if (childpid[GCOREID_CP]) {
-					kill(childpid[GCOREID_CP], SIGTERM);
-				}
-			}
+			sigact_general_code (pid);
+			
 		}
 	}
 
