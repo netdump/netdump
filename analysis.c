@@ -41,17 +41,17 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
     if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
-        T(erromsg, "Prctl set name(%s) failed", pname);
+        TE ("Prctl set name(%s) failed", pname);
         goto label1;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
-        T(erromsg, "Register signal handle failed");
+        TE ("Register signal handle failed");
         goto label1;
     }
 
     if (unlikely((analysis_loop()) == ND_ERR)) {
-        T(erromsg, "Analysis loop startup failed");
+        TE ("Analysis loop startup failed");
         goto label1;
     }
 
