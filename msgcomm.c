@@ -88,7 +88,7 @@ static int msgcomm_init_msgcomm(msgcomm_t * vmsgcomm) {
     );
 
     if (unlikely((!(vmsgcomm->comm.ring)))) {
-        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
 
@@ -99,7 +99,7 @@ static int msgcomm_init_msgcomm(msgcomm_t * vmsgcomm) {
     );
 
     if (unlikely((!(vmsgcomm->comm._ring)))) {
-        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
     
@@ -111,7 +111,7 @@ static int msgcomm_init_msgcomm(msgcomm_t * vmsgcomm) {
     );
 
     if (unlikely((!(vmsgcomm->msg.memory)))) {
-        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
 
@@ -133,7 +133,7 @@ static int msgcomm_lookup_msgcomm(msgcomm_t * vmsgcomm) {
     );
 
     if (unlikely((!(vmsgcomm->comm.ring)))) {
-        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
 
@@ -144,7 +144,7 @@ static int msgcomm_lookup_msgcomm(msgcomm_t * vmsgcomm) {
     );
 
     if (unlikely((!(vmsgcomm->comm._ring)))) {
-        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
     
@@ -156,7 +156,7 @@ static int msgcomm_lookup_msgcomm(msgcomm_t * vmsgcomm) {
     );
 
     if (unlikely((!(vmsgcomm->msg.memory)))) {
-        T("errmsg: vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
+        TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
 
@@ -178,7 +178,7 @@ static int msgcomm_ending_msgcomm(msgcomm_t * vmsgcomm) {
     TC("Called { %s(%p)", __func__, vmsgcomm);
 
     if (unlikely((!(vmsgcomm->comm.ring)))) {
-        T("errmsg: vmsgcomm->comm.ring is null");
+        TE("vmsgcomm->comm.ring is null");
     }
     else {
         ring_free(vmsgcomm->comm.ring);
@@ -186,7 +186,7 @@ static int msgcomm_ending_msgcomm(msgcomm_t * vmsgcomm) {
     unlink(vmsgcomm->comm.name);
 
     if (unlikely((!(vmsgcomm->comm._ring)))) {
-        T("errmsg: vmsgcomm->comm._ring is null");
+        TE("vmsgcomm->comm._ring is null");
     }
     else {
         ring_free(vmsgcomm->comm._ring);
@@ -194,7 +194,7 @@ static int msgcomm_ending_msgcomm(msgcomm_t * vmsgcomm) {
     unlink(vmsgcomm->comm._name);
 
     if (unlikely((!(vmsgcomm->msg.memory)))) {
-        T("errmsg: vmsgcomm->msg.memory is null");
+        TE("vmsgcomm->msg.memory is null");
     }
     else {
         munmap(vmsgcomm->msg.memory, (vmsgcomm->msg.memspace * vmsgcomm->comm.count));
@@ -223,12 +223,12 @@ static int msgcomm_enq_ring(msgcomm_t * vmsgcomm) {
     int i = 0;
     for (i = 0; i < (vmsgcomm->comm.count - 1); i++) {
         if (unlikely((ring_enqueue(ring, (void *)(vmsgcomm->msg.memory + (i * vmsgcomm->msg.memspace))) != 0))) {
-            T("errmsg: called ring_enqueue failed;[i: %d]", i);
+            TE("called ring_enqueue failed;[i: %d]", i);
             RInt(ND_ERR);
         }
     }
 
-    T("infomsg: ring_count(ring) = %u", ring_count(ring));
+    TI("ring_count(ring) = %u", ring_count(ring));
 
     RInt(ND_OK);
 }
@@ -251,7 +251,7 @@ static int msgcomm_filladdr(unsigned int dir, ring_t **ring) {
     TC("Called { %s(%u, %p)", __func__, dir, ring);
 
     if (unlikely(!ring)) {
-        T("errmsg: ring is null");
+        TE("ring is null");
         RInt(ND_ERR);
     }
 
@@ -263,7 +263,7 @@ static int msgcomm_filladdr(unsigned int dir, ring_t **ring) {
             *ring = msgcomm[1].comm.ring;
             break;
         default:
-            T("errmsg: msg dir error; dir: %u", dir);
+            TE("msg dir error; dir: %u", dir);
             RInt(ND_ERR);
     }
 
@@ -366,29 +366,29 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
             _ring = msgcomm[1].comm._ring;
             break;
         default:
-            T("errmsg: msg dir error; dir: %u", dir);
+            TE("msg dir error; dir: %u", dir);
             RInt(ND_ERR);
     }
 
     if (unlikely((!ring) || (!_ring))) {
-        T("errmsg: ring: %p; _ring: %p", ring, _ring);
+        TE("ring: %p; _ring: %p", ring, _ring);
         RInt(ND_ERR);
     }
 
-    T("infomsg: [ {_ring} Before dequeue] ring count: %u", ring_count(_ring));
+    TI("[ {_ring} Before dequeue] ring count: %u", ring_count(_ring));
 
     void * obj = NULL;
     if (unlikely(ring_dequeue(_ring, &obj) != 0)) {
-        T("errmsg: called ring_dequeue failed");
+        TE("called ring_dequeue failed");
         RInt(ND_ERR);
     }
 
     if (unlikely(!obj)) {
-        T("errmsg: obj is null");
+        TE("obj is null");
         RInt(ND_ERR);
     }
 
-    T("infomsg: [ {_ring} after dequeue] ring count: %u", ring_count(_ring));
+    TI("[ {_ring} after dequeue] ring count: %u", ring_count(_ring));
 
     message_t * message = (message_t *)(obj);
     message->dir = dir;
@@ -397,16 +397,16 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
     if (msg && length > 0)
         memcpy(message->msg, msg, length);
     
-    T("infomsg: [ {ring} Before enqueue] ring count: %u", ring_count(ring));
+    TI("[ {ring} Before enqueue] ring count: %u", ring_count(ring));
 
     if (unlikely((ring_enqueue(ring, obj) != 0))) {
-        T("errmsg: called ring_enqueue failed");
+        TE("called ring_enqueue failed");
         memset(obj, 0, MSGCOMM_MEMORY_SPACE);
         ring_enqueue(_ring, obj);
         RInt(ND_ERR);
     }
 
-    T("infomsg: [ {ring} after enqueue] ring count: %u", ring_count(ring));
+    TI("[ {ring} after enqueue] ring count: %u", ring_count(ring));
 
     RInt(ND_OK);
 }
@@ -428,7 +428,7 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
     TC("Called { %s(%u, %p)", __func__, dir, message);
 
     if (unlikely((!message))) {
-        T("errmsg: message is null");
+        TE("message is null");
         RInt(ND_ERR);
     }
 
@@ -444,30 +444,30 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
             _ring = msgcomm[1].comm._ring;
             break;
         default:
-            T("errmsg: msg dir error; dir: %u", dir);
+            TE("msg dir error; dir: %u", dir);
             RInt(ND_ERR);
     }
 
     if (unlikely((!ring) || (!_ring))) {
-        T("errmsg: ring: %p; _ring: %p", ring, _ring);
+        TE("ring: %p; _ring: %p", ring, _ring);
         RInt(ND_ERR);
     }
 
     unsigned int nums = ring_count(ring);
     if (nums <= 0 || nums > MSGCOMM_BLOCK_NUMBERS) {
-        T("errmsg: the number of elements in the queue: %u", nums);
+        TE("the number of elements in the queue: %u", nums);
         RInt(ND_ERR);
     }
 
-    T("infomsg: [ {ring} Before dequeue] ring count: %u", nums);
+    TI("[ {ring} Before dequeue] ring count: %u", nums);
 
     void * obj = NULL;
     if (unlikely((ring_dequeue(ring, &obj) != 0))) {
-        T("errmsg: called ring_dequeue failed");
+        TE("called ring_dequeue failed");
         RInt(ND_ERR);
     }
 
-    T("infomsg: [ {ring} after dequeue] ring count: %u", ring_count(ring));
+    TI("[ {ring} after dequeue] ring count: %u", ring_count(ring));
 
     message_t * tmp = (message_t *)(obj);
 
@@ -477,13 +477,13 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
     if (tmp->length) 
         memcpy(message->msg, tmp->msg, tmp->length);
 
-    T("infomsg: [ {_ring} Before enqueue] ring count: %u", ring_count(_ring));
+    TI("[ {_ring} Before enqueue] ring count: %u", ring_count(_ring));
 
     if (unlikely((ring_enqueue(_ring, obj) != 0))) {
-        T("errmsg: called ring_enqueue failed");
+        TE("called ring_enqueue failed");
     }
 
-    T("infomsg: [ {_ring} after enqueue] ring count: %u", ring_count(_ring));
+    TI("[ {_ring} after enqueue] ring count: %u", ring_count(_ring));
 
     RInt(ND_OK);
 }
@@ -511,14 +511,14 @@ unsigned int msgcomm_detection(unsigned int dir) {
             ring = msgcomm[1].comm.ring;
             break;
         default:
-            T("errmsg: msg dir error; dir: %u", dir);
+            TE("msg dir error; dir: %u", dir);
             RInt(ND_ERR);
     }
 
     //T("infomsg: ring: %p;", ring);
 
     if (unlikely((!ring))) {
-        T("errmsg: ring: %p; _ring: %p", ring);
+        TE("ring: %p; _ring: %p", ring);
         RInt(0);
     }
 
@@ -539,22 +539,22 @@ void msgcomm_infodump(void) {
 
     int i = 0;
     for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
-        T("infomsg: msgcomm[%d]", i);
-        T("msgcomm[%d].comm.name: %s", i, msgcomm[i].comm.name);
-        T("msgcomm[%d].comm.baseaddr: %p", i, msgcomm[i].comm.baseaddr);
-        T("msgcomm[%d].comm.ring: %p", i, msgcomm[i].comm.ring);
+        TI("msgcomm[%d]", i);
+        TI("msgcomm[%d].comm.name: %s", i, msgcomm[i].comm.name);
+        TI("msgcomm[%d].comm.baseaddr: %p", i, msgcomm[i].comm.baseaddr);
+        TI("msgcomm[%d].comm.ring: %p", i, msgcomm[i].comm.ring);
         
-        T("msgcomm[%d].comm._name: %s", i, msgcomm[i].comm._name);
-        T("msgcomm[%d].comm._baseaddr: %p", i, msgcomm[i].comm._baseaddr);
-        T("msgcomm[%d].comm._ring: %p", i, msgcomm[i].comm._ring);
+        TI("msgcomm[%d].comm._name: %s", i, msgcomm[i].comm._name);
+        TI("msgcomm[%d].comm._baseaddr: %p", i, msgcomm[i].comm._baseaddr);
+        TI("msgcomm[%d].comm._ring: %p", i, msgcomm[i].comm._ring);
         
-        T("msgcomm[%d].comm.count: %u", i, msgcomm[i].comm.count);
+        TI("msgcomm[%d].comm.count: %u", i, msgcomm[i].comm.count);
 
-        T("msgcomm[%d].msg.name: %s", i, msgcomm[i].msg.name);
-        T("msgcomm[%d].msg.baseaddr: %p", i, msgcomm[i].msg.baseaddr);
-        T("msgcomm[%d].msg.memory: %p", i, msgcomm[i].msg.memory);
-        T("msgcomm[%d].msg.memspace: %u", i, msgcomm[i].msg.memspace);
-        T("msgcomm[%d].msg.dir: %u", i, msgcomm[i].msg.dir);
+        TI("msgcomm[%d].msg.name: %s", i, msgcomm[i].msg.name);
+        TI("msgcomm[%d].msg.baseaddr: %p", i, msgcomm[i].msg.baseaddr);
+        TI("msgcomm[%d].msg.memory: %p", i, msgcomm[i].msg.memory);
+        TI("msgcomm[%d].msg.memspace: %u", i, msgcomm[i].msg.memspace);
+        TI("msgcomm[%d].msg.dir: %u", i, msgcomm[i].msg.dir);
     }
 
     RVoid();
@@ -584,12 +584,12 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
         ((dir != MSGCOMM_DIR_0TO1) && (dir != MSGCOMM_DIR_1TO0)) || 
         (msgtype < 0xF0 || msgtype > 0xF3) || (length < 0)
     ))) {
-        T("errmsg: Param is error");
+        TE("Param is error");
         RInt(ND_ERR);
     }
 
     if (unlikely((msgcomm_sendmsg(dir, msgtype, msg, length)) == ND_ERR)) {
-        T("errmsg: msgcomm_sendmsg error");
+        TE("msgcomm_sendmsg error");
         RInt(ND_ERR);
     }
 
@@ -604,12 +604,12 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
 
     message_t message;
     if (unlikely((msgcomm_recvmsg(rdir, &message)) == ND_ERR)) {
-        T("errmsg: msgcomm_recvmsg failed");
+        TE("msgcomm_recvmsg failed");
         RInt(ND_ERR);
     }
 
     if(unlikely((message.msgtype != 0xF1U))) {
-        T("errmsg: message.msgtype is not ack");
+        TE("message.msgtype is not ack");
         RInt(ND_ERR);
     }
 
@@ -633,7 +633,7 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
     TC("Called { %s(%u, %p)", __func__, dir, message);
 
     if (unlikely(!message)) {
-        T("errmsg: param error");
+        TE("param error; message: %p", message);
         RInt(ND_ERR);
     }
 
@@ -645,7 +645,7 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
     }
 
     if (unlikely((msgcomm_recvmsg(dir, message)) == ND_ERR)) {
-        T("errmsg: msgcomm_recvmsg failed");
+        TE("msgcomm_recvmsg failed");
         RInt(ND_ERR);
     }
 
@@ -653,14 +653,14 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
         ((message->dir != MSGCOMM_DIR_0TO1 && message->dir != MSGCOMM_DIR_1TO0) ||
         (message->msgtype > 0xF3u || message->msgtype < 0xF0u)))
     ) {
-        T("errmsg: message is error");
+        TE("message is error");
         RInt(ND_ERR);
     }
 
     unsigned int sdir = (dir == MSGCOMM_DIR_0TO1) ? MSGCOMM_DIR_1TO0 : MSGCOMM_DIR_0TO1;
 
     if (unlikely((msgcomm_sendmsg(sdir, MSGCOMM_ACK, NULL, 0)) == ND_ERR)) {
-        T("errmsg: ACK send failed");
+        TE("ACK send failed");
         RInt(ND_ERR);
     }
 
