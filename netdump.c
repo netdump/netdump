@@ -27,7 +27,7 @@ int main(int argc, char ** argv) {
     TC("Called { %s (%d, %p)", __func__, argc, argv);
 
     if(unlikely((msgcomm_startup()) == ND_ERR)) {
-        T("errmsg: Msgcomm startup failed");
+        TE("Msgcomm startup failed");
         goto label1;
     }
 
@@ -36,18 +36,18 @@ int main(int argc, char ** argv) {
     fflush(trace_G_log);
 
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
-        T("errmsg: Fork Capture failed");
+        TE("Fork Capture failed");
         goto label2;
     }
 
     if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
-        T("errmsg: Fork Analysis failed");
+        TE("Fork Analysis failed");
         kill(childpid[GCOREID_CP], SIGTERM);
         goto label2;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
-        T("errmsg: Register signal handle failed");
+        TE("Register signal handle failed");
         goto label2;
     }
 
