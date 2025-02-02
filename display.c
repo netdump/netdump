@@ -41,8 +41,8 @@ unsigned char display_G_flag = 0;
  *  G_display.panels[5]: The panel associated with G_display.wins[5]
  */
 display_t G_display = {
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 
 
@@ -121,7 +121,7 @@ int display_cmd_to_capture (const char * command) {
 	TC("Called { %s()", __func__);
 
 	if (unlikely((!command))) {
-		T("errmsg: param error");
+		TE("param error; command: %s", command);
 		RInt(ND_ERR);
 	}
 
@@ -129,7 +129,7 @@ int display_cmd_to_capture (const char * command) {
 		((msgcomm_message_send(MSGCOMM_DIR_0TO1, MSGCOMM_CMD, command, strlen(command))) == ND_ERR)
 	))
 	{
-		T("errmsg: msgcomm message send failed");
+		TE("msgcomm message send failed");
 		RInt(ND_ERR);
 	}
 
@@ -151,12 +151,12 @@ int display_reply_from_capture (message_t * message) {
 	TC("Called { %s(%p)", __func__, message);
 
 	if (unlikely((!message))) {
-        T("errmsg: param error");
+        TE("param error; message: %p", message);
         RInt(ND_ERR);
     }
 
     if (unlikely((msgcomm_message_recv(MSGCOMM_DIR_1TO0, message)) == ND_ERR)) {
-        T("errmsg: msgcomm message recv failed");
+        TE("msgcomm message recv failed");
         RInt(ND_ERR);
     }
 
@@ -224,30 +224,30 @@ int display_first_tui_handle_logic (const char * command, WINDOW * win, PANEL * 
 	TC("Called { %s(%s, %p, %p)", __func__, command, win, panel);
 
 	if (unlikely((!command) || (!win) || (!panel))) {
-		T("errmsg: param error; command: %p, win: %p, panel: %p", command, win, panel);
+		TE("param error; command: %p, win: %p, panel: %p", command, win, panel);
 		RInt(ND_ERR);
 	}
 
 	if (unlikely(((display_cmd_to_capture(command))))) {
-		T("errmsg: display cmd to capture failed");
+		TE("display cmd to capture failed");
 		RInt(ND_ERR);
 	}
 
 	char space[1024] = {0};
 	message_t * message = (message_t *)(space);
 	if (unlikely(((display_reply_from_capture(message)) == ND_ERR))) {
-		T("errmsg: display reply from capture failed");
+		TE("display reply from capture failed");
 		RInt(ND_ERR);
 	}
 
-	T("infomsg:     ");
-	T("infomsg: message->dir: %u", message->dir);
-	T("infomsg: message->msgtype: %u", message->msgtype);
-	T("infomsg: message->length: %u", message->length);
-	T("infomsg: message->msg: %s", message->msg);
+	TI("     ");
+	TI("message->dir: %u", message->dir);
+	TI("message->msgtype: %u", message->msgtype);
+	TI("message->length: %u", message->length);
+	TI("message->msg: %s", message->msg);
 
 	if (message->msgtype != MSGCOMM_SUC) {
-		T("infomsg: %s", message->msg);
+		TI("%s", message->msg);
 		display_error_message_display((const char *)(message->msg), win, panel);
 		RInt(ND_ERR);
 	}

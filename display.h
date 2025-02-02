@@ -93,7 +93,7 @@ int display_reply_from_capture (message_t * message);
 #define display_initialize_scr()                                                                                                        \
     do {                                                                                                                                \
         if(!(initscr())) {                                                                                                              \
-            trace_log("Can't initscr");                                                                                                 \
+            TE("Can't initscr");                                                                                                        \
             display_G_flag = 1;                                                                                                         \
         }                                                                                                                               \
                                                                                                                                         \
@@ -107,7 +107,7 @@ int display_reply_from_capture (message_t * message);
 #define display_initialize_color()                                                                                                      \
     do {                                                                                                                                \
         if (!has_colors()) {                                                                                                            \
-            T("Don't support color attribute");                                                                                         \
+            TE("Don't support color attribute");                                                                                        \
             display_G_flag = 1;                                                                                                         \
         }                                                                                                                               \
         start_color();                                                                                                                  \
@@ -239,12 +239,12 @@ int display_reply_from_capture (message_t * message);
         int i = 0;                                                                                                                      \
         for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
             if (!(G_display.wins[i])) {                                                                                                 \
-                T("G_display.wins[%d] is NULL", i);                                                                                     \
+                TE("G_display.wins[%d] is NULL", i);                                                                                    \
                 display_G_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
             if (!(G_display.panels[i])) {                                                                                               \
-                T("G_display.panels[%d] is NULL", i);                                                                                   \
+                TE("G_display.panels[%d] is NULL", i);                                                                                  \
                 display_G_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
@@ -652,7 +652,7 @@ int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * p
             code = wgetnstr(G_display.wins[2], buffer, 1008);                                                                           \
             if (code == ERR) {                                                                                                          \
                 /* display_exit_TUI_showcase(); */                                                                                      \
-                T("Called wgetnstr error");                                                                                             \
+                TE("Called wgetnstr error");                                                                                            \
                 display_G_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
@@ -664,13 +664,13 @@ int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * p
             wrefresh(stdscr);                                                                                                           \
             if (!strncmp("Quit", buffer, 4)) {                                                                                          \
                 /* display_exit_TUI_showcase(); */                                                                                      \
-                T("Recv Quit String also exit");                                                                                        \
+                TI("Recv Quit String also exit");                                                                                       \
                 display_G_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
             else {                                                                                                                      \
                 if (unlikely(((display_first_tui_handle_logic((const char *)(buffer), G_display.wins[6], G_display.panels[6])) == ND_ERR))) {\
-                    T("errmsg: Command error; need to again");                                                                          \
+                    TE("Command error; need to again");                                                                                 \
                     continue;                                                                                                           \
                 }                                                                                                                       \
                 break;                                                                                                                  \
