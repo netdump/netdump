@@ -112,6 +112,41 @@ void trace_resource_destruction(void);
 #define T	trace_log
 
 
+/**
+ * @brief
+ *  Re-definition of trace_log; loging allmsg 
+ */
+#define TA(fmt, ...)    trace_log(allmesg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging dbugmsg
+ */
+#define TD(fmt, ...)    trace_log(dbugmsg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging infomsg
+ */
+#define TI(fmt, ...)    trace_log(infomsg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging warnmsg
+ */
+#define TW(fmt, ...)    trace_log(warnmsg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging erromsg
+ */
+#define TE(fmt, ...)    trace_log(erromsg, fmt, ##__VA_ARGS__)
+
+
 #ifdef TOPTRACE
 
 
@@ -275,6 +310,43 @@ void trace_resource_destruction(void);
  *  Re-definition of trace_log
  */
 #define T	trace_log
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging allmsg 
+ */
+#define TA(fmt, ...)    trace_log(allmesg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging dbugmsg
+ */
+#define TD(fmt, ...)    trace_log(dbugmsg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging infomsg
+ */
+#define TI(fmt, ...)    trace_log(infomsg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging warnmsg
+ */
+#define TW(fmt, ...)    trace_log(warnmsg, fmt, ##__VA_ARGS__)
+
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging erromsg
+ */
+#define TE(fmt, ...)    trace_log(erromsg, fmt, ##__VA_ARGS__)
+
+
 
 /**
  * @brief 
