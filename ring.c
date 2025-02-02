@@ -148,7 +148,7 @@ void ring_dump(const ring_t *r)
 ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags)
 {
 
-	TC("Called { %s(%s, %p, %d, %d)", __func__, name, baseaddr, count, flags);
+	TC("Called { %s(%s, %p, %d, %d)", __func__, name, (void *)baseaddr, count, flags);
 
 	if (unlikely((!(POWEROF2(count))))) {
 		TE("POWEROF2(%d) is False", count);
@@ -168,7 +168,7 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 		RVoidPtr(NULL);
 	}
 
-	TI("align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
+	TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address(baseaddr)));
 
 	ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(baseaddr)), 
@@ -223,7 +223,7 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
 {
     
-	TC("Called { %s(%s, %p, %d)", __func__, name, baseaddr, count);
+	TC("Called { %s(%s, %p, %d)", __func__, name, (void *)baseaddr, count);
 
 	if (unlikely((!(POWEROF2(count))))) {
 		TE("POWEROF2(%d) is False", count);
@@ -236,7 +236,7 @@ ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
 		RVoidPtr(NULL);
 	}
 
-	TI("align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
+	TI("align_address(%p) : %p", (void *)(baseaddr), (void *)(align_address(baseaddr)));
 
     ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(baseaddr)), 

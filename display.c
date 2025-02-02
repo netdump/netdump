@@ -179,7 +179,7 @@ int display_reply_from_capture (message_t * message) {
  */
 static void display_error_message_display (const char * errmsg, WINDOW * win, PANEL * panel) {
 
-	TC("Called { %s(%s, %p, %p)", __func__, win, panel);
+	TC("Called { %s(%s, %p, %p)", __func__, errmsg, win, panel);
 
 	show_panel(panel); 
 	update_panels();

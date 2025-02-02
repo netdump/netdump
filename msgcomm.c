@@ -518,7 +518,7 @@ unsigned int msgcomm_detection(unsigned int dir) {
     //T("infomsg: ring: %p;", ring);
 
     if (unlikely((!ring))) {
-        TE("ring: %p; _ring: %p", ring);
+        TE("ring: %p;", ring);
         RInt(0);
     }
 
@@ -548,7 +548,7 @@ void msgcomm_infodump(void) {
         TI("msgcomm[%d].comm._baseaddr: %p", i, msgcomm[i].comm._baseaddr);
         TI("msgcomm[%d].comm._ring: %p", i, msgcomm[i].comm._ring);
         
-        TI("msgcomm[%d].comm.count: %u", i, msgcomm[i].comm.count);
+        TI("msgcomm[%d].comm.count: %llu", i, msgcomm[i].comm.count);
 
         TI("msgcomm[%d].msg.name: %s", i, msgcomm[i].msg.name);
         TI("msgcomm[%d].msg.baseaddr: %p", i, msgcomm[i].msg.baseaddr);

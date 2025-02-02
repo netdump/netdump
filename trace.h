@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <error.h>
+#include <errno.h>
 #include "common.h"
 
 
@@ -162,7 +164,7 @@ void trace_resource_destruction(void);
  */
 #define RBool(code)\
     do {\
-        TC(allmesg, "return } %s", code ? "TRUE" : "FALSE");\
+        TC("return } %s", code ? "TRUE" : "FALSE");\
         return code;\
     } while (0);\
 
@@ -173,7 +175,7 @@ void trace_resource_destruction(void);
  */
 #define RChar(code)\
     do {\
-        TC(allmesg, "return } %c", code);\
+        TC("return } %c", code);\
         return (char) code;\
     } while (0);\
 
@@ -184,7 +186,7 @@ void trace_resource_destruction(void);
  */
 #define RInt(code)\
     do {\
-        TC(allmesg, "return } %d", code);\
+        TC("return } %d", code);\
         return code;\
     } while (0);\
 
@@ -195,7 +197,18 @@ void trace_resource_destruction(void);
  */
 #define RUInt(code)\
     do {\
-        TC(allmesg, "return } %d", code);\
+        TC("return } %d", code);\
+        return code;\
+    } while (0);\
+
+
+/**
+ * @brief
+ *  Trace 'unsigned long' return-values
+ */
+#define RULong(code)\
+    do {\
+        TC("return } %lu", code);\
         return code;\
     } while (0);\
 
@@ -206,7 +219,7 @@ void trace_resource_destruction(void);
  */
 #define RCharPtr(code)\
     do {\
-        TC(allmesg, "return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -217,7 +230,7 @@ void trace_resource_destruction(void);
  */
 #define RConstCharPtr(code)\
     do {\
-        TC(allmesg, "return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -228,7 +241,7 @@ void trace_resource_destruction(void);
  */
 #define RVoidPtr(code)\
     do {\
-        TC(allmesg, "return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -239,7 +252,7 @@ void trace_resource_destruction(void);
  */
 #define RConstVoidPtr(code)\
     do {\
-        TC(allmesg, "return } %p", code);\
+        TC("return } %p", code);\
         return code;\
     } while (0);\
 
@@ -250,7 +263,7 @@ void trace_resource_destruction(void);
  */
 #define RVoid()\
 	do {\
-        TC(allmesg, "return }");\
+        TC("return }");\
          return;\
     } while (0);\
 
@@ -266,6 +279,7 @@ void trace_resource_destruction(void);
 #define RChar(code)		        return ((char) code)
 #define RInt(code)		        return code
 #define RUInt(code)             return code
+#define RULong(code)            return code
 #define RCharPtr(code)			return code
 #define RConstCharPtr(code)		return code
 #define RConstVoidPtr(code)	    return code
@@ -358,6 +372,7 @@ void trace_resource_destruction(void);
 #define RChar(code)		        return ((char) code)
 #define RInt(code)		        return code
 #define RUInt(code)             return code
+#define RULong(code)            return code
 #define RCharPtr(code)			return code
 #define RConstCharPtr(code)		return code
 #define RConstVoidPtr(code)	    return code

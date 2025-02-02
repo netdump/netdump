@@ -63,7 +63,7 @@ void nd_check_kernel_version(void) {
  */
 uintptr_t align_address(uintptr_t addr)
 {
-	TC("Called { %s(%p)", __func__, addr);
+	TC("Called { %s(%p)", __func__, (void*)(addr));
 
     long page_size = sysconf(_SC_PAGESIZE); 
 
@@ -72,7 +72,7 @@ uintptr_t align_address(uintptr_t addr)
         page_size = 4096;
 	}
 
-	RVoidPtr(((addr + page_size - 1) & ~(page_size - 1)));
+	RULong(((addr + page_size - 1) & ~(page_size - 1)));
 }
 
 
@@ -245,7 +245,7 @@ int nd_check_fpath (char * fname) {
 void * nd_called_open_mmap_openup_memory (
     const char * name, void * baseaddr, unsigned int memspace, unsigned int count) {
 
-    TC("Called { %s(%s, %p, %u, %u)", __func__, name, baseaddr, memspace, count);
+    TC("Called { %s(%s, %p, %u, %u)", __func__, name, (void *)baseaddr, memspace, count);
 
     if (unlikely((!(POWEROF2(count))))) {
 		TE("POWEROF2(%d) is False", count);
@@ -264,7 +264,7 @@ void * nd_called_open_mmap_openup_memory (
 		RVoidPtr(NULL);
 	}
 
-	TI("align_address(%p) : %p", baseaddr, (align_address((uintptr_t)baseaddr)));
+	TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
 
     void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
 				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd , 0);
@@ -318,7 +318,7 @@ void * nd_called_mmap_lookup_memory (
 		RVoidPtr(NULL);
 	}
 
-	TI("align_address(%p) : %p", baseaddr, (align_address((uintptr_t)baseaddr)));
+	TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
 
     void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
 				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd , 0);

@@ -85,7 +85,7 @@ int32_t trace_startup (void) {
 
     close(fd);
 
-    if (unlikely(trace_G_log = freopen(name, "wb", stderr)) == NULL) {
+    if (unlikely((trace_G_log = freopen(name, "wb", stderr)) == NULL)) {
         trace_G_log = stderr;
         T (erromsg, "%s", strerror(errno));
         return ND_ERR;
