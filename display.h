@@ -39,7 +39,7 @@ extern unsigned char display_G_flag;
  * @brief 
  *  The number of windows and panels used globally
  */
-#define display_PW_number               7
+#define display_PW_number               9
 
 
 /**
@@ -155,6 +155,20 @@ int display_reply_from_capture (message_t * message);
         int cmdnybegin = nybegin + 11;                                                                                                  \
         int cmdnxbegin = (COLS - cmdncols) / 2;                                                                                         \
         G_display.wins[2] = newwin(cmdnlines, cmdncols, cmdnybegin, cmdnxbegin);                                                        \
+                                                                                                                                        \
+        /* 4. error message show */                                                                                                     \
+        int errnlines = 7;                                                                                                              \
+        int errncols = (COLS / 3);                                                                                                      \
+        int errnybegin = ((LINES - errnlines) / 2);                                                                                     \
+        int errnxbegin = ((COLS - errncols) / 2);                                                                                       \
+        G_display.wins[6] = newwin(errnlines, errncols, errnybegin, errnxbegin);                                                        \
+                                                                                                                                        \
+        /* 5. help message show */                                                                                                      \
+        int helpnlines = (LINES - 8);                                                                                                   \
+        int helpncols = (COLS - 8);                                                                                                     \
+        int helpnybegin = ((LINES - helpnlines) / 2);                                                                                   \
+        int helpnxbegin = ((COLS - helpncols) / 2);                                                                                     \
+        G_display.wins[7] = newwin(helpnlines, helpncols, helpnybegin, helpnxbegin);                                                    \
     } while (0);                                                                                                                        \
 
 
@@ -167,6 +181,8 @@ int display_reply_from_capture (message_t * message);
         G_display.panels[0] = new_panel(G_display.wins[0]);                                                                             \
         G_display.panels[1] = new_panel(G_display.wins[1]);                                                                             \
         G_display.panels[2] = new_panel(G_display.wins[2]);                                                                             \
+        G_display.panels[6] = new_panel(G_display.wins[6]);                                                                             \
+        G_display.panels[7] = new_panel(G_display.wins[7]);                                                                             \
     } while (0);                                                                                                                        \
 
 
@@ -330,6 +346,22 @@ int display_reply_from_capture (message_t * message);
  *  Color attribute of the title bar content
  */
 int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+
+
+/**
+ * @brief 
+ * 	Display the processing logic interface of the first interface of the process
+ * @param command
+ * 	Commands entered via the tui interface
+ * @param win
+ * 	Error message display window
+ * @param panel
+ * 	Error message window control panel
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * panel);
 
 
 /**
@@ -637,24 +669,8 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
                 break;                                                                                                                  \
             }                                                                                                                           \
             else {                                                                                                                      \
-                if (unlikely(((display_cmd_to_capture((const char *)(buffer))) == ND_ERR))) {                                           \
-                    T("errmsg: display cmd to capture failed");                                                                         \
-                    continue;                                                                                                           \
-                }                                                                                                                       \
-                char space[1024] = {0};                                                                                                 \
-                message_t * message = (message_t *)(space);                                                                             \
-                if (unlikely(((display_reply_from_capture(message)) == ND_ERR))) {                                                      \
-                    T("errmsg: display reply from capture failed");                                                                     \
-                    continue;                                                                                                           \
-                }                                                                                                                       \
-                T("infomsg:     ");                                                                                                     \
-                T("infomsg: message->dir: %u", message->dir);                                                                           \
-                T("infomsg: message->msgtype: %u", message->msgtype);                                                                   \
-                T("infomsg: message->length: %u", message->length);                                                                     \
-                T("infomsg: message->msg: %s", message->msg);                                                                           \
-                if (message->msgtype != MSGCOMM_SUC) {                                                                                  \
-                    /* add a win to show error msg */                                                                                   \
-                    T("infomsg: %s", message->msg);                                                                                     \
+                if (unlikely(((display_first_tui_handle_logic((const char *)(buffer), G_display.wins[6], G_display.panels[6])) == ND_ERR))) {\
+                    T("errmsg: Command error; need to again");                                                                          \
                     continue;                                                                                                           \
                 }                                                                                                                       \
                 break;                                                                                                                  \
