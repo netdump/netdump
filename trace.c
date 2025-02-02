@@ -107,7 +107,7 @@ int32_t trace_startup (void) {
  */
 void trace_resource_destruction(void) {
 
-    TC(allmesg, "called { %s", __func__);
+    TC("called { %s", __func__);
 
     fflush(trace_G_log);
 

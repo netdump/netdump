@@ -116,10 +116,10 @@ void trace_resource_destruction(void);
 
 
 /**
- * @brief 
+ * @brief   
  *  Re-definition of trace_log
  */
-#define TC trace_log
+#define TC(fmt, ...)    trace_log(allmesg, fmt, ##__VA_ARGS__);
 
 /**
  * @brief 
