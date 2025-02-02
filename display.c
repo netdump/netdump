@@ -162,3 +162,95 @@ int display_reply_from_capture (message_t * message) {
 
 	RInt(ND_OK);
 }
+
+
+/**
+ * @brief 
+ * 	Error message display
+ * @param errmsg
+ * 	error message
+ * @param win
+ * 	Error message display window
+ * @param panel 
+ * 	Error message window control panel
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+static void display_error_message_display (const char * errmsg, WINDOW * win, PANEL * panel) {
+
+	TC("Called { %s(%s, %p, %p)", __func__, win, panel);
+
+	show_panel(panel); 
+	update_panels();
+	doupdate();
+	wmove(win, 1, 1);
+	wattrset(win, A_NORMAL);
+	wclrtoeol(win);
+	wattrset(win, A_BOLD);
+	wattron(win, COLOR_PAIR((4)));
+	char space[1024] = {0};
+	snprintf(space, 1024, "\nERRMSG:\n\t%s\n", errmsg);
+	waddstr(win, space);
+	wattroff(win, COLOR_PAIR((4)));
+	wattron(win, COLOR_PAIR((4)));
+	box(win, 0, 0);
+	wattroff(win, COLOR_PAIR((4)));
+	refresh();
+	wrefresh(win);
+	nd_delay_microsecond(3, 0);
+	hide_panel(panel);
+	update_panels();
+	doupdate();
+	RVoid();
+} 
+
+
+/**
+ * @brief 
+ * 	Display the processing logic interface of the first interface of the process
+ * @param command
+ * 	Commands entered via the tui interface
+ * @param win
+ * 	Error message display window
+ * @param panel
+ * 	Error message window control panel
+ * @return 
+ *  If successful, it returns ND_OK; 
+ *  if failed, it returns ND_ERR
+ */
+int display_first_tui_handle_logic (const char * command, WINDOW * win, PANEL * panel) {
+
+	TC("Called { %s(%s, %p, %p)", __func__, command, win, panel);
+
+	if (unlikely((!command) || (!win) || (!panel))) {
+		T("errmsg: param error; command: %p, win: %p, panel: %p", command, win, panel);
+		RInt(ND_ERR);
+	}
+
+	if (unlikely(((display_cmd_to_capture(command))))) {
+		T("errmsg: display cmd to capture failed");
+		RInt(ND_ERR);
+	}
+
+	char space[1024] = {0};
+	message_t * message = (message_t *)(space);
+	if (unlikely(((display_reply_from_capture(message)) == ND_ERR))) {
+		T("errmsg: display reply from capture failed");
+		RInt(ND_ERR);
+	}
+
+	T("infomsg:     ");
+	T("infomsg: message->dir: %u", message->dir);
+	T("infomsg: message->msgtype: %u", message->msgtype);
+	T("infomsg: message->length: %u", message->length);
+	T("infomsg: message->msg: %s", message->msg);
+
+	if (message->msgtype != MSGCOMM_SUC) {
+		T("infomsg: %s", message->msg);
+		display_error_message_display((const char *)(message->msg), win, panel);
+		RInt(ND_ERR);
+	}
+
+	RInt(ND_OK);
+}
