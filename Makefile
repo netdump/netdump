@@ -6,6 +6,7 @@ ECHO = @echo
 
 
 NCURSESW_PATH = ./Third/ncursesw
+PCAP_PATH = ./Third/pcap
 
 
 CFLAGS = -O0 -g
@@ -14,10 +15,13 @@ CFLAGS += -DTRACE
 CFLAGS += -DTOPTRACE
 CFLAGS += -I ./
 CFLAGS += -I ${NCURSESW_PATH}/include
+CFLAGS += -I ${PCAP_PATH}/include
+CFLAGS += -I ${PCAP_PATH}/include/pcap
 
 
 LDFLAGS = 
 LDFLAGS = -L ${NCURSESW_PATH}/lib
+LDFLAGS = -L ${PCAP_PATH}/lib
 
 
 LINKLIB = 
