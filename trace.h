@@ -98,7 +98,7 @@ void trace_resource_destruction(void);
  */
 #define trace_log(level, format, ...) \
     do { \
-        if (level >= CURRENT_LOG_LEVEL) { \
+        if (level > CURRENT_LOG_LEVEL) { \
             error_at_line(0, 0, __FILE__, __LINE__, "[%s] [%s] " format, \
                           __TIME__, #level, ##__VA_ARGS__); \
         } \

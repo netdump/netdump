@@ -37,7 +37,7 @@ FILE * trace_G_log = NULL;
  * @brief
  *  The current log level
  */
-TLevel CURRENT_LOG_LEVEL = dbugmsg;
+TLevel CURRENT_LOG_LEVEL = allmesg;
 
 
 #ifdef TRACE
