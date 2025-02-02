@@ -24,6 +24,7 @@ LDFLAGS = -L ${NCURSESW_PATH}/lib
 LDFLAGS = -L ${PCAP_PATH}/lib
 
 
+
 LINKLIB = 
 LINKLIB += -lmenuw
 LINKLIB += -lpanelw
