@@ -587,7 +587,7 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
     while (1) {
         if (msgcomm_detection(rdir)) 
             break;
-        nd_delay_microsecond(1000);
+        nd_delay_microsecond(0, 10000);
     }
 
     message_t message;

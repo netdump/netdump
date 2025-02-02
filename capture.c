@@ -97,7 +97,7 @@ int capture_loop (void) {
             exit(1);
         }
 
-        nd_delay_microsecond(1000);
+        nd_delay_microsecond(1, 10000);
 
         getchar();
 
