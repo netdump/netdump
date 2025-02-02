@@ -297,9 +297,11 @@ void * nd_called_mmap_lookup_memory (
 /**
  * @brief 
  *  Use the select function to achieve millisecond delay
+ * @param sec
+ *  Delay in second
  * @param microseconds
  *  Delay in microseconds
  */
-void nd_delay_microsecond (unsigned long microseconds);
+void nd_delay_microsecond (unsigned int sec, unsigned long microseconds);
 
 #endif 

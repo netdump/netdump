@@ -338,14 +338,16 @@ void * nd_called_mmap_lookup_memory (
 /**
  * @brief 
  *  Use the select function to achieve millisecond delay
+ * @param sec
+ *  Delay in second
  * @param microseconds
  *  Delay in microseconds
  */
-void nd_delay_microsecond (unsigned long microseconds) {
+void nd_delay_microsecond (unsigned int sec, unsigned long microseconds) {
 
-    //TC("Called { %s(%lu)", __func__, microseconds);
+    //TC("Called { %s(%u, %lu)", __func__, sec, microseconds);
 
-    struct timeval timeout = {0, microseconds};
+    struct timeval timeout = {sec, microseconds};
     
     if (unlikely(((select(0, NULL, NULL, NULL, &timeout)) == -1))) {
         T("errmsg: %s", strerror(errno));
