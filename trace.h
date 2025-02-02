@@ -98,7 +98,7 @@ void trace_resource_destruction(void);
  */
 #define trace_log(level, format, ...) \
     do { \
-        if (level > CURRENT_LOG_LEVEL) { \
+        if (level >= CURRENT_LOG_LEVEL) { \
             error_at_line(0, 0, __FILE__, __LINE__, "[%s] [%s] " format, \
                           __TIME__, #level, ##__VA_ARGS__); \
         } \
@@ -127,7 +127,7 @@ void trace_resource_destruction(void);
  */
 #define RBool(code)\
     do {\
-        TC("return } %s", code ? "TRUE" : "FALSE");\
+        TC(allmesg, "return } %s", code ? "TRUE" : "FALSE");\
         return code;\
     } while (0);\
 
@@ -138,7 +138,7 @@ void trace_resource_destruction(void);
  */
 #define RChar(code)\
     do {\
-        TC("return } %c", code);\
+        TC(allmesg, "return } %c", code);\
         return (char) code;\
     } while (0);\
 
@@ -149,7 +149,7 @@ void trace_resource_destruction(void);
  */
 #define RInt(code)\
     do {\
-        TC("return } %d", code);\
+        TC(allmesg, "return } %d", code);\
         return code;\
     } while (0);\
 
@@ -160,7 +160,7 @@ void trace_resource_destruction(void);
  */
 #define RUInt(code)\
     do {\
-        TC("return } %d", code);\
+        TC(allmesg, "return } %d", code);\
         return code;\
     } while (0);\
 
@@ -171,7 +171,7 @@ void trace_resource_destruction(void);
  */
 #define RCharPtr(code)\
     do {\
-        TC("return } %p", code);\
+        TC(allmesg, "return } %p", code);\
         return code;\
     } while (0);\
 
@@ -182,7 +182,7 @@ void trace_resource_destruction(void);
  */
 #define RConstCharPtr(code)\
     do {\
-        TC("return } %p", code);\
+        TC(allmesg, "return } %p", code);\
         return code;\
     } while (0);\
 
@@ -193,7 +193,7 @@ void trace_resource_destruction(void);
  */
 #define RVoidPtr(code)\
     do {\
-        TC("return } %p", code);\
+        TC(allmesg, "return } %p", code);\
         return code;\
     } while (0);\
 
@@ -204,7 +204,7 @@ void trace_resource_destruction(void);
  */
 #define RConstVoidPtr(code)\
     do {\
-        TC("return } %p", code);\
+        TC(allmesg, "return } %p", code);\
         return code;\
     } while (0);\
 
@@ -215,7 +215,7 @@ void trace_resource_destruction(void);
  */
 #define RVoid()\
 	do {\
-        TC("return }");\
+        TC(allmesg, "return }");\
          return;\
     } while (0);\
 

@@ -60,26 +60,26 @@ int32_t trace_startup (void) {
     char path [256] = {0};
     if ((getcwd(path, 256)) == 0) {
         trace_G_log = stderr;
-        T ("errmsg: %s", strerror(errno));
+        T (erromsg, "%s", strerror(errno));
         return ND_ERR;
     }
 
     if (access(path, W_OK) != 0) {
         trace_G_log = stderr;
-        T ("errmsg: %s", strerror(errno));
+        T (erromsg, "%s", strerror(errno));
         return ND_ERR;
     } 
 
     if (access(path, R_OK) != 0) {
         trace_G_log = stderr;
-        T ("errmsg: %s", strerror(errno));
+        T (erromsg, "%s", strerror(errno));
         return ND_ERR;
     }
         
     int fd = open(name, O_CREAT | O_RDWR, 0666);
     if (fd < 0) {
         trace_G_log = stderr;
-        T ("errmsg: %s", strerror(errno));
+        T (erromsg, "%s", strerror(errno));
         return ND_ERR;
     }
 
@@ -87,7 +87,7 @@ int32_t trace_startup (void) {
 
     if (unlikely(trace_G_log = freopen(name, "wb", stderr)) == NULL) {
         trace_G_log = stderr;
-        T ("errmsg: %s", strerror(errno));
+        T (erromsg, "%s", strerror(errno));
         return ND_ERR;
     }
 
@@ -95,7 +95,7 @@ int32_t trace_startup (void) {
 
     error_one_per_line = 1;
 
-    T ("NETDUMP VERSION %04x-%04x", MAJOR_V, SUB_V);
+    T (infomsg, "NETDUMP VERSION %04x-%04x", MAJOR_V, SUB_V);
 
     return ND_OK;
 }
@@ -107,7 +107,7 @@ int32_t trace_startup (void) {
  */
 void trace_resource_destruction(void) {
 
-    TC("called { %s", __func__);
+    TC(allmesg, "called { %s", __func__);
 
     fflush(trace_G_log);
 
