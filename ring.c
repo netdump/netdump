@@ -63,7 +63,7 @@ int ring_set_water_mark(ring_t *r, unsigned count)
 	TC("Called { %s(%p, %u)", __func__, r, count);
 
 	if (unlikely(count >= r->prod.size)) {
-		T("errmsg: count(%u) >= r->prod.size(%u)", count, r->prod.size);
+		TE("count(%u) >= r->prod.size(%u)", count, r->prod.size);
 		RInt(-EINVAL);
 	}
 
@@ -90,22 +90,22 @@ void ring_dump(const ring_t *r)
 
 	if (unlikely((!r))) return;
 
-	T("ring <%s>@%p\n", r->name, r);
-	T("  flags=%x\n", r->flags);
-	T("  size=%"PRIu32"\n", r->prod.size);
-	T("  ct=%"PRIu32"\n", r->cons.tail);
-	T("  ch=%"PRIu32"\n", r->cons.head);
-	T("  pt=%"PRIu32"\n", r->prod.tail);
-	T("  ph=%"PRIu32"\n", r->prod.head);
-	T("  used=%u\n", ring_count(r));
-	T("  avail=%u\n", ring_free_count(r));
+	TI("ring <%s>@%p\n", r->name, r);
+	TI("  flags=%x\n", r->flags);
+	TI("  size=%"PRIu32"\n", r->prod.size);
+	TI("  ct=%"PRIu32"\n", r->cons.tail);
+	TI("  ch=%"PRIu32"\n", r->cons.head);
+	TI("  pt=%"PRIu32"\n", r->prod.tail);
+	TI("  ph=%"PRIu32"\n", r->prod.head);
+	TI("  used=%u\n", ring_count(r));
+	TI("  avail=%u\n", ring_free_count(r));
 	if (r->prod.watermark == r->prod.size) {
-		T("  watermark=0\n");
+		TI("  watermark=0\n");
 	}
 	else {
-		T("  watermark=%"PRIu32"\n", r->prod.watermark);
+		TI("  watermark=%"PRIu32"\n", r->prod.watermark);
 	}
-	T("  no statistics available\n");
+	TI("  no statistics available\n");
 
 	RVoid();
 }
@@ -151,24 +151,24 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 	TC("Called { %s(%s, %p, %d, %d)", __func__, name, baseaddr, count, flags);
 
 	if (unlikely((!(POWEROF2(count))))) {
-		T("errmsg: POWEROF2(%d) is False", count);
+		TE("POWEROF2(%d) is False", count);
 		RVoidPtr(NULL);
 	}
 
 	int fd = -1;
 	if (unlikely(fd = open(name, O_RDWR |O_CREAT, 0666)) < 0) {
-		T("errmsg: %s", strerror(errno));
+		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
 
 	if(unlikely(ftruncate(fd, (count * (sizeof(void *)) + sizeof(ring_t))) == -1)){
 		close(fd);
-		T("errmsg: %s", strerror(errno));
+		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
-	T("infomsg: align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
+	TI("align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
 
 	ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(baseaddr)), 
@@ -179,13 +179,13 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 
 	if(unlikely(ring == MAP_FAILED)) {
 		close(fd);
-		T("errmsg: %s", strerror(errno));
+		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
 	if (unlikely(!ring)) {
 		close(fd);
-		T("errmsg: %s", strerror(errno));
+		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
@@ -226,17 +226,17 @@ ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
 	TC("Called { %s(%s, %p, %d)", __func__, name, baseaddr, count);
 
 	if (unlikely((!(POWEROF2(count))))) {
-		T("errmsg: POWEROF2(%d) is False", count);
+		TE("POWEROF2(%d) is False", count);
 		RVoidPtr(NULL);
 	}
 
 	int fd = -1;
     if (unlikely((fd = open(name, O_RDWR, 0666)) == -1)) {
-		T("errmsg: %s", strerror(errno));
+		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
-	T("infomsg: align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
+	TI("align_address(%p) : %p", baseaddr, (align_address(baseaddr)));
 
     ring_t * ring = (ring_t*)mmap(
 				(void *)(align_address(baseaddr)), 
@@ -247,7 +247,7 @@ ring_t * ring_lookup(const char *name, uintptr_t baseaddr, int count)
 
     if(unlikely((ring == MAP_FAILED) || (ring == NULL))){
 		close(fd);
-		T("errmsg: %s", strerror(errno));
+		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
 	}
 
@@ -268,7 +268,7 @@ void ring_free(ring_t *ring) {
 	TC("Called { %s(%p)", __func__, ring);
 
 	if (unlikely((!ring))) {
-		T("errmsg: ring: %p", ring);
+		TE("ring: %p", ring);
 		RVoid();
 	}
 
