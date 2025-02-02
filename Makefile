@@ -3,6 +3,8 @@
 CC = gcc
 RM = rm -rf
 ECHO = @echo
+IF = if
+FI = fi
 
 
 NCURSESW_PATH = ./Third/ncursesw
@@ -37,6 +39,8 @@ LDFLAGS += $(LINKLIB)
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 
+LOG_FILES = $(wildcard trace[0-9]*.log)
+
 
 TARGET = netdump
 
@@ -55,6 +59,9 @@ $(TARGET): $(OBJS)
 
 clean:
 	$(RM) $(OBJS) $(TARGET)
+	$(IF) [ -n "$(LOG_FILES)" ]; then \
+		$(RM) $(LOG_FILES); \
+	$(FI)
 
 
 debug:
