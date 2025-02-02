@@ -370,12 +370,12 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
             RInt(ND_ERR);
     }
 
-    T("infomsg: ring: %p; _ring: %p", ring, _ring);
-
     if (unlikely((!ring) || (!_ring))) {
         T("errmsg: ring: %p; _ring: %p", ring, _ring);
         RInt(ND_ERR);
     }
+
+    T("infomsg: [ {_ring} Before dequeue] ring count: %u", ring_count(_ring));
 
     void * obj = NULL;
     if (unlikely(ring_dequeue(_ring, &obj) != 0)) {
@@ -388,19 +388,25 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
         RInt(ND_ERR);
     }
 
+    T("infomsg: [ {_ring} after dequeue] ring count: %u", ring_count(_ring));
+
     message_t * message = (message_t *)(obj);
     message->dir = dir;
     message->msgtype = msgtype;
     message->length = length;
-    if (msg)
+    if (msg && length > 0)
         memcpy(message->msg, msg, length);
     
+    T("infomsg: [ {ring} Before enqueue] ring count: %u", ring_count(ring));
+
     if (unlikely((ring_enqueue(ring, obj) != 0))) {
         T("errmsg: called ring_enqueue failed");
         memset(obj, 0, MSGCOMM_MEMORY_SPACE);
         ring_enqueue(_ring, obj);
         RInt(ND_ERR);
     }
+
+    T("infomsg: [ {ring} after enqueue] ring count: %u", ring_count(ring));
 
     RInt(ND_OK);
 }
@@ -442,8 +448,6 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
             RInt(ND_ERR);
     }
 
-    T("infomsg: ring: %p; _ring: %p", ring, _ring);
-
     if (unlikely((!ring) || (!_ring))) {
         T("errmsg: ring: %p; _ring: %p", ring, _ring);
         RInt(ND_ERR);
@@ -455,11 +459,15 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
         RInt(ND_ERR);
     }
 
+    T("infomsg: [ {ring} Before dequeue] ring count: %u", nums);
+
     void * obj = NULL;
     if (unlikely((ring_dequeue(ring, &obj) != 0))) {
         T("errmsg: called ring_dequeue failed");
         RInt(ND_ERR);
     }
+
+    T("infomsg: [ {ring} after dequeue] ring count: %u", ring_count(ring));
 
     message_t * tmp = (message_t *)(obj);
 
@@ -469,9 +477,13 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
     if (tmp->length) 
         memcpy(message->msg, tmp->msg, tmp->length);
 
+    T("infomsg: [ {_ring} Before enqueue] ring count: %u", ring_count(_ring));
+
     if (unlikely((ring_enqueue(_ring, obj) != 0))) {
         T("errmsg: called ring_enqueue failed");
     }
+
+    T("infomsg: [ {_ring} after enqueue] ring count: %u", ring_count(_ring));
 
     RInt(ND_OK);
 }
@@ -629,6 +641,7 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
         if (msgcomm_detection(dir)) {
             break;
         }
+        nd_delay_microsecond(0, 10000);
     }
 
     if (unlikely((msgcomm_recvmsg(dir, message)) == ND_ERR)) {
