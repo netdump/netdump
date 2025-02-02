@@ -31,6 +31,7 @@ LINKLIB =
 LINKLIB += -lmenuw
 LINKLIB += -lpanelw
 LINKLIB += -lncursesw
+LINKLIB += -lpcap
 
 
 LDFLAGS += $(LINKLIB)
