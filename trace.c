@@ -42,6 +42,32 @@ TLevel CURRENT_LOG_LEVEL = allmesg;
 
 #ifdef TRACE
 
+#if 0
+void __attribute((noreturn)) log_message(LogLevel level, const char *file, unsigned int line, const char *format, ...)
+    __attribute__((format(printf, 4, 5)));
+
+void log_message(LogLevel level, const char *file, unsigned int line, const char *format, ...) {
+    if (level >= current_log_level) {
+        time_t now = time(NULL);
+        char *time_str = ctime(&now);
+        time_str[strlen(time_str) - 1] = '\0';
+
+        error_at_line(0, 0, file, line, "[%s] [%s] ", time_str, (level == LOG_LEVEL_DEBUG) ? "DEBUG" :
+                      (level == LOG_LEVEL_INFO) ? "INFO" :
+                      (level == LOG_LEVEL_WARNING) ? "WARNING" : "ERROR");
+
+        va_list args;
+        va_start(args, format);
+        vfprintf(stderr, format, args);
+        va_end(args);
+
+        fprintf(stderr, "\n");
+    }
+}
+
+#define LOG(level, format, ...) \
+    log_message(level, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#endif
 
 /**
  * @brief 
