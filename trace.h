@@ -27,6 +27,28 @@
  */
 extern FILE * trace_G_log;
 
+
+
+/**
+ * @brief 
+ *  Log Level
+ */
+typedef enum {
+    allmesg,
+    dbugmsg,
+    infomsg,
+    warnmsg,
+    erromsg,
+} TLevel;
+
+
+/**
+ * @brief
+ *  The current log level
+ */
+extern TLevel CURRENT_LOG_LEVEL;
+
+
 #ifdef TRACE
 
 /**
@@ -35,14 +57,6 @@ extern FILE * trace_G_log;
  */
 #define TRACE_LOG_FILE_FMT		"trace%d.log"
 
-
-/**
- * @brief 
- *  Logging
- * @brief 
- *  fmt Formatting parameters
- */
-void nd_tracef(const char *fmt, ...);
 
 /**
  * @brief 
@@ -82,10 +96,13 @@ void trace_resource_destruction(void);
  * @brief 
  *  Logging
  */
-#define trace_log(fmt, ...)\
-	do {\
-		nd_tracef("[%s][%s:%d]"fmt"\n", __TIME__, __FILE__, __LINE__, ##__VA_ARGS__);\
-	} while (0);\
+#define trace_log(level, format, ...) \
+    do { \
+        if (level >= CURRENT_LOG_LEVEL) { \
+            error_at_line(0, 0, __FILE__, __LINE__, "[%s] [%s] " format, \
+                          __TIME__, #level, ##__VA_ARGS__); \
+        } \
+    } while (0)
 	
 
 /**
@@ -244,10 +261,13 @@ void trace_resource_destruction(void);
  * @brief 
  *  Logging
  */
-#define trace_log(fmt, ...)\
-    do {\
-        fprintf(stderr, "[%s][%s:%d]"fmt"\n", __TIME__, __func__, __LINE__, ##__VA_ARGS__);\
-    } while (0);\
+#define trace_log(level, format, ...)\
+    do { \
+        if (level >= CURRENT_LOG_LEVEL) { \
+            error_at_line(0, 0, __FILE__, __LINE__, "[%s] [%s] " format, \
+                          __TIME__, #level, ##__VA_ARGS__); \
+        } \
+    } while (0)
 
 
 /**

@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <error.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -32,27 +33,14 @@
 FILE * trace_G_log = NULL;
 
 
-#ifdef TRACE
-
-
 /**
- * @brief 
- *  Logging
- * @brief 
- *  fmt Formatting parameters
+ * @brief
+ *  The current log level
  */
-void nd_tracef(const char *fmt, ...) {
+TLevel CURRENT_LOG_LEVEL = dbugmsg;
 
-    va_list ap;
 
-    va_start(ap, fmt);
-
-    vfprintf(trace_G_log, fmt, ap);
-
-    va_end(ap);
-
-    return ;
-}
+#ifdef TRACE
 
 
 /**
@@ -95,13 +83,17 @@ int32_t trace_startup (void) {
         return ND_ERR;
     }
 
-    if ((trace_G_log = fdopen(fd, "wb")) == NULL) {
+    close(fd);
+
+    if (unlikely(trace_G_log = freopen(name, "wb", stderr)) == NULL) {
         trace_G_log = stderr;
         T ("errmsg: %s", strerror(errno));
         return ND_ERR;
     }
 
     setvbuf(trace_G_log, (char *) 0, _IOFBF, (size_t) 0);
+
+    error_one_per_line = 1;
 
     T ("NETDUMP VERSION %04x-%04x", MAJOR_V, SUB_V);
 
