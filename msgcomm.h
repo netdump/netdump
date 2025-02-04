@@ -103,6 +103,7 @@ enum {
     MSGCOMM_ACK = 0xF1U,
     MSGCOMM_ERR = 0XF2U,
     MSGCOMM_CMD = 0xF3U,
+	MSGCOMM_FAD = 0xF4U,
 };
 
 
