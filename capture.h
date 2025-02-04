@@ -254,13 +254,6 @@
  * Set up flags that might or might not be supported depending on the
  * version of libpcap we're using.
  */
-#if defined(HAVE_PCAP_CREATE)
-#define B_FLAG		"B:"
-#define B_FLAG_USAGE	" [ -B size ]"
-#else /* defined(HAVE_PCAP_CREATE) */
-#define B_FLAG
-#define B_FLAG_USAGE
-#endif /* defined(HAVE_PCAP_CREATE) */
 
 #ifdef HAVE_PCAP_FINDALLDEVS
 #define D_FLAG	"D"
@@ -274,15 +267,6 @@
 #define I_FLAG
 #endif /* HAVE_PCAP_CREATE */
 
-#ifdef HAVE_PCAP_SET_TSTAMP_TYPE
-#define j_FLAG		"j:"
-#define j_FLAG_USAGE	" [ -j tstamptype ]"
-#define J_FLAG		"J"
-#else /* PCAP_ERROR_TSTAMP_TYPE_NOTSUP */
-#define j_FLAG
-#define j_FLAG_USAGE
-#define J_FLAG
-#endif /* PCAP_ERROR_TSTAMP_TYPE_NOTSUP */
 
 #ifdef HAVE_PCAP_SETDIRECTION
 #define Q_FLAG "Q:"
@@ -292,17 +276,14 @@
 #define Q_FLAG_USAGE
 #endif
 
-#ifdef HAVE_PCAP_DUMP_FLUSH
-#define U_FLAG	"U"
-#else
-#define U_FLAG
-#endif
+/**
+ * @brief
+ *  getopt_long function corresponding to the short option
+ */
+#define SHORTOPTS "bc:C" D_FLAG "E:F:G:hi:" I_FLAG "KLM:p" Q_FLAG "r:w:W:y:"
 
-#define SHORTOPTS "aAb" B_FLAG "c:C:d" D_FLAG "eE:fF:G:hHi:" I_FLAG j_FLAG J_FLAG "KlLm:M:nNOpq" Q_FLAG "r:s:StT:u" U_FLAG "vV:w:W:xXy:Yz:Z:#"
 
-#ifdef HAVE_PCAP_SET_IMMEDIATE_MODE
-#define IMMEDIATE_MODE_USAGE " [ --immediate-mode ]"
-#endif
+
 
 typedef enum {
 	S_SUCCESS           = 0, /* not a libnetdissect status */
@@ -429,26 +410,14 @@ struct dump_info {
 };
 
 
-#define PT_VAT		1	/* Visual Audio Tool */
-#define PT_WB		2	/* distributed White Board */
-#define PT_RPC		3	/* Remote Procedure Call */
-#define PT_RTP		4	/* Real-Time Applications protocol */
-#define PT_RTCP		5	/* Real-Time Applications control protocol */
-#define PT_SNMP		6	/* Simple Network Management Protocol */
-#define PT_CNFP		7	/* Cisco NetFlow protocol */
-#define PT_TFTP		8	/* trivial file transfer protocol */
-#define PT_AODV		9	/* Ad-hoc On-demand Distance Vector Protocol */
-#define PT_CARP		10	/* Common Address Redundancy Protocol */
-#define PT_RADIUS	11	/* RADIUS authentication Protocol */
-#define PT_ZMTP1	12	/* ZeroMQ Message Transport Protocol 1.0 */
-#define PT_VXLAN	13	/* Virtual eXtensible Local Area Network */
-#define PT_PGM		14	/* [UDP-encapsulated] Pragmatic General Multicast */
-#define PT_PGM_ZMTP1	15	/* ZMTP/1.0 inside PGM (native or UDP-encapsulated) */
-#define PT_LMP		16	/* Link Management Protocol */
-#define PT_RESP		17	/* RESP */
-#define PT_PTP		18	/* PTP */
-#define PT_SOMEIP	19	/* Autosar SOME/IP Protocol */
-#define PT_DOMAIN	20	/* Domain Name System (DNS) */
+/**
+ * @brief
+ * 	Network device status
+ */
+typedef struct status {
+	unsigned int v;
+	const char *s;
+} status_t;
 
 
 /*
@@ -549,18 +518,18 @@ int capture_reply_to_display (unsigned int msgtype, const char * reply);
  */
 int display_convert_cmd_to_string_array(const char * command, char argv[128][256]);
 
-
 /**
- * @brief 
+ * @brief
  *  Real command parsing
  * @param argc
  *  Number of commands
  * @param command
  *  Commands to be parsed
  * @return
- *  If successful, it returns ND_OK; 
+ *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
+ *  if cmd -D it returns CP_FAD
  */
-int capture_parsing_cmd (int argc, char command[128][256]);
+int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]);
 
 #endif  // __CAPTURE_H__
