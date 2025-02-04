@@ -83,6 +83,7 @@ typedef unsigned long long  uint64_t;
 enum {
     ND_OK,
     ND_ERR,
+	CP_FAD,
 };
 
 
