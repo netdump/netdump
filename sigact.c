@@ -25,6 +25,7 @@
 #include "common.h"
 #include "trace.h"
 #include "msgcomm.h"
+#include "capture.h"
 
 /**
  * Common signals that cause process crashes
@@ -160,6 +161,10 @@ void sigact_handle_crash (int signum) {
 		display_exit_resource_destruction();
 		msgcomm_ending();
 	}
+	else if (GCOREID_CP == lCOREID)
+	{
+		capture_signal_handle(signum);
+	}
 
 	TRACE_DESTRUCTION();
 
@@ -186,6 +191,10 @@ void sigact_handle_quit (int signum) {
 	if (GCOREID_DP == lCOREID) {
 		display_exit_resource_destruction();
 		msgcomm_ending();
+	}
+	else if (GCOREID_CP == lCOREID)
+	{
+		capture_signal_handle(signum);
 	}
 
 	TRACE_DESTRUCTION();
