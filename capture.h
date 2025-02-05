@@ -29,6 +29,7 @@
 
 #include "bpf.h"
 #include "pcap/pcap.h"
+#include "pcap/dlt.h"
 
 
 #include "common.h"
@@ -280,7 +281,7 @@
  * @brief
  *  getopt_long function corresponding to the short option
  */
-#define SHORTOPTS "bc:C" D_FLAG "E:F:G:hi:" I_FLAG "KLM:p" Q_FLAG "r:w:W:y:"
+#define SHORTOPTS "b" D_FLAG "E:hi:" I_FLAG "Lp" Q_FLAG "r:y:"
 
 
 
@@ -398,15 +399,6 @@ struct netdissect_options {
   void (*ndo_warning)(netdissect_options *,
 		      const char *fmt, ...)
 		      PRINTFLIKE_FUNCPTR(2, 3);
-};
-
-
-struct dump_info {
-    char *WFileName;
-    char *CurrentFileName;
-    pcap_t *pd;
-    pcap_dumper_t *pdd;
-    netdissect_options *ndo;
 };
 
 
@@ -531,5 +523,13 @@ int display_convert_cmd_to_string_array(const char * command, char argv[128][256
  *  if cmd -D it returns CP_FAD
  */
 int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]);
+
+/**
+ * @brief
+ *  capture process signal processing function
+ * @param signo
+ *  Captured signal
+ */
+void capture_signal_handle(int signo);
 
 #endif  // __CAPTURE_H__

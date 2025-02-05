@@ -15,35 +15,12 @@
 #include "msgcomm.h"
 
 
-#if defined(HAVE_PCAP_CREATE)
-/**
- * @brief
- *  buffer size
- */
-static int Bflag;
-#endif
 
-#ifdef HAVE_PCAP_DUMP_FTELL64
-/**
- * @brief 
- *  rotate dump files after this many bytes
- */
-static int64_t Cflag;
-#endif
-
-/**
- * @brief 
- *  Keep track of which file number we're writing
- */
-static int Cflag_count;
-
-#ifdef HAVE_PCAP_FINDALLDEVS
 /**
  * @brief 
  *  list available devices and exit
  */
 static int Dflag;
-#endif
 
 /**
  * @brief 
@@ -53,47 +30,9 @@ static int Lflag;
 
 /**
  * @brief
- *  rotate dump files after this many seconds
- */
-static int Gflag;
-
-/**
- * @brief
- *  number of files created with Gflag rotation
- */
-static int Gflag_count;
-
-/**
- * @brief
- *  The last time_t the dump file was rotated.
- */
-static time_t Gflag_time;
-
-/**
- * @brief
  *  rfmon (monitor) mode
  */
 static int Iflag;
-
-#ifdef HAVE_PCAP_SET_TSTAMP_TYPE
-/**
- * @brief 
- *  list available time stamp types
- */
-static int Jflag;
-
-/**
- * @brief
- *  packet time stamp source
- */
-static int jflag = -1;
-#endif
-
-/**
- * @brief 
- *  line-buffered output
- */
-static int lflag;
 
 /**
  * @brief
@@ -101,49 +40,14 @@ static int lflag;
  */
 static int pflag;
 
-#ifdef HAVE_PCAP_SETDIRECTION
 /**
  * @brief
  *  restrict captured packet by send/receive direction
  */
 static int Qflag = -1;
-#endif
 
-#ifdef HAVE_PCAP_DUMP_FLUSH
-/**
- * @brief 
- *  "unbuffered" output of dump files 
- */
-static int Uflag;
-#endif
-
-/**
- * @brief 
- *  recycle output files after this number of files
- */
-static int Wflag;
-static int WflagChars;
-
-/**
- * @brief
- *  compress each savefile using a specified command (like gzip or bzip2)
- */
-static char *zflag = NULL;
-
-/**
- * @brief
- *  default timeout = 1000 ms = 1 s
- */
-static int timeout = 1000;
-
-#ifdef HAVE_PCAP_SET_IMMEDIATE_MODE
-static int immediate_mode;
-#endif
-
-static int count_mode;
-
-static int infodelay;
-static int infoprint;
+static pcap_t *pd = NULL;
+static int supports_monitor_mode;
 
 char *program_name = "Netdump";
 
@@ -186,17 +90,6 @@ int dflag;
  * component of the entry for the long option, and have a case for that
  * option in the switch statement.
  */
-#define OPTION_VERSION			                128
-#define OPTION_TSTAMP_PRECISION		            129
-#define OPTION_IMMEDIATE_MODE		            130
-#define OPTION_PRINT			                131
-#define OPTION_LIST_REMOTE_INTERFACES	        132
-#define OPTION_TSTAMP_MICRO		                133
-#define OPTION_TSTAMP_NANO		                134
-#define OPTION_FP_TYPE			                135
-#define OPTION_COUNT			                136
-
-
 /**
  * @brief
  *  getopt_long function corresponding to the long option
@@ -212,8 +105,6 @@ static const struct option longopts[] = {
 #ifdef HAVE_PCAP_CREATE
     {"monitor-mode", no_argument, NULL, 'I'},
 #endif
-
-    {"dont-verify-checksums", no_argument, NULL, 'K'},
 
     {"list-data-link-types", no_argument, NULL, 'L'},
     
@@ -237,8 +128,8 @@ struct netdissect_options Gndo = {
 
     .ndo_bflag = 0,
     .ndo_eflag = 1,
-    .ndo_fflag = 1,/* 该选项与 -r 不能同时使用，先初始化为1，如果 cmd 命令中有 -r 选项，则将 ndo_fflag 置为0， 后期看看可不可以同时存在 */
-    .ndo_Kflag = 0,
+    .ndo_fflag = 0, /* 该选项与 -r 不能同时使用，先初始化为0，如果 cmd 命令中有 -r 选项，则将 ndo_fflag 置为0， 后期看看可不可以同时存在，或者是否可以不支持从文件中读取过滤规则 */
+    .ndo_Kflag = 1, /* 禁用 TCP 校验和验证; 忽略 TCP 校验和错误; 初始化的时已初始化为 1 */
     .ndo_nflag = 1,
     .ndo_Nflag = 0,
     .ndo_qflag = 0,
@@ -277,9 +168,7 @@ struct netdissect_options Gndo = {
     /* pointer to function to output errors */
     .ndo_error = NULL,
     /* pointer to function to output warnings */
-    .ndo_warning = NULL
-};
-
+    .ndo_warning = NULL};
 
 /**
  * @brief
@@ -514,122 +403,55 @@ int display_convert_cmd_to_string_array(const char * command, char argv[128][256
     RInt(argc);
 }
 
-
-static void
-print_usage(FILE *f)
-{
-    (void)fprintf(f,
-        "Usage: [-bc:C" D_FLAG "E:F:G:hi:" I_FLAG "KLM:pr:w:W:y:] [ -c count ]\n");
-    (void)fprintf(f,
-        "\t\t[ -C file_size ] [ -E algo:secret ] [ -F file ] [ -G seconds ]\n");
-	(void)fprintf(f,
-        "\t\t[ -i interface\n");
-	(void)fprintf(f,
-        "\t\t[ -M secret ]" Q_FLAG_USAGE "\n");
-	(void)fprintf(f,
-        "\t\t[ -r file ]\n");
-	(void)fprintf(f,
-        "\t\t[ -w file ] [ -W filecount ] [ -y datalinktype ]\n");
-    return ;
-}
-
-static void
-print_version(FILE *f)
-{
-    return ;
-}
-
-void
-float_type_check(uint32_t in)
-{
-	union { /* int to float conversion buffer */
-		float f;
-		uint32_t i;
-	} f;
-
-	f.i = in;
-	printf("%.3f\n", f.f*8/1000000);
-}
-
-
-static int
-getWflagChars(int x)
-{
-	int c = 0;
-
-	x -= 1;
-	while (x > 0) {
-		c += 1;
-		x /= 10;
-	}
-
-	return c;
-}
-
-#ifdef HAVE_PCAP_SET_TSTAMP_PRECISION
-static int
-tstamp_precision_from_string(const char *precision)
-{
-	if (strncmp(precision, "nano", strlen("nano")) == 0)
-		return PCAP_TSTAMP_PRECISION_NANO;
-
-	if (strncmp(precision, "micro", strlen("micro")) == 0)
-		return PCAP_TSTAMP_PRECISION_MICRO;
-
-	return -EINVAL;
-}
-
-static const char *
-tstamp_precision_to_string(int precision)
-{
-	switch (precision) {
-
-	case PCAP_TSTAMP_PRECISION_MICRO:
-		return "micro";
-
-	case PCAP_TSTAMP_PRECISION_NANO:
-		return "nano";
-
-	default:
-		return "unknown";
-	}
-}
-#endif
-
-
-int
-nd_have_smi_support(void)
-{
-#ifdef USE_LIBSMI
-	return (1);
-#else
-	return (0);
-#endif
-}
-
-/*
- * Indicates whether an SMI module has been loaded, so that we can use
- * libsmi to translate OIDs.
+/**
+ * @brief
+ *  Output User Manual
  */
-int nd_smi_module_loaded;
-
-int
-nd_load_smi_module(const char *module, char *errbuf, size_t errbuf_size)
+static void capture_usage(void)
 {
-#ifdef USE_LIBSMI
-	if (smiLoadModule(module) == 0) {
-		snprintf(errbuf, errbuf_size, "could not load MIB module %s",
-		    module);
-		return (-1);
-	}
-	nd_smi_module_loaded = 1;
-	return (0);
-#else
-	snprintf(errbuf, errbuf_size, "MIB module %s not loaded: no libsmi support",
-	    module);
-	return (-1);
-#endif
+
+    TC("Called { %s(void)", __func__);
+
+    char space[2048] = {0};
+    char * sp = space;
+    int length = 2048;
+    int ret = 0;
+
+    ret = snprintf(sp, length, "Usage: [-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
+    if (ret == -1) {
+        TE("snprintf function failed");
+        exit(S_ERR_HOST_PROGRAM);
+    }
+    sp = space + strlen(space);
+    length -= strlen(space);
+
+    ret = snprintf(sp, length, "\t\t[ -E algo:secret ] [ -i interface]" Q_FLAG_USAGE "\n");
+    if (ret == -1)
+    {
+        TE("snprintf function failed");
+        exit(S_ERR_HOST_PROGRAM);
+    }
+    sp = space + strlen(space);
+    length -= strlen(space);
+
+    ret = snprintf(sp, length,"\t\t[ -r file ] [ -y datalinktype ]\n");
+    if (ret == -1)
+    {
+        TE("snprintf function failed");
+        exit(S_ERR_HOST_PROGRAM);
+    }
+    sp = space + strlen(space);
+    length -= strlen(space);
+
+    if (unlikely(((capture_reply_to_display(MSGCOMM_HLP, space)) == ND_ERR)))
+    {
+        TE("capture reply to display failed");
+        exit(1);
+    }
+
+    RVoid();
 }
+
 
 /*
  * This array maps upper-case ASCII letters to their lower-case
@@ -674,17 +496,31 @@ static const unsigned char charmap[] = {
 	0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
 };
 
-int
-ascii_strcasecmp(const char *s1, const char *s2)
+/**
+ * @brief
+ *  String comparison functions
+ * @param
+ *  String 1
+ * @param
+ *  String 2
+ * @return
+ *  If they are equal, they return 0; 
+ *  if they are not equal, they return the difference.
+ */
+int ascii_strcasecmp(const char *s1, const char *s2)
 {
+    TC("Called { %s(%p, %p)", __func__, s1, s2);
+
 	const unsigned char *cm = charmap,
-			*us1 = (const unsigned char *)s1,
-			*us2 = (const unsigned char *)s2;
+    *us1 = (const unsigned char *)s1,
+    *us2 = (const unsigned char *)s2;
 
 	while (cm[*us1] == cm[*us2++])
-		if (*us1++ == '\0')
-			return(0);
-	return(cm[*us1] - cm[*--us2]);
+		if (*us1++ == '\0') {
+			RInt(0);
+        }
+	
+    RInt((int)(cm[*us1] - cm[*--us2]));
 }
 
 /**
@@ -781,7 +617,7 @@ void capture_show_devices_to_display (void) {
     }
 
     char msg[1000] = {0};
-    char msgp = msg;
+    char * msgp = msg;
     short msglen = 1000;
 
     int i = 0;
@@ -858,7 +694,429 @@ void capture_show_devices_to_display (void) {
     RVoid();
 }
 
-static pcap_t *pd;
+/**
+ * @brief
+ *  capture process signal processing function
+ * @param signo
+ *  Captured signal
+ */
+void capture_signal_handle(int signo)
+{
+
+    TC("Called { %s(%d)", __func__, signo);
+
+    #if 0
+    // 目前看是没有用
+    struct itimerval timer;
+
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    setitimer(ITIMER_REAL, &timer, NULL);
+    #endif
+    pcap_breakloop(pd);
+
+    RVoid();
+}
+
+
+/**
+ * @brief
+ *  Copy arg vector into a new buffer, concatenating arguments with spaces.
+ * @param argv
+ *  cmd data
+ * @return
+ *  Returns a pointer to the copied data.
+ */
+static char * capture_copy_argv(char **argv)
+{
+
+    TC("Called { %s(%p)", __func__, argv);
+
+    char **p;
+    size_t len = 0;
+    char *buf;
+    char *src, *dst;
+
+    p = argv;
+    if (*p == NULL)
+        return 0;
+
+    while (*p)
+        len += strlen(*p++) + 1;
+
+    buf = (char *)malloc(len);
+    if (buf == NULL) {
+        TE("%s: malloc", __func__);
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    p = argv;
+    dst = buf;
+    while ((src = *p++) != NULL)
+    {
+        while ((*dst++ = *src++) != '\0')
+            ;
+        dst[-1] = ' ';
+    }
+    dst[-1] = '\0';
+
+    RVoidPtr(buf);
+}
+
+
+/**
+ * @brief 
+ *  capture suport data link type (array)
+ */
+static int capture_support_dlt[] = {
+#ifdef DLT_APPLE_IP_OVER_IEEE1394
+    DLT_APPLE_IP_OVER_IEEE1394,
+#endif
+    DLT_ARCNET,
+#ifdef DLT_ARCNET_LINUX
+    DLT_ARCNET_LINUX,
+#endif
+    DLT_ATM_RFC1483,
+#ifdef DLT_DSA_TAG_BRCM
+    DLT_DSA_TAG_BRCM,
+#endif
+#ifdef DLT_DSA_TAG_BRCM_PREPEND
+    DLT_DSA_TAG_BRCM_PREPEND,
+#endif
+#ifdef DLT_BLUETOOTH_HCI_H4_WITH_PHDR
+    DLT_BLUETOOTH_HCI_H4_WITH_PHDR,
+#endif
+#ifdef DLT_C_HDLC
+    DLT_C_HDLC,
+#endif
+#ifdef DLT_HDLC
+    DLT_HDLC,
+#endif
+#ifdef DLT_ATM_CLIP
+    DLT_ATM_CLIP,
+#endif
+#ifdef DLT_CIP
+    DLT_CIP,
+#endif
+#ifdef DLT_DSA_TAG_DSA
+    DLT_DSA_TAG_DSA,
+#endif
+#ifdef DLT_DSA_TAG_EDSA
+    DLT_DSA_TAG_EDSA,
+#endif
+#ifdef DLT_ENC
+    DLT_ENC,
+#endif
+    DLT_EN10MB,
+    DLT_FDDI,
+#ifdef DLT_FR
+    {fr_if_print, DLT_FR},
+#endif
+#ifdef DLT_FRELAY
+    DLT_FRELAY,
+#endif
+#ifdef DLT_IEEE802_11
+    DLT_IEEE802_11,
+#endif
+#ifdef DLT_IEEE802_11_RADIO_AVS
+    DLT_IEEE802_11_RADIO_AVS,
+#endif
+#ifdef DLT_IEEE802_11_RADIO
+    DLT_IEEE802_11_RADIO,
+#endif
+#ifdef DLT_IEEE802_15_4
+    DLT_IEEE802_15_4,
+#endif
+#ifdef DLT_IEEE802_15_4_NOFCS
+    DLT_IEEE802_15_4_NOFCS,
+#endif
+#ifdef DLT_IEEE802_15_4_TAP
+    DLT_IEEE802_15_4_TAP,
+#endif
+#ifdef DLT_IP_OVER_FC
+    DLT_IP_OVER_FC,
+#endif
+#ifdef DLT_IPNET
+    DLT_IPNET,
+#endif
+#ifdef DLT_IPOIB
+    DLT_IPOIB,
+#endif
+#ifdef DLT_JUNIPER_ATM1
+    DLT_JUNIPER_ATM1,
+#endif
+#ifdef DLT_JUNIPER_ATM2
+    DLT_JUNIPER_ATM2,
+#endif
+#ifdef DLT_JUNIPER_CHDLC
+    DLT_JUNIPER_CHDLC,
+#endif
+#ifdef DLT_JUNIPER_ES
+    DLT_JUNIPER_ES,
+#endif
+#ifdef DLT_JUNIPER_ETHER
+    DLT_JUNIPER_ETHER,
+#endif
+#ifdef DLT_JUNIPER_FRELAY
+    DLT_JUNIPER_FRELAY,
+#endif
+#ifdef DLT_JUNIPER_GGSN
+    DLT_JUNIPER_GGSN,
+#endif
+#ifdef DLT_JUNIPER_MFR
+    DLT_JUNIPER_MFR,
+#endif
+#ifdef DLT_JUNIPER_MLFR
+    DLT_JUNIPER_MLFR,
+#endif
+#ifdef DLT_JUNIPER_MLPPP
+    DLT_JUNIPER_MLPPP,
+#endif
+#ifdef DLT_JUNIPER_MONITOR
+    DLT_JUNIPER_MONITOR,
+#endif
+#ifdef DLT_JUNIPER_PPP
+    DLT_JUNIPER_PPP,
+#endif
+#ifdef DLT_JUNIPER_PPPOE_ATM
+    DLT_JUNIPER_PPPOE_ATM,
+#endif
+#ifdef DLT_JUNIPER_PPPOE
+    DLT_JUNIPER_PPPOE,
+#endif
+#ifdef DLT_JUNIPER_SERVICES
+    DLT_JUNIPER_SERVICES,
+#endif
+#ifdef DLT_LTALK
+    DLT_LTALK,
+#endif
+#ifdef DLT_MFR
+    DLT_MFR,
+#endif
+#ifdef DLT_NETANALYZER
+    DLT_NETANALYZER,
+#endif
+#ifdef DLT_NETANALYZER_TRANSPARENT
+    DLT_NETANALYZER_TRANSPARENT,
+#endif
+#ifdef DLT_NFLOG
+    DLT_NFLOG,
+#endif
+    DLT_NULL,
+#ifdef DLT_LOOP
+    DLT_LOOP,
+#endif
+#ifdef DLT_PFLOG
+    DLT_PFLOG,
+#endif
+#ifdef DLT_PKTAP
+    DLT_PKTAP,
+#endif
+#ifdef DLT_PPI
+    DLT_PPI,
+#endif
+#ifdef DLT_PPP_BSDOS
+    DLT_PPP_BSDOS,
+#endif
+#ifdef DLT_PPP_SERIAL
+    DLT_PPP_SERIAL,
+#endif
+    DLT_PPP,
+#ifdef DLT_PPP_PPPD
+    DLT_PPP_PPPD,
+#endif
+#ifdef DLT_PPP_ETHER
+    DLT_PPP_ETHER,
+#endif
+#ifdef DLT_PRISM_HEADER
+    DLT_PRISM_HEADER,
+#endif
+    DLT_RAW,
+#ifdef DLT_IPV4
+    DLT_IPV4,
+#endif
+#ifdef DLT_IPV6
+    DLT_IPV6,
+#endif
+#ifdef DLT_SLIP_BSDOS
+    DLT_SLIP_BSDOS,
+#endif
+    DLT_SLIP,
+#ifdef DLT_LINUX_SLL
+    DLT_LINUX_SLL,
+#endif
+#ifdef DLT_LINUX_SLL2
+    DLT_LINUX_SLL2,
+#endif
+#ifdef DLT_SUNATM
+    DLT_SUNATM,
+#endif
+#ifdef DLT_SYMANTEC_FIREWALL
+    DLT_SYMANTEC_FIREWALL,
+#endif
+    DLT_IEEE802,
+#ifdef DLT_USB_LINUX
+    DLT_USB_LINUX,
+#endif /* DLT_USB_LINUX */
+#ifdef DLT_USB_LINUX_MMAPPED
+    DLT_USB_LINUX_MMAPPED,
+#endif /* DLT_USB_LINUX_MMAPPED */
+#ifdef DLT_VSOCK
+    DLT_VSOCK,
+#endif
+    0,
+};
+
+/**
+ * @brief
+ *  Check if the type is supported in the array
+ * 
+ */
+int capture_check_is_support_dlt (int type) {
+
+    TC("Called { %s(%d)}", __func__, type);
+
+    int nums = (sizeof(capture_support_dlt) / sizeof(int));
+    int i = 0;
+    for (i = 0; i < nums; i++) {
+        if (capture_support_dlt[i] == type)
+        {
+            RInt(ND_OK);
+        }
+    }
+
+    RInt(ND_ERR);
+}
+
+
+/**
+ * @brief 
+ *  shorten code
+ */
+#define CAPTURE_SHORTEN_CODE_2(msgp, length, fmt, ...)    \
+    do                                                    \
+    {                                                     \
+        ret = snprintf(msgp, length, fmt, ##__VA_ARGS__); \
+        if (ret < 0)                                      \
+        {                                                 \
+            TE("called snprintf failed");                 \
+            exit(S_ERR_HOST_PROGRAM);                     \
+        }                                                 \
+        msgp = space + strlen(space);                     \
+        length -= strlen(space);                          \
+    } while (0);
+
+
+/**
+ * @brief
+ *  Display data link type
+ * @param pc
+ *  pcap_t type pointer
+ * @param device
+ *  Device Name
+ */
+static void capture_show_datalinktype(pcap_t *pc, const char *device)
+{
+
+    TC("Called { %s(%p, %p)", __func__, pc, device);
+
+    int n_dlts, i;
+    int *dlts = 0;
+    const char *dlt_name;
+
+    n_dlts = pcap_list_datalinks(pc, &dlts);
+    if (n_dlts < 0)
+    {
+        TE("%s", pcap_geterr(pc));
+        exit(S_ERR_HOST_PROGRAM);
+    }
+    else if (n_dlts == 0 || !dlts)
+    {
+        TE("No data link types.");
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    char space[2048] = {0};
+    char * msgp = space;
+    int length = 2048;
+    int ret = 0;
+
+    CAPTURE_SHORTEN_CODE_2(msgp, length, "Data link types for ");
+    if (supports_monitor_mode) {
+        CAPTURE_SHORTEN_CODE_2(msgp, length, "%s %s", device, Iflag ? "when in monitor mode" : "when not in monitor mode");
+    }
+    else {
+        CAPTURE_SHORTEN_CODE_2(msgp, length, "%s", device);
+    }
+    CAPTURE_SHORTEN_CODE_2(msgp, length, " (use option -y to set):\n");
+
+    for (i = 0; i < n_dlts; i++)
+    {
+        dlt_name = pcap_datalink_val_to_name(dlts[i]);
+        if (dlt_name != NULL)
+        {
+            CAPTURE_SHORTEN_CODE_2(msgp, length, "  %s (%s)", dlt_name, pcap_datalink_val_to_description(dlts[i]));
+
+            if ((capture_check_is_support_dlt(dlts[i]) == ND_ERR))
+            {
+                CAPTURE_SHORTEN_CODE_2(msgp, length, " (printing not supported)");
+            }
+            CAPTURE_SHORTEN_CODE_2(msgp, length, "\n");
+        }
+        else
+        {
+            CAPTURE_SHORTEN_CODE_2(msgp, length, "  DLT %d (printing not supported)\n", dlts[i]);
+        }
+    }
+
+    if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
+    {
+        TE("capture reply to display failed");
+        exit(1);
+    }
+
+    pcap_free_datalinks(dlts);
+
+    RVoid();
+}
+
+static pcap_t *
+open_interface(const char *device, netdissect_options *ndo, char *ebuf)
+{
+    TC("Called { %s(%p, %p, %p)", __func__, device, ndo, ebuf);
+
+
+    RVoidPtr(NULL);
+}
+
+static long
+parse_interface_number(const char *device)
+{
+    TC("Called { %s(%p)", __func__, device);
+
+
+    RULong(0UL);
+}
+
+static char *
+find_interface_by_number(const char *url, long devnum)
+{
+    TC("Called { %s(%p, %ld)", __func__, url, devnum);
+
+
+    RVoidPtr(NULL);
+}
+
+static void
+print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
+{
+
+    TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
+
+    RVoid();
+}
 
 /**
  * @brief
@@ -872,250 +1130,130 @@ static pcap_t *pd;
  *  if failed, it returns ND_ERR
  *  if cmd -D it returns CP_FAD
  */
-int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]) {
+int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
+{
 
     TC("Called { %s(%d, %p)", __func__, argc, command);
 
-    int cnt = -1, op, i;
-	bpf_u_int32 localnet = 0, netmask = 0;
-    char *cp, *infile = NULL, *cmdbuf, *device = NULL, *RFileName = NULL, *VFileName = NULL, *WFileName = NULL;
-	char *endp = NULL;
-	pcap_handler callback;
-	int dlt = -1;
-	const char *dlt_name = NULL;
-	struct bpf_program fcode;
-    void (*oldhandler)(int);
-    struct dump_info dumpinfo;
-	unsigned char *pcap_userdata = NULL;
-	char ebuf[PCAP_ERRBUF_SIZE] = {0};
-	char VFileLine[PATH_MAX + 1] = {0};
-	const char *username = NULL;
-    const char *chroot_dir = NULL;
-    char *ret = NULL;
-	char *end = NULL;
-    #ifdef HAVE_PCAP_FINDALLDEVS
-	pcap_if_t *devlist;
-	long devnum;
-    #endif
-    int status;
-	FILE *VFile = NULL;
-    int Oflag = 1;			/* run filter code optimizer */
-	int yflag_dlt = -1;
-	const char *yflag_dlt_name = NULL;
-	int print = 0;
+    long devnum;
+    int op, i, dlt = -1, yflag_dlt = -1, status;
+    char *cmdbuf = NULL, *device = NULL, *RFileName = NULL,
+    *ret = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0}, space[1024] = {0};
+    
+    const char *dlt_name = NULL, *yflag_dlt_name = NULL;
+    unsigned char *pcap_userdata = NULL;
+    
+    pcap_if_t *devlist;
+    pcap_handler callback;
+    bpf_u_int32 netmask = 0;
+    struct bpf_program fcode;
 
-	netdissect_options *ndo = &Gndo;
+    netdissect_options *ndo = &Gndo;
 
     memset(ebuf, 0, sizeof(ebuf));
 
-    // ndo_set_function_pointers(ndo);
-
     tzset();
 
-    char * const* argv = (char * const*) command;
+    char *const *argv = (char *const *)command;
 
-    while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1) {
-        
-        switch (op) {
+    while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
+    {
+
+        switch (op)
+        {
             case 'b':
                 ++ndo->ndo_bflag;
                 break;
-            // -B 选项 对应的全局的 Bflag 被删除，后面代码中会被写死
-            case 'c':
-                cnt = atoi(optarg);
-                if (cnt <= 0)
-                    TE("invalid packet count %s", optarg);
-                break;
-
-            case 'C':
-                errno = 0;
-                #ifdef HAVE_PCAP_DUMP_FTELL64
-                Cflag = strtoll(optarg, &endp, 10);
-                #endif
-                if (endp == optarg || *endp != '\0' || errno != 0 || Cflag <= 0) {
-                    TE("invalid file size %s", optarg);
-                }
-                
-                #ifdef HAVE_PCAP_DUMP_FTELL64
-                if (Cflag > INT64_T_CONSTANT(0x7fffffffffffffff) / 1000000) {
-                #endif
-                    TE("file size %s is too large", optarg);
-                }
-                Cflag *= 1000000;
-                break;
-            // -d 删除 选项对应 dflag 变量，将来后面的代码中 dflag 永远为 0
-            #ifdef HAVE_PCAP_FINDALLDEVS
+            
             case 'D':
                 Dflag++;
                 break;
-            #endif
+
             case 'L':
                 Lflag++;
                 break;
-            // -e 选项删除了，目前在全局变量初始化时，初始化为 1
+            
             case 'E':
-                #ifndef HAVE_LIBCRYPTO
-                TW("crypto code not compiled in");
-                #endif
                 ndo->ndo_espsecret = optarg;
-                break;
-            // -f 选项删除，在全局初始化时初始化为 1
-            case 'F':
-                infile = optarg;
-                break;
-
-            case 'G':
-                Gflag = atoi(optarg);
-                if (Gflag < 0)
-                    TW("invalid number of seconds %s", optarg);
-
-                /* We will create one file initially. */
-                Gflag_count = 0;
-
-                /* Grab the current time for rotation use. */
-                if ((Gflag_time = time(NULL)) == (time_t)-1) {
-                    TE("%s: can't get current time: %s",
-                        __func__, pcap_strerror(errno));
-                }
                 break;
 
             case 'h':
-                print_usage(stdout);
-                exit(S_SUCCESS);
-                break;
-            // -H 选项直接写死了，在初始化全局变量的时候
+                capture_usage();
+                RInt(ND_OK);
+            
             case 'i':
                 device = optarg;
                 break;
 
-    #ifdef HAVE_PCAP_CREATE
             case 'I':
                 ++Iflag;
                 break;
-    #endif /* HAVE_PCAP_CREATE */
-            // -j jflag -J Jflag 直接删除了
-            // -l 选项删除了，对应的 变量是  lflag
-            case 'K':
-                ++ndo->ndo_Kflag;
-                break;
-            // -m 选项被删除了，
-            case 'M':
-                /* TCP-MD5 shared secret */
-    #ifndef HAVE_LIBCRYPTO
-                TW("crypto code not compiled in");
-    #endif
-                ndo->ndo_sigsecret = optarg;
-                break;
-            // -n 选项被删除，全局初始化时，置为 1
-            // -N 选项被删除，全局初始化为 0，使用默认的时间戳
-            // -O 选项，对应的变量是 Oflag ,直接删除吧，没有用
+
             case 'p':
                 ++pflag;
                 break;
-            // -q 选项直接删除吧，没有用
-    #ifdef HAVE_PCAP_SETDIRECTION
+                
             case 'Q':
-                if (ascii_strcasecmp(optarg, "in") == 0)
+                if (ascii_strcasecmp(optarg, "in") == 0) {
                     Qflag = PCAP_D_IN;
-                else if (ascii_strcasecmp(optarg, "out") == 0)
+                }
+                else if (ascii_strcasecmp(optarg, "out") == 0) {
                     Qflag = PCAP_D_OUT;
-                else if (ascii_strcasecmp(optarg, "inout") == 0)
+                }
+                else if (ascii_strcasecmp(optarg, "inout") == 0) {
                     Qflag = PCAP_D_INOUT;
-                else
-                    TE("unknown capture direction '%s'", optarg);
+                }
+                else {
+                    memset(space, 0, 1024);
+                    snprintf(space, 1024, "-Q in/out/inout; %s is error", optarg);
+                    if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
+                    {
+                        TE("capture reply to display failed");
+                        exit(1);
+                    }
+                    TE("-Q %s is error", optarg);
+                    RInt(ND_ERR);
+                }
                 break;
-    #endif /* HAVE_PCAP_SETDIRECTION */
 
             case 'r':
-                ndo->ndo_fflag = 0;
                 RFileName = optarg;
                 break;
-            // -s 选项全局初始化时写死了，ndo->ndo_snaplen = 262144
-            // -S 选项全局初始化为 1 
-            // -t 选项先删除吧，觉得吧，没有啥意义，后期如果需要显示每个包之间的时间差了再说吧
-            // -T 选项先删除吧，后面会有用但是目前看着比较烦
-            // -u 选项删除，在初始化的时候设置成了0 ，使用默认的时间戳吧
-            // -U 选项先删除吧，对应的 全部变量是 Uflag
-            // -v 选项删除，全局初始化的时候已经初始化了
-            // -V 显示版本信息，先删除吧，没有意义，将来会在第一个界面显示
-            case 'w':
-                WFileName = optarg;
-                break;
-
-            case 'W':
-                Wflag = atoi(optarg);
-                if (Wflag <= 0)
-                    TE("invalid number of output files %s", optarg);
-                WflagChars = getWflagChars(Wflag);
-                break;
-            // -x 选项删除，全局初始化时，已经初始化了
-            // -X 选项删除，全局初始化时，已经初始化了
+            
             case 'y':
                 yflag_dlt_name = optarg;
-                yflag_dlt =
-                    pcap_datalink_name_to_val(yflag_dlt_name);
-                if (yflag_dlt < 0)
-                    TE("invalid data link type %s", yflag_dlt_name);
+                yflag_dlt = pcap_datalink_name_to_val(yflag_dlt_name);
+                if (yflag_dlt < 0) {
+                    memset(space, 0, 1024);
+                    snprintf(space, 1024, "-Q in/out/inout; %s is error", optarg);
+                    if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
+                    {
+                        TE("capture reply to display failed");
+                        exit(1);
+                    }
+                    TE("-y invalid data link type %s", yflag_dlt_name);
+                    RInt(ND_ERR);
+                }
                 break;
 
-            // -Y 选项已删除，没有实际意义
-            // -z 选项删除，没有实际意义 zflag
-            // -Z 选项删除吧，没有实际意义 username
-            // -# 全局初始化时，已经初始化为 1
-            // OPTION_VERSION 删除，将来不显示版本信息
-            // OPTION_TSTAMP_PRECISION 删除吧，使用默认的时间戳吧
-            // OPTION_IMMEDIATE_MODE 选项先删除吧
-            // OPTION_PRINT 选项先删除吧
-            // OPTION_TSTAMP_MICRO OPTION_TSTAMP_NANO 删除吧，使用默认的 微秒
-            // OPTION_FP_TYPE 先删除吧，不知道干啥的
-            // OPTION_COUNT 先删除吧，不知道干啥的
-
             default:
-                print_usage(stderr);
-                exit(S_ERR_HOST_PROGRAM);
-                /* NOTREACHED */
-		}
+                capture_usage();
+                RInt(ND_ERR);
+        }
 
     }
 
     // end of while(getopt_long)
-    #ifdef HAVE_PCAP_FINDALLDEVS
+
     if (Dflag) {
         capture_show_devices_to_display();
         RInt(CP_FAD);
     }
-    #endif
-
-    if (ndo->ndo_fflag != 0 && RFileName != NULL) {
-        TE("-f can not be used with -r");
-        if (unlikely(((capture_reply_to_display(MSGCOMM_ERR, "-f can not be used with -r")) == ND_ERR)))
-        {
-            TE("capture reply to display failed");
-            exit(1);
-        }
-        RInt(ND_ERR);
-    }
-
-    #if 0
-    if ((WFileName == NULL || print) && (isatty(1) || lflag))
-		timeout = 100;
-    #endif
 
     if (RFileName != NULL)
     {
-        /*
-         * We don't need network access, so relinquish any set-UID
-         * or set-GID privileges we have (if any).
-         *
-         * We do *not* want set-UID privileges when opening a
-         * trace file, as that might let the user read other
-         * people's trace files (especially if we're set-UID
-         * root).
-         */
-        if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
-            TW("Warning: setgid/setuid failed !\n");
-        }
-
+        // 编写一个函数，将这些信息传输给界面显示
+        // 1148 -> 1170 应该是界面的显示信息
         pd = pcap_open_offline_with_tstamp_precision(RFileName, ndo->ndo_tstamp_precision, ebuf);
 
         if (pd == NULL) {
@@ -1135,25 +1273,16 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]) {
             TI(", link-type %s (%s)", dlt_name, pcap_datalink_val_to_description(dlt));
         }
         TI(", snapshot length %d\n", pcap_snapshot(pd));
-#ifdef DLT_LINUX_SLL2
+
         if (dlt == DLT_LINUX_SLL2) {
             TI("Warning: interface names might be incorrect\n");
         }
-#endif
+
     }
     else if (!device)
     {
         int dump_dlt = DLT_EN10MB;
-        /*
-         * We're dumping the compiled code without an explicit
-         * device specification.  (If a device is specified, we
-         * definitely want to open it to use the DLT of that device.)
-         * Either default to DLT_EN10MB with a warning, or use
-         * the user-specified value if supplied.
-         */
-        /*
-         * If a DLT was specified with the -y flag, use that instead.
-         */
+        
         if (yflag_dlt != -1) {
             dump_dlt = yflag_dlt;
         }
@@ -1166,8 +1295,6 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]) {
     {
         if (device == NULL)
         {
-            /* No interface was specified.  Pick one. */
-            /* Find the list of interfaces, and pick the first interface. */
             if (pcap_findalldevs(&devlist, ebuf) == -1) {
                 TE("%s", ebuf);
                 exit(S_ERR_HOST_PROGRAM);
@@ -1181,27 +1308,16 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]) {
 
         }
 
-        /* Try to open the interface with the specified name. */
         pd = open_interface(device, ndo, ebuf);
         if (pd == NULL)
         {
-            /*
-             * That failed.  If we can get a list of interfaces, and the interface name
-             * is purely numeric, try to use it as a 1-based index in the list of interfaces.
-             */
             devnum = parse_interface_number(device);
             if (devnum == -1)
             {
-                /* It's not a number; just report the open error and fail. */
                 TE("%s", ebuf);
                 exit(S_ERR_HOST_PROGRAM);
             }
 
-            /*
-             * OK, it's a number; try to find the interface with that index, and try to open it.
-             *
-             * find_interface_by_number() exits if it couldn't be found.
-             */
             device = find_interface_by_number(device, devnum);
             pd = open_interface(device, ndo, ebuf);
             if (pd == NULL) {
@@ -1210,416 +1326,76 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]) {
             }
 
         }
-
-        /*
-         * Let user own process after capture device has been opened.
-         */
-
-        if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
-            TW("Warning: setgid/setuid failed !\n");
+        #if 0
+        if (pcap_setbuff(pd, 16 * 1024 * 1024) == -1)
+        {
+            TE("%s", pcap_geterr(pd));
+            exit(S_ERR_HOST_PROGRAM);
         }
-
+        #endif
         if (Lflag) {
-            show_dlts_and_exit(pd, device);
+            capture_show_datalinktype(pd, device);
             return ND_OK;
         }
+
         if (yflag_dlt >= 0)
         {
-#ifdef HAVE_PCAP_SET_DATALINK
-            if (pcap_set_datalink(pd, yflag_dlt) < 0)
-                error("%s", pcap_geterr(pd));
-#else
-            /*
-             * We don't actually support changing the
-             * data link type, so we only let them
-             * set it to what it already is.
-             */
-            if (yflag_dlt != pcap_datalink(pd))
-            {
-                error("%s is not one of the DLTs supported by this device\n",
-                      yflag_dlt_name);
+            if (pcap_set_datalink(pd, yflag_dlt) < 0) {
+                TE("%s", pcap_geterr(pd));
+                exit(S_ERR_HOST_PROGRAM);
             }
-#endif
-            (void)fprintf(stderr, "%s: data link type %s\n",
-                          program_name,
-                          pcap_datalink_val_to_name(yflag_dlt));
-            (void)fflush(stderr);
+
+            TI("%s: data link type %s\n", program_name, pcap_datalink_val_to_name(yflag_dlt));
         }
-#if defined(DLT_LINUX_SLL2) && defined(HAVE_PCAP_SET_DATALINK)
         else
         {
-            /*
-             * Attempt to set default linktype to
-             * DLT_LINUX_SLL2 when capturing on the
-             * "any" device.
-             *
-             * If the attempt fails, just quietly drive
-             * on; this may be a non-Linux "any" device
-             * that doesn't support DLT_LINUX_SLL2.
-             */
             if (strcmp(device, "any") == 0)
             {
-DIAG_OFF_WARN_UNUSED_RESULT(void)
                 pcap_set_datalink(pd, DLT_LINUX_SLL2);
-DIAG_ON_WARN_UNUSED_RESULT
             }
         }
-#endif
 
         i = pcap_snapshot(pd);
         if (ndo->ndo_snaplen < i)
         {
             if (ndo->ndo_snaplen != 0)
-                warning("snaplen raised from %d to %d", ndo->ndo_snaplen, i);
+                TW("snaplen raised from %d to %d", ndo->ndo_snaplen, i);
             ndo->ndo_snaplen = i;
         }
         else if (ndo->ndo_snaplen > i)
         {
-            warning("snaplen lowered from %d to %d", ndo->ndo_snaplen, i);
+            TW("snaplen lowered from %d to %d", ndo->ndo_snaplen, i);
             ndo->ndo_snaplen = i;
         }
-        if (ndo->ndo_fflag != 0)
-        {
-            if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0)
-            {
-                warning("foreign (-f) flag used but: %s", ebuf);
-            }
-        }
     }
 
-    if (infile)
-        cmdbuf = read_infile(infile);
-    else
-        cmdbuf = copy_argv(&argv[optind]);
+    cmdbuf = capture_copy_argv((char**)(&argv[optind]));
 
-#ifdef HAVE_PCAP_SET_OPTIMIZER_DEBUG
-    pcap_set_optimizer_debug(dflag);
-#endif
-    if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
-        error("%s", pcap_geterr(pd));
-    if (dflag)
-    {
-        bpf_dump(&fcode, dflag);
-        pcap_close(pd);
-        free(cmdbuf);
-        pcap_freecode(&fcode);
-        exit_tcpdump(S_SUCCESS);
+    if (pcap_compile(pd, &fcode, cmdbuf, 0, netmask) < 0) {
+        TE("%s", pcap_geterr(pd));
+        exit(S_ERR_HOST_PROGRAM);
     }
 
-#ifdef HAVE_CASPER
-    if (!ndo->ndo_nflag)
-        capdns = capdns_setup();
-#endif /* HAVE_CASPER */
-
-    init_print(ndo, localnet, netmask);
-
-#ifndef _WIN32
-    (void)setsignal(SIGPIPE, cleanup);
-    (void)setsignal(SIGTERM, cleanup);
-#endif /* _WIN32 */
-    (void)setsignal(SIGINT, cleanup);
-#if defined(HAVE_FORK) || defined(HAVE_VFORK)
-    (void)setsignal(SIGCHLD, child_cleanup);
-#endif
-    /* Cooperate with nohup(1) */
-#ifndef _WIN32
-    /*
-     * In illumos /usr/include/sys/iso/signal_iso.h causes Clang to
-     * generate a -Wstrict-prototypes warning here, see [1].  The
-     * __illumos__ macro is available since at least GCC 11 and Clang 13,
-     * see [2].
-     * 1: https://www.illumos.org/issues/16344
-     * 2: https://www.illumos.org/issues/13726
-     */
-#ifdef __illumos__
-    DIAG_OFF_STRICT_PROTOTYPES
-#endif /* __illumos__ */
-    if ((oldhandler = setsignal(SIGHUP, cleanup)) != SIG_DFL)
-#ifdef __illumos__
-        DIAG_ON_STRICT_PROTOTYPES
-#endif /* __illumos__ */
-            (void)
-            setsignal(SIGHUP, oldhandler);
-#endif /* _WIN32 */
-
-#ifndef _WIN32
-    /*
-     * If a user name was specified with "-Z", attempt to switch to
-     * that user's UID.  This would probably be used with sudo,
-     * to allow tcpdump to be run in a special restricted
-     * account (if you just want to allow users to open capture
-     * devices, and can't just give users that permission,
-     * you'd make tcpdump set-UID or set-GID).
-     *
-     * Tcpdump doesn't necessarily write only to one savefile;
-     * the general only way to allow a -Z instance to write to
-     * savefiles as the user under whose UID it's run, rather
-     * than as the user specified with -Z, would thus be to switch
-     * to the original user ID before opening a capture file and
-     * then switch back to the -Z user ID after opening the savefile.
-     * Switching to the -Z user ID only after opening the first
-     * savefile doesn't handle the general case.
-     */
-
-    if (getuid() == 0 || geteuid() == 0)
-    {
-#ifdef HAVE_LIBCAP_NG
-        /* Initialize capng */
-        capng_clear(CAPNG_SELECT_BOTH);
-        if (username)
-        {
-            DIAG_OFF_ASSIGN_ENUM
-            capng_updatev(
-                CAPNG_ADD,
-                CAPNG_PERMITTED | CAPNG_EFFECTIVE,
-                CAP_SETUID,
-                CAP_SETGID,
-                -1);
-            DIAG_ON_ASSIGN_ENUM
-        }
-        if (chroot_dir)
-        {
-            DIAG_OFF_ASSIGN_ENUM
-            capng_update(
-                CAPNG_ADD,
-                CAPNG_PERMITTED | CAPNG_EFFECTIVE,
-                CAP_SYS_CHROOT);
-            DIAG_ON_ASSIGN_ENUM
-        }
-
-        if (WFileName)
-        {
-            DIAG_OFF_ASSIGN_ENUM
-            capng_update(
-                CAPNG_ADD,
-                CAPNG_PERMITTED | CAPNG_EFFECTIVE,
-                CAP_DAC_OVERRIDE);
-            DIAG_ON_ASSIGN_ENUM
-        }
-        capng_apply(CAPNG_SELECT_BOTH);
-#endif /* HAVE_LIBCAP_NG */
-        if (username || chroot_dir)
-            droproot(username, chroot_dir);
-    }
-#endif /* _WIN32 */
-
-    if (pcap_setfilter(pd, &fcode) < 0)
-        error("%s", pcap_geterr(pd));
-#ifdef HAVE_CAPSICUM
-    if (RFileName == NULL && VFileName == NULL && pcap_fileno(pd) != -1)
-    {
-        static const unsigned long cmds[] = {BIOCGSTATS, BIOCROTZBUF};
-
-        /*
-         * The various libpcap devices use a combination of
-         * read (bpf), ioctl (bpf, netmap), poll (netmap)
-         * so we add the relevant access rights.
-         */
-        cap_rights_init(&rights, CAP_IOCTL, CAP_READ, CAP_EVENT);
-        if (cap_rights_limit(pcap_fileno(pd), &rights) < 0 &&
-            errno != ENOSYS)
-        {
-            error("unable to limit pcap descriptor");
-        }
-        if (cap_ioctls_limit(pcap_fileno(pd), cmds,
-                             sizeof(cmds) / sizeof(cmds[0])) < 0 &&
-            errno != ENOSYS)
-        {
-            error("unable to limit ioctls on pcap descriptor");
-        }
-    }
-#endif
-    if (WFileName)
-    {
-        /* Do not exceed the default PATH_MAX for files. */
-        dumpinfo.CurrentFileName = (char *)malloc(PATH_MAX + 1);
-
-        if (dumpinfo.CurrentFileName == NULL)
-            error("malloc of dumpinfo.CurrentFileName");
-
-        /* We do not need numbering for dumpfiles if Cflag isn't set. */
-        if (Cflag != 0)
-            MakeFilename(dumpinfo.CurrentFileName, WFileName, 0, WflagChars);
-        else
-            MakeFilename(dumpinfo.CurrentFileName, WFileName, 0, 0);
-
-        pdd = pcap_dump_open(pd, dumpinfo.CurrentFileName);
-#ifdef HAVE_LIBCAP_NG
-        /* Give up CAP_DAC_OVERRIDE capability.
-         * Only allow it to be restored if the -C or -G flag have been
-         * set since we may need to create more files later on.
-         */
-        capng_update(
-            CAPNG_DROP,
-            (Cflag || Gflag ? 0 : CAPNG_PERMITTED) | CAPNG_EFFECTIVE,
-            CAP_DAC_OVERRIDE);
-        capng_apply(CAPNG_SELECT_BOTH);
-#endif /* HAVE_LIBCAP_NG */
-        if (pdd == NULL)
-            error("%s", pcap_geterr(pd));
-#ifdef HAVE_CAPSICUM
-        set_dumper_capsicum_rights(pdd);
-#endif
-        if (Cflag != 0 || Gflag != 0)
-        {
-#ifdef HAVE_CAPSICUM
-            /*
-             * basename() and dirname() may modify their input buffer
-             * and they do since FreeBSD 12.0, but they didn't before.
-             * Hence use the return value only, but always assume the
-             * input buffer has been modified and would need to be
-             * reset before the next use.
-             */
-            char *WFileName_copy;
-
-            if ((WFileName_copy = strdup(WFileName)) == NULL)
-            {
-                error("Unable to allocate memory for file %s",
-                      WFileName);
-            }
-            DIAG_OFF_C11_EXTENSIONS
-            dumpinfo.WFileName = strdup(basename(WFileName_copy));
-            DIAG_ON_C11_EXTENSIONS
-            if (dumpinfo.WFileName == NULL)
-            {
-                error("Unable to allocate memory for file %s",
-                      WFileName);
-            }
-            free(WFileName_copy);
-
-            if ((WFileName_copy = strdup(WFileName)) == NULL)
-            {
-                error("Unable to allocate memory for file %s",
-                      WFileName);
-            }
-            DIAG_OFF_C11_EXTENSIONS
-            char *WFileName_dirname = dirname(WFileName_copy);
-            DIAG_ON_C11_EXTENSIONS
-            dumpinfo.dirfd = open(WFileName_dirname,
-                                  O_DIRECTORY | O_RDONLY);
-            if (dumpinfo.dirfd < 0)
-            {
-                error("unable to open directory %s",
-                      WFileName_dirname);
-            }
-            free(WFileName_dirname);
-            free(WFileName_copy);
-
-            cap_rights_init(&rights, CAP_CREATE, CAP_FCNTL,
-                            CAP_FTRUNCATE, CAP_LOOKUP, CAP_SEEK, CAP_WRITE);
-            if (cap_rights_limit(dumpinfo.dirfd, &rights) < 0 &&
-                errno != ENOSYS)
-            {
-                error("unable to limit directory rights");
-            }
-            if (cap_fcntls_limit(dumpinfo.dirfd, CAP_FCNTL_GETFL) < 0 &&
-                errno != ENOSYS)
-            {
-                error("unable to limit dump descriptor fcntls");
-            }
-#else /* !HAVE_CAPSICUM */
-            dumpinfo.WFileName = WFileName;
-#endif
-            callback = dump_packet_and_trunc;
-            dumpinfo.pd = pd;
-            dumpinfo.pdd = pdd;
-            pcap_userdata = (u_char *)&dumpinfo;
-        }
-        else
-        {
-            callback = dump_packet;
-            dumpinfo.WFileName = WFileName;
-            dumpinfo.pd = pd;
-            dumpinfo.pdd = pdd;
-            pcap_userdata = (u_char *)&dumpinfo;
-        }
-        if (print)
-        {
-            dlt = pcap_datalink(pd);
-            ndo->ndo_if_printer = get_if_printer(dlt);
-            dumpinfo.ndo = ndo;
-        }
-        else
-            dumpinfo.ndo = NULL;
-
-#ifdef HAVE_PCAP_DUMP_FLUSH
-        if (Uflag)
-            pcap_dump_flush(pdd);
-#endif
-    }
-    else
-    {
-        dlt = pcap_datalink(pd);
-        ndo->ndo_if_printer = get_if_printer(dlt);
-        callback = print_packet;
-        pcap_userdata = (u_char *)ndo;
+    if (pcap_setfilter(pd, &fcode) < 0) {
+        TE("%s", pcap_geterr(pd));
+        exit(S_ERR_HOST_PROGRAM);
     }
 
-#ifdef SIGNAL_REQ_INFO
-    /*
-     * We can't get statistics when reading from a file rather
-     * than capturing from a device.
-     */
+    dlt = pcap_datalink(pd);
+    ndo->ndo_if_printer = NULL;
+    callback = print_packet;
+    pcap_userdata = (unsigned char *)ndo;
+
+    #if 0
+    // 先保留吧，目前还不知道，谁发送的这两个信号
     if (RFileName == NULL)
-        (void)setsignal(SIGNAL_REQ_INFO, requestinfo);
-#endif
-#ifdef SIGNAL_FLUSH_PCAP
-    (void)setsignal(SIGNAL_FLUSH_PCAP, flushpcap);
-#endif
-
-    if (ndo->ndo_vflag > 0 && WFileName && RFileName == NULL && !print)
-    {
-        /*
-         * When capturing to a file, if "--print" wasn't specified,
-         *"-v" means tcpdump should, once per second,
-         * "v"erbosely report the number of packets captured.
-         * Except when reading from a file, because -r, -w and -v
-         * together used to make a corner case, in which pcap_loop()
-         * errored due to EINTR (see GH #155 for details).
-         */
-#ifdef _WIN32
-        /*
-         * https://blogs.msdn.microsoft.com/oldnewthing/20151230-00/?p=92741
-         *
-         * suggests that this dates back to W2K.
-         *
-         * I don't know what a "long wait" is, but we'll assume
-         * that printing the stats could be a "long wait".
-         */
-        CreateTimerQueueTimer(&timer_handle, NULL,
-                              verbose_stats_dump, NULL, 1000, 1000,
-                              WT_EXECUTEDEFAULT | WT_EXECUTELONGFUNCTION);
-        setvbuf(stderr, NULL, _IONBF, 0);
-#else  /* _WIN32 */
-        /*
-         * Assume this is UN*X, and that it has setitimer(); that
-         * dates back to UNIX 95.
-         */
-        struct itimerval timer;
-        (void)setsignal(SIGALRM, verbose_stats_dump);
-        timer.it_interval.tv_sec = 1;
-        timer.it_interval.tv_usec = 0;
-        timer.it_value.tv_sec = 1;
-        timer.it_value.tv_usec = 1;
-        setitimer(ITIMER_REAL, &timer, NULL);
-#endif /* _WIN32 */
-    }
+        (void)setsignal(SIGUSR1, requestinfo);
+    (void)setsignal(SIGUSR2, flushpcap);
+    #endif
 
     if (RFileName == NULL)
     {
-        /*
-         * Live capture (if -V was specified, we set RFileName
-         * to a file from the -V file).  Print a message to
-         * the standard error on UN*X.
-         */
-        if (!ndo->ndo_vflag && !WFileName)
-        {
-            (void)fprintf(stderr,
-                          "%s: verbose output suppressed, use -v[v]... for full protocol decode\n",
-                          program_name);
-        }
-        else
-            (void)fprintf(stderr, "%s: ", program_name);
+        (void)fprintf(stderr, "%s: ", program_name);
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
         (void)fprintf(stderr, "listening on %s", device);
@@ -1630,164 +1406,30 @@ DIAG_ON_WARN_UNUSED_RESULT
         else
         {
             (void)fprintf(stderr, ", link-type %s (%s)", dlt_name,
-                          pcap_datalink_val_to_description(dlt));
+                            pcap_datalink_val_to_description(dlt));
         }
         (void)fprintf(stderr, ", snapshot length %d bytes\n", ndo->ndo_snaplen);
         (void)fflush(stderr);
     }
 
-#ifdef HAVE_CAPSICUM
-    cansandbox = (VFileName == NULL && zflag == NULL);
-#ifdef HAVE_CASPER
-    cansandbox = (cansandbox && (ndo->ndo_nflag || capdns != NULL));
-#else
-    cansandbox = (cansandbox && ndo->ndo_nflag);
-#endif /* HAVE_CASPER */
-    cansandbox = (cansandbox && (pcap_fileno(pd) != -1 ||
-                                 RFileName != NULL));
-
-    if (cansandbox && cap_enter() < 0 && errno != ENOSYS)
-        error("unable to enter the capability mode");
-#endif /* HAVE_CAPSICUM */
-
     do
     {
-        status = pcap_loop(pd, cnt, callback, pcap_userdata);
-        if (WFileName == NULL)
-        {
-            /*
-             * We're printing packets.  Flush the printed output,
-             * so it doesn't get intermingled with error output.
-             */
-            if (status == -2)
-            {
-                /*
-                 * We got interrupted, so perhaps we didn't
-                 * manage to finish a line we were printing.
-                 * Print an extra newline, just in case.
-                 */
-                putchar('\n');
-            }
-            (void)fflush(stdout);
-        }
+        status = pcap_loop(pd, -1, callback, pcap_userdata);
         if (status == -2)
         {
-            /*
-             * We got interrupted. If we are reading multiple
-             * files (via -V) set these so that we stop.
-             */
-            VFileName = NULL;
             ret = NULL;
         }
         if (status == -1)
         {
-            /*
-             * Error.  Report it.
-             */
-            (void)fprintf(stderr, "%s: pcap_loop: %s\n",
-                          program_name, pcap_geterr(pd));
-        }
-        if (RFileName == NULL)
-        {
-            /*
-             * We're doing a live capture.  Report the capture
-             * statistics.
-             */
-            info(1);
+            TE("%s: pcap_loop: %s\n", program_name, pcap_geterr(pd));
         }
         pcap_close(pd);
-        if (VFileName != NULL)
-        {
-            ret = get_next_file(VFile, VFileLine);
-            if (ret)
-            {
-                int new_dlt;
-
-                RFileName = VFileLine;
-                pd = pcap_open_offline(RFileName, ebuf);
-                if (pd == NULL)
-                    error("%s", ebuf);
-#ifdef HAVE_CAPSICUM
-                cap_rights_init(&rights, CAP_READ);
-                if (cap_rights_limit(fileno(pcap_file(pd)),
-                                     &rights) < 0 &&
-                    errno != ENOSYS)
-                {
-                    error("unable to limit pcap descriptor");
-                }
-#endif
-                new_dlt = pcap_datalink(pd);
-                if (new_dlt != dlt)
-                {
-                    /*
-                     * The new file has a different
-                     * link-layer header type from the
-                     * previous one.
-                     */
-                    if (WFileName != NULL)
-                    {
-                        /*
-                         * We're writing raw packets
-                         * that match the filter to
-                         * a pcap file.  pcap files
-                         * don't support multiple
-                         * different link-layer
-                         * header types, so we fail
-                         * here.
-                         */
-                        error("%s: new dlt does not match original", RFileName);
-                    }
-
-                    /*
-                     * We're printing the decoded packets;
-                     * switch to the new DLT.
-                     *
-                     * To do that, we need to change
-                     * the printer, change the DLT name,
-                     * and recompile the filter with
-                     * the new DLT.
-                     */
-                    dlt = new_dlt;
-                    ndo->ndo_if_printer = get_if_printer(dlt);
-                    /* Free the old filter */
-                    pcap_freecode(&fcode);
-                    if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
-                        error("%s", pcap_geterr(pd));
-                }
-
-                /*
-                 * Set the filter on the new file.
-                 */
-                if (pcap_setfilter(pd, &fcode) < 0)
-                    error("%s", pcap_geterr(pd));
-
-                /*
-                 * Report the new file.
-                 */
-                dlt_name = pcap_datalink_val_to_name(dlt);
-                fprintf(stderr, "reading from file %s", RFileName);
-                if (dlt_name == NULL)
-                {
-                    fprintf(stderr, ", link-type %u", dlt);
-                }
-                else
-                {
-                    fprintf(stderr, ", link-type %s (%s)",
-                            dlt_name,
-                            pcap_datalink_val_to_description(dlt));
-                }
-                fprintf(stderr, ", snapshot length %d\n", pcap_snapshot(pd));
-            }
-        }
     } while (ret != NULL);
-
-    if (count_mode && RFileName != NULL)
-        fprintf(stdout, "%u packet%s\n", packets_captured,
-                PLURAL_SUFFIX(packets_captured));
-
+    
     free(cmdbuf);
     pcap_freecode(&fcode);
-    exit_tcpdump(status == -1 ? S_ERR_HOST_PROGRAM : S_SUCCESS);
+    exit(status);
 
     RInt(ND_OK);
 }
+
