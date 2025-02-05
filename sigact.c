@@ -67,6 +67,9 @@
  *
  * 12. SIGCHLD - 当子进程终止或停止时，父进程会收到一个 SIGCHLD 信号
  *
+ * 13. SIGPIPE - 是一个信号，默认行为是终止进程。
+ * 	它的主要作用是提醒进程：写入操作的目标已经不可用，通常是管道、套接字或 FIFO 的读取端已经关闭。
+ *
  */
 
 static sigact_t sigact[] = {
@@ -81,6 +84,7 @@ static sigact_t sigact[] = {
 	{.sig = SIGQUIT, .sa.sa_handler = sigact_handle_quit, .sa.sa_flags = SA_RESTART},
 	{.sig = SIGINT, .sa.sa_handler = sigact_handle_quit, .sa.sa_flags = SA_RESTART},
 	{.sig = SIGTERM, .sa.sa_handler = sigact_handle_quit, .sa.sa_flags = SA_RESTART},
+	{.sig = SIGPIPE, .sa.sa_handler = sigact_handle_quit, .sa.sa_flags = SA_RESTART},
 
 	{.sig = SIGCHLD, .sa.sa_handler = sigact_handle_child_quit, .sa.sa_flags = SA_RESTART},
 
