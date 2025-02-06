@@ -167,19 +167,26 @@ int display_reply_from_capture (message_t * message) {
 /**
  * @brief 
  * 	Error message display
- * @param errmsg
- * 	error message
+ * @param prefix
+ * 	message prefix
+ * @param msg
+ * 	message
  * @param win
- * 	Error message display window
+ * 	message display window
  * @param panel 
- * 	Error message window control panel
- * @return 
- *  If successful, it returns ND_OK; 
- *  if failed, it returns ND_ERR
+ * 	message window control panel
+ * @param color
+ * 	color pair
  */
-static void display_error_message_display (const char * errmsg, WINDOW * win, PANEL * panel) {
+static void display_message_display (const char * prefix, const char * msg, WINDOW * win, PANEL * panel, int color) {
 
-	TC("Called { %s(%s, %p, %p)", __func__, errmsg, win, panel);
+	TC("Called { %s(%s, %s, %p, %p, %d)", __func__, prefix, msg, win, panel, color);
+
+	char * space = malloc(1024 * 1024);
+	if (!space) {
+		TE("malloc(1024 * 1024) failed");
+		RVoid();
+	}
 
 	show_panel(panel); 
 	update_panels();
@@ -188,43 +195,50 @@ static void display_error_message_display (const char * errmsg, WINDOW * win, PA
 	wattrset(win, A_NORMAL);
 	wclrtoeol(win);
 	wattrset(win, A_BOLD);
-	wattron(win, COLOR_PAIR((4)));
-	char space[1024] = {0};
-	snprintf(space, 1024, "\nERRMSG:\n\t%s\n", errmsg);
+	wattron(win, COLOR_PAIR((color)));
+	snprintf(space, 1024 * 1024, "\n%s\n\t%s\n", prefix, msg);
 	waddstr(win, space);
-	wattroff(win, COLOR_PAIR((4)));
-	wattron(win, COLOR_PAIR((4)));
+	wattroff(win, COLOR_PAIR((color)));
+	wattron(win, COLOR_PAIR((color)));
 	box(win, 0, 0);
-	wattroff(win, COLOR_PAIR((4)));
+	wattroff(win, COLOR_PAIR((color)));
 	refresh();
 	wrefresh(win);
-	nd_delay_microsecond(3, 0);
+	getchar();
 	hide_panel(panel);
 	update_panels();
 	doupdate();
+
+	free(space);
 	RVoid();
-} 
+}
 
 
 /**
- * @brief 
+ * @brief
  * 	Display the processing logic interface of the first interface of the process
  * @param command
  * 	Commands entered via the tui interface
- * @param win
+ * @param errwin
  * 	Error message display window
- * @param panel
+ * @param errpanel
  * 	Error message window control panel
- * @return 
- *  If successful, it returns ND_OK; 
+ * @param infowin
+ * 	info message display window
+ * @param infopanel
+ * 	info message window control panel
+ * @return
+ *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int display_first_tui_handle_logic (const char * command, WINDOW * win, PANEL * panel) {
+int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel)
+{
 
-	TC("Called { %s(%s, %p, %p)", __func__, command, win, panel);
+	TC("Called { %s(%s, %p, %p)", __func__, command, errwin, errpanel);
 
-	if (unlikely((!command) || (!win) || (!panel))) {
-		TE("param error; command: %p, win: %p, panel: %p", command, win, panel);
+	if (unlikely((!command) || (!errwin) || (!errpanel) || (!infowin) || (!infopanel)))
+	{
+		TE("param error; command: %s, errwin: %p, errpanel: %p, infowin: %p, infopanel: %p", command, errwin, errpanel, infowin, infopanel);
 		RInt(ND_ERR);
 	}
 
@@ -246,10 +260,29 @@ int display_first_tui_handle_logic (const char * command, WINDOW * win, PANEL * 
 	TI("message->length: %u", message->length);
 	TI("message->msg: %s", message->msg);
 
-	if (message->msgtype != MSGCOMM_SUC) {
+	if (message->msgtype == MSGCOMM_ERR) {
 		TI("%s", message->msg);
-		display_error_message_display((const char *)(message->msg), win, panel);
+		display_message_display("ERROR MSG:", (const char *)(message->msg), errwin, errpanel, 4);
 		RInt(ND_ERR);
+	}
+	else if (message->msgtype == MSGCOMM_HLP)
+	{
+		display_message_display("HELP MSG:", (const char *)(message->msg), infowin, infopanel, 5);
+		RInt(ND_ERR);
+	}
+	else if (message->msgtype == MSGCOMM_FAD)
+	{
+		display_message_display("ALLDEVICE MSG:", (const char *)(message->msg), infowin, infopanel, 5);
+		RInt(ND_ERR);
+	}
+	else if (message->msgtype == MSGCOMM_DLT)
+	{
+		display_message_display("DATA-LINK-TYPE MSG:", (const char *)(message->msg), infowin, infopanel, 5);
+		RInt(ND_ERR);
+	}
+	else if (message->msgtype == MSGCOMM_SUC)
+	{
+		
 	}
 
 	RInt(ND_OK);

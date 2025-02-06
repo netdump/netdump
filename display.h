@@ -163,7 +163,7 @@ int display_reply_from_capture (message_t * message);
         int errnxbegin = ((COLS - errncols) / 2);                                                                                       \
         G_display.wins[6] = newwin(errnlines, errncols, errnybegin, errnxbegin);                                                        \
                                                                                                                                         \
-        /* 5. help message show */                                                                                                      \
+        /* 5. info message show */                                                                                                      \
         int helpnlines = (LINES - 8);                                                                                                   \
         int helpncols = (COLS - 8);                                                                                                     \
         int helpnybegin = ((LINES - helpnlines) / 2);                                                                                   \
@@ -347,22 +347,24 @@ int display_reply_from_capture (message_t * message);
  */
 int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
-
 /**
- * @brief 
+ * @brief
  * 	Display the processing logic interface of the first interface of the process
  * @param command
  * 	Commands entered via the tui interface
- * @param win
+ * @param errwin
  * 	Error message display window
- * @param panel
+ * @param errpanel
  * 	Error message window control panel
- * @return 
- *  If successful, it returns ND_OK; 
+ * @param infowin
+ * 	info message display window
+ * @param infopanel
+ * 	info message window control panel
+ * @return
+ *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * panel);
-
+int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel);
 
 /**
  * @brief 
@@ -632,9 +634,11 @@ int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * p
  *  Handle TUI first page
  */
 #define display_handle_TUI_first_page()                                                                                                 \
-    do {                                                                                                                                \
+    do                                                                                                                                  \
+    {                                                                                                                                   \
         display_show_wins_0_1_2();                                                                                                      \
-        while (1) {                                                                                                                     \
+        while (1)                                                                                                                       \
+        {                                                                                                                               \
             wmove(G_display.wins[2], 1, 1);                                                                                             \
             wattrset(G_display.wins[2], A_NORMAL);                                                                                      \
             wclrtoeol(G_display.wins[2]);                                                                                               \
@@ -650,7 +654,8 @@ int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * p
             int code = OK;                                                                                                              \
             char buffer[1008] = {0};                                                                                                    \
             code = wgetnstr(G_display.wins[2], buffer, 1008);                                                                           \
-            if (code == ERR) {                                                                                                          \
+            if (code == ERR)                                                                                                            \
+            {                                                                                                                           \
                 /* display_exit_TUI_showcase(); */                                                                                      \
                 TE("Called wgetnstr error");                                                                                            \
                 display_G_flag = 1;                                                                                                     \
@@ -662,14 +667,18 @@ int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * p
             mvwprintw(stdscr, 0, 0, "%s\n", buffer);                                                                                    \
             refresh();                                                                                                                  \
             wrefresh(stdscr);                                                                                                           \
-            if (!strncmp("Quit", buffer, 4)) {                                                                                          \
+            if (!strncmp("Quit", buffer, 4))                                                                                            \
+            {                                                                                                                           \
                 /* display_exit_TUI_showcase(); */                                                                                      \
                 TI("Recv Quit String also exit");                                                                                       \
                 display_G_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
-            else {                                                                                                                      \
-                if (unlikely(((display_first_tui_handle_logic((const char *)(buffer), G_display.wins[6], G_display.panels[6])) == ND_ERR))) {\
+            else                                                                                                                        \
+            {                                                                                                                           \
+                if (unlikely(((display_first_tui_handle_logic((const char *)(buffer),                                                   \
+                    G_display.wins[6], G_display.panels[6], G_display.wins[7], G_display.panels[7])) == ND_ERR)))                       \
+                {                                                                                                                       \
                     TE("Command error; need to again");                                                                                 \
                     continue;                                                                                                           \
                 }                                                                                                                       \
@@ -677,8 +686,7 @@ int display_first_tui_handle_logic(const char * command, WINDOW * win, PANEL * p
             }                                                                                                                           \
         }                                                                                                                               \
         display_hide_wins_0_1_2();                                                                                                      \
-    } while (0);                                                                                                                        \
-
+    } while (0);
 
 /**
  * @brief 

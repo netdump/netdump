@@ -99,7 +99,7 @@ typedef struct {
  *  Command type message
  */
 enum {
-    MSGCOMM_SUC = 0XF0U,
+    MSGCOMM_SUC = 0xF0U,
     MSGCOMM_ACK = 0xF1U,
     MSGCOMM_ERR = 0XF2U,
     MSGCOMM_CMD = 0xF3U,
@@ -107,6 +107,14 @@ enum {
 	MSGCOMM_HLP = 0xF5U,
 	MSGCOMM_DLT = 0xF6U
 };
+
+/**
+ * @brief
+ * 	Message Type Boundaries
+ */
+#define MSGCOMM_LEFT_VAL		0xF0U
+#define MSGCOMM_RIGHT_VAL		0xF7U
+
 
 
 /**

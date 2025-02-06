@@ -38,7 +38,7 @@ static int Iflag;
  * @brief
  *  don't go promiscuous
  */
-static int pflag;
+static int pflag = 0;
 
 /**
  * @brief
@@ -46,9 +46,32 @@ static int pflag;
  */
 static int Qflag = -1;
 
-static pcap_t *pd = NULL;
+/**
+ * @brief
+ *  Whether to support monitoring mode
+ */
 static int supports_monitor_mode;
 
+/**
+ * @brief
+ *  default timeout = 1000 ms = 1 s
+ *  userful for function pcap_set_timeout 
+ */
+static int timeout = 1000;
+
+/**
+ * @brief
+ *  Cache size
+ *  userful for function 
+ */
+static int Bflag = (16 * 1024 * 1024);
+
+
+
+/**
+ * @brief
+ *  Process name
+ */
 char *program_name = "Netdump";
 
 /*
@@ -63,12 +86,36 @@ char *program_name = "Netdump";
  * dflag but, instead, *if* built with optimizer debugging code,
  * *export* a routine to set that flag.
  */
-extern int dflag;
 /**
  * @brief 
  *  print filter code
  */
 int dflag;
+
+/**
+ * @brief
+ *  Global pcap_t pointer
+ */
+static pcap_t *pd = NULL;
+
+/**
+ * @brief
+ *  for "pcap_compile()", "pcap_setfilter()"
+ */
+struct bpf_program fcode;
+
+/**
+ * @brief
+ *  Pointer to the global storage filter command
+ */
+static char * cmdbuf = NULL;
+
+/**
+ * @brief
+ *  Pointer to memory used for communication
+ */
+static char * space = NULL;
+
 
 /*
  * Long options.
@@ -146,7 +193,7 @@ struct netdissect_options Gndo = {
     .ndo_packet_number = 1,
     .ndo_suppress_default_print = 1,
     .ndo_tstamp_precision = 0,
-    .program_name = "capture",
+    .program_name = "netdump",
     .ndo_espsecret = NULL,
     .ndo_sa_list_head = NULL,
     .ndo_sa_default = NULL,
@@ -214,6 +261,15 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
+    atexit(capture_atexit_handle);
+
+    space = malloc((1024 * 1024));
+    if (!space)
+    {
+        TE("malloc(1024 * 1024) failed");
+        exit(1);
+    }
+
     if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
         TE("Prctl set name(%s) failed", pname);
         goto label1;
@@ -230,6 +286,8 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
     }
 
 label1:
+
+    capture_resource_release();
 
     TRACE_DESTRUCTION();
 
@@ -250,7 +308,6 @@ int capture_loop (void) {
 
     while (1) {
 
-        char space[1024] = {0};
         message_t * message = (message_t *)(space);
 
         if (unlikely((capture_cmd_from_display (message)) == ND_ERR)) {
@@ -274,25 +331,14 @@ int capture_loop (void) {
             exit(1);
         }
 
-        TI("     ");
+        TI("argc:%d", argc);
         int i = 0;
         for (i = 0; i < argc; i++) {
-            TI(" %s", argv[i]);
+            TI("argv[%d]: %s", i, argv[i]);
         }
 
         capture_parsing_cmd_and_exec_capture(argc, argv);
-    
-        #if 0
-        if (unlikely(((capture_reply_to_display(MSGCOMM_ERR, "Commad Analysis Failed")) == ND_ERR)))
-        {
-            TE("capture reply to display failed");
-            exit(1);
-        }
-        getchar();
-        #endif
-
-        nd_delay_microsecond(1, 10000);
-
+        
     }
 
     RInt(ND_OK);
@@ -412,36 +458,16 @@ static void capture_usage(void)
 
     TC("Called { %s(void)", __func__);
 
-    char space[2048] = {0};
     char * sp = space;
-    int length = 2048;
-    int ret = 0;
+    int len = 2048;
 
-    ret = snprintf(sp, length, "Usage: [-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
-    if (ret == -1) {
-        TE("snprintf function failed");
-        exit(S_ERR_HOST_PROGRAM);
-    }
-    sp = space + strlen(space);
-    length -= strlen(space);
+    CAPTURE_SHORTEN_CODE(space, sp, len, "Usage: [-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
 
-    ret = snprintf(sp, length, "\t\t[ -E algo:secret ] [ -i interface]" Q_FLAG_USAGE "\n");
-    if (ret == -1)
-    {
-        TE("snprintf function failed");
-        exit(S_ERR_HOST_PROGRAM);
-    }
-    sp = space + strlen(space);
-    length -= strlen(space);
+    CAPTURE_SHORTEN_CODE(space, sp, len, "\t\t[ -E algo:secret ] [ -i interface]" Q_FLAG_USAGE "\n");
 
-    ret = snprintf(sp, length,"\t\t[ -r file ] [ -y datalinktype ]\n");
-    if (ret == -1)
-    {
-        TE("snprintf function failed");
-        exit(S_ERR_HOST_PROGRAM);
-    }
-    sp = space + strlen(space);
-    length -= strlen(space);
+    CAPTURE_SHORTEN_CODE(space, sp, len, "\t\t[ -r file ] [ -y datalinktype ]\n");
+
+    TI("%s", space);
 
     if (unlikely(((capture_reply_to_display(MSGCOMM_HLP, space)) == ND_ERR)))
     {
@@ -581,24 +607,6 @@ char *capture_status_convert_string(const status_t *lp, const char *fmt,
 
 /**
  * @brief
- *  Shorten the code of the function capture_show_devices_to_display
- */
-#define CAPTURE_SHORTEN_CODE(msglen, msgp, fmt, ...) \
-    if (msglen <= 0)                                 \
-    {                                                \
-        TE("Msgspace is not enough");                \
-        break;                                       \
-    }                                                \
-    do                                               \
-    {                                                \
-        snprintf(msgp, msglen, fmt, ##__VA_ARGS__);  \
-        msglen -= strlen(msgp);                      \
-        msgp = msg + strlen(msgp);                   \
-    } while (0);
-
-
-/**
- * @brief
  *  Output a network device that captures packets
  */
 void capture_show_devices_to_display (void) {
@@ -616,24 +624,24 @@ void capture_show_devices_to_display (void) {
         }
     }
 
-    char msg[1000] = {0};
-    char * msgp = msg;
-    short msglen = 1000;
+    memset(space, 0, (1024 * 1024));
+    char *sp = space;
+    int len = (1024 * 1024);
 
     int i = 0;
     for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next)
     {
-        
-        CAPTURE_SHORTEN_CODE(msglen, msgp, "%d.%s", i + 1, dev->name);
+
+        CAPTURE_SHORTEN_CODE(space, sp, len, "%d.%s", i + 1, dev->name);
 
         if (dev->description != NULL) {
-            CAPTURE_SHORTEN_CODE(msglen, msgp, " (%s)", dev->description);
+            CAPTURE_SHORTEN_CODE(space, sp, len, " (%s)", dev->description);
         }
         if (dev->flags != 0)
         {
-            CAPTURE_SHORTEN_CODE(msglen, msgp, " [");
+            CAPTURE_SHORTEN_CODE(space, sp, len, " [");
 
-            CAPTURE_SHORTEN_CODE(msglen, msgp, "%s", capture_status_convert_string(status_flags, "none", dev->flags, ", "));
+            CAPTURE_SHORTEN_CODE(space, sp, len, "%s", capture_status_convert_string(status_flags, "none", dev->flags, ", "));
 
 #ifdef PCAP_IF_WIRELESS
             if (dev->flags & PCAP_IF_WIRELESS)
@@ -642,15 +650,15 @@ void capture_show_devices_to_display (void) {
                 {
 
                     case PCAP_IF_CONNECTION_STATUS_UNKNOWN:
-                        CAPTURE_SHORTEN_CODE(msglen, msgp, ", Association status unknown");
+                        CAPTURE_SHORTEN_CODE(space, sp, len, ", Association status unknown");
                         break;
 
                     case PCAP_IF_CONNECTION_STATUS_CONNECTED:
-                        CAPTURE_SHORTEN_CODE(msglen, msgp, ", Associated");
+                        CAPTURE_SHORTEN_CODE(space, sp, len, ", Associated");
                         break;
 
                     case PCAP_IF_CONNECTION_STATUS_DISCONNECTED:
-                        CAPTURE_SHORTEN_CODE(msglen, msgp, ", Not associated");
+                        CAPTURE_SHORTEN_CODE(space, sp, len, ", Not associated");
                         break;
 
                     case PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE:
@@ -663,15 +671,15 @@ void capture_show_devices_to_display (void) {
                 {
 
                     case PCAP_IF_CONNECTION_STATUS_UNKNOWN:
-                        CAPTURE_SHORTEN_CODE(msglen, msgp, ", Connection status unknown");
+                        CAPTURE_SHORTEN_CODE(space, sp, len, ", Connection status unknown");
                         break;
 
                     case PCAP_IF_CONNECTION_STATUS_CONNECTED:
-                        CAPTURE_SHORTEN_CODE(msglen, msgp, ", Connected");
+                        CAPTURE_SHORTEN_CODE(space, sp, len, ", Connected");
                         break;
 
                     case PCAP_IF_CONNECTION_STATUS_DISCONNECTED:
-                        CAPTURE_SHORTEN_CODE(msglen, msgp, ", Disconnected");
+                        CAPTURE_SHORTEN_CODE(space, sp, len, ", Disconnected");
                         break;
 
                     case PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE:
@@ -679,13 +687,16 @@ void capture_show_devices_to_display (void) {
                 }
             }
 #endif
-            CAPTURE_SHORTEN_CODE(msglen, msgp, "]");
+            CAPTURE_SHORTEN_CODE(space, sp, len, "]");
         }
-        CAPTURE_SHORTEN_CODE(msglen, msgp, "\n");
+        CAPTURE_SHORTEN_CODE(space, sp, len, "\n");
     }
+
     pcap_freealldevs(devlist);
 
-    if (unlikely(((capture_reply_to_display(MSGCOMM_FAD, msg)) == ND_ERR)))
+    TI("%s", space);
+
+    if (unlikely(((capture_reply_to_display(MSGCOMM_FAD, space)) == ND_ERR)))
     {
         TE("capture reply to display failed");
         exit(1);
@@ -696,28 +707,61 @@ void capture_show_devices_to_display (void) {
 
 /**
  * @brief
- *  capture process signal processing function
- * @param signo
- *  Captured signal
+ *  Resource Release
  */
-void capture_signal_handle(int signo)
+void capture_resource_release(void)
 {
 
-    TC("Called { %s(%d)", __func__, signo);
+    TC("Called {%s(void)", __func__);
 
-    #if 0
-    // 目前看是没有用
-    struct itimerval timer;
+    if (pd)
+    {
+        pcap_breakloop(pd);
+    }
 
-    timer.it_interval.tv_sec = 0;
-    timer.it_interval.tv_usec = 0;
-    timer.it_value.tv_sec = 0;
-    timer.it_value.tv_usec = 0;
-    setitimer(ITIMER_REAL, &timer, NULL);
-    #endif
-    pcap_breakloop(pd);
+    if (cmdbuf)
+    {
+        free(cmdbuf);
+    }
+
+    if (space)
+    {
+        free(space);
+    }
+
+    pcap_freecode(&fcode);
 
     RVoid();
+}
+
+/**
+ * @brief
+ *  capture process signal processing function
+ */
+void capture_sig_handle(void)
+{
+
+    TC("Called { %s(void)", __func__);
+
+    capture_resource_release();
+
+    RVoid();
+}
+
+
+/**
+ * @brief
+ *  Calling exit after the processing function
+ */
+void capture_atexit_handle(void) {
+
+    TC("Called { %s(void)", __func__);
+
+    capture_resource_release();
+
+    TRACE_DESTRUCTION();
+
+    return ;
 }
 
 
@@ -992,24 +1036,6 @@ int capture_check_is_support_dlt (int type) {
 
 
 /**
- * @brief 
- *  shorten code
- */
-#define CAPTURE_SHORTEN_CODE_2(msgp, length, fmt, ...)    \
-    do                                                    \
-    {                                                     \
-        ret = snprintf(msgp, length, fmt, ##__VA_ARGS__); \
-        if (ret < 0)                                      \
-        {                                                 \
-            TE("called snprintf failed");                 \
-            exit(S_ERR_HOST_PROGRAM);                     \
-        }                                                 \
-        msgp = space + strlen(space);                     \
-        length -= strlen(space);                          \
-    } while (0);
-
-
-/**
  * @brief
  *  Display data link type
  * @param pc
@@ -1038,38 +1064,39 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
         exit(S_ERR_HOST_PROGRAM);
     }
 
-    char space[2048] = {0};
-    char * msgp = space;
-    int length = 2048;
-    int ret = 0;
+    memset(space, 0, (1024 * 1024));
+    char * sp = space;
+    int len = (1024 * 1024);
 
-    CAPTURE_SHORTEN_CODE_2(msgp, length, "Data link types for ");
+    CAPTURE_SHORTEN_CODE(space, sp, len, "Data link types for ");
     if (supports_monitor_mode) {
-        CAPTURE_SHORTEN_CODE_2(msgp, length, "%s %s", device, Iflag ? "when in monitor mode" : "when not in monitor mode");
+        CAPTURE_SHORTEN_CODE(space, sp, len, "%s %s", device, Iflag ? "when in monitor mode" : "when not in monitor mode");
     }
     else {
-        CAPTURE_SHORTEN_CODE_2(msgp, length, "%s", device);
+        CAPTURE_SHORTEN_CODE(space, sp, len, "%s", device);
     }
-    CAPTURE_SHORTEN_CODE_2(msgp, length, " (use option -y to set):\n");
+    CAPTURE_SHORTEN_CODE(space, sp, len, " (use option -y to set):\n");
 
     for (i = 0; i < n_dlts; i++)
     {
         dlt_name = pcap_datalink_val_to_name(dlts[i]);
         if (dlt_name != NULL)
         {
-            CAPTURE_SHORTEN_CODE_2(msgp, length, "  %s (%s)", dlt_name, pcap_datalink_val_to_description(dlts[i]));
+            CAPTURE_SHORTEN_CODE(space, sp, len, "  %s (%s)", dlt_name, pcap_datalink_val_to_description(dlts[i]));
 
             if ((capture_check_is_support_dlt(dlts[i]) == ND_ERR))
             {
-                CAPTURE_SHORTEN_CODE_2(msgp, length, " (printing not supported)");
+                CAPTURE_SHORTEN_CODE(space, sp, len, " (printing not supported)");
             }
-            CAPTURE_SHORTEN_CODE_2(msgp, length, "\n");
+            CAPTURE_SHORTEN_CODE(space, sp, len, "\n");
         }
         else
         {
-            CAPTURE_SHORTEN_CODE_2(msgp, length, "  DLT %d (printing not supported)\n", dlts[i]);
+            CAPTURE_SHORTEN_CODE(space, sp, len, "  DLT %d (printing not supported)\n", dlts[i]);
         }
     }
+
+    TI("%s", space);
 
     if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
     {
@@ -1082,31 +1109,283 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
     RVoid();
 }
 
-static pcap_t *
-open_interface(const char *device, netdissect_options *ndo, char *ebuf)
+/**
+ * @brief
+ *  Convert timestamp to string
+ * @param precision
+ *  Timestamp Type
+ * @return
+ *  timestamp string
+ */
+static const char * capture_tstamp_precision_to_string(int precision)
+{
+
+    TC("Called %s(%d)", __func__, precision);
+
+    switch (precision)
+    {
+        case PCAP_TSTAMP_PRECISION_MICRO:
+            RVoidPtr((void *)"micro");
+
+        case PCAP_TSTAMP_PRECISION_NANO:
+            RVoidPtr((void *)"nano");
+
+        default:
+            RVoidPtr((void *)"unknown");
+    }
+
+    RVoidPtr(NULL);
+}
+
+/**
+ * @brief
+ *  Open a device interface
+ * @param device
+ *  Device name string
+ * @param ndo
+ *  netdissect_options structure type pointer
+ * @param ebuf
+ *  Space for error messages
+ * @return
+ *  Returns a pcap_t pointer on success, NULL on failure
+ */
+static pcap_t * capture_open_interface(const char *device, netdissect_options *ndo, char *ebuf)
 {
     TC("Called { %s(%p, %p, %p)", __func__, device, ndo, ebuf);
 
+    pcap_t *pc;
+    int status;
+    char *cp;
 
-    RVoidPtr(NULL);
+    pc = pcap_create(device, ebuf);
+    if (pc == NULL)
+    {
+        if (strstr(ebuf, "No such device") != NULL) {
+            TE("No such device");
+            return (NULL);
+        }
+        TE("%s", ebuf);
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    status = pcap_set_tstamp_precision(pc, ndo->ndo_tstamp_precision);
+    if (status != 0) {
+        TE("%s: Can't set %s second time stamp precision: %s",
+           device,
+           capture_tstamp_precision_to_string(ndo->ndo_tstamp_precision),
+           pcap_statustostr(status));
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    if (pcap_can_set_rfmon(pc) == 1) {
+        supports_monitor_mode = 1;
+    }
+    else {
+        supports_monitor_mode = 0;
+    }
+
+    if (ndo->ndo_snaplen != 0)
+    {
+        status = pcap_set_snaplen(pc, ndo->ndo_snaplen);
+        if (status != 0) {
+            TE("%s: Can't set snapshot length: %s", device, pcap_statustostr(status));
+            exit(S_ERR_HOST_PROGRAM);
+        }
+    }
+
+    status = pcap_set_promisc(pc, !pflag);
+    if (status != 0) {
+        TE("%s: Can't set promiscuous mode: %s", device, pcap_statustostr(status));
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    if (Iflag)
+    {
+        status = pcap_set_rfmon(pc, 1);
+        if (status != 0) {
+            TE("%s: Can't set monitor mode: %s", device, pcap_statustostr(status));
+            exit(S_ERR_HOST_PROGRAM);
+        }
+    }
+
+    status = pcap_set_timeout(pc, timeout);
+    if (status != 0) {
+        TE("%s: pcap_set_timeout failed: %s", device, pcap_statustostr(status));
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    if (Bflag != 0)
+    {
+        status = pcap_set_buffer_size(pc, Bflag);
+        if (status != 0) {
+            TE("%s: Can't set buffer size: %s", device, pcap_statustostr(status));
+            exit(S_ERR_HOST_PROGRAM);
+        }
+    }
+
+    status = pcap_activate(pc);
+    if (status < 0)
+    {
+        TE("pcap_active failed");
+        cp = pcap_geterr(pc);
+        if (status == PCAP_ERROR) {
+            TE("%s", cp);
+            exit(S_ERR_HOST_PROGRAM);
+        }
+        else if (status == PCAP_ERROR_NO_SUCH_DEVICE)
+        {
+            snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n(%s)", device, pcap_statustostr(status), cp);
+        }
+        else if (status == PCAP_ERROR_PERM_DENIED && *cp != '\0') {
+            TE("%s: %s\n(%s)", device, pcap_statustostr(status), cp);
+            exit(S_ERR_HOST_PROGRAM);
+        }
+        else {
+            TE("%s: %s", device, pcap_statustostr(status));
+            exit(S_ERR_HOST_PROGRAM);
+        }
+        pcap_close(pc);
+        return (NULL);
+    }
+    else if (status > 0)
+    {
+        cp = pcap_geterr(pc);
+        if (status == PCAP_WARNING) {
+            TW("%s", cp);
+        }
+        else if (status == PCAP_WARNING_PROMISC_NOTSUP && *cp != '\0') {
+            TW("%s: %s\n(%s)", device, pcap_statustostr(status), cp);
+        }
+        else {
+            TW("%s: %s", device, pcap_statustostr(status));
+        }
+    }
+
+    if (Qflag != -1)
+    {
+        status = pcap_setdirection(pc, Qflag);
+        if (status != 0) {
+            TE("%s: pcap_setdirection() failed: %s", device, pcap_geterr(pc));
+            exit(S_ERR_HOST_PROGRAM);
+        }
+    }
+
+    RVoidPtr((void *)pc);
 }
 
-static long
-parse_interface_number(const char *device)
+/**
+ * @brief
+ *  
+ * @param device
+ *  Device name string
+ * @return 
+ *  
+ */
+static long capture_parse_interface_number(const char *device)
 {
     TC("Called { %s(%p)", __func__, device);
 
+    const char *p;
+    long devnum;
+    char *end;
 
-    RULong(0UL);
+    /*
+     * Search for a colon, terminating any scheme at the beginning
+     * of the device.
+     */
+    p = strchr(device, ':');
+    if (p != NULL)
+    {
+        /*
+         * We found it.  Is it followed by "//"?
+         */
+        p++; /* skip the : */
+        if (strncmp(p, "//", 2) == 0)
+        {
+            /*
+             * Yes.  Search for the next /, at the end of the
+             * authority part of the URL.
+             */
+            p += 2; /* skip the // */
+            p = strchr(p, '/');
+            if (p != NULL)
+            {
+                /*
+                 * OK, past the / is the path.
+                 */
+                device = p + 1;
+            }
+        }
+    }
+    devnum = strtol(device, &end, 10);
+    if (device != end && *end == '\0')
+    {
+        /*
+         * It's all-numeric, but is it a valid number?
+         */
+        if (devnum <= 0)
+        {
+            /*
+             * No, it's not an ordinal.
+             */
+            TE("Invalid adapter index %s", device);
+            exit(S_ERR_HOST_PROGRAM);
+        }
+        RLong(devnum);
+    }
+    else
+    {
+        /*
+         * It's not all-numeric; return -1, so our caller
+         * knows that.
+         */
+        RLong(-1L);
+    }
+
+    RLong(0L);
 }
 
-static char *
-find_interface_by_number(const char *url, long devnum)
+/**
+ * @brief
+ *  Find the interface name based on the device number
+ * @param url
+ *  Device Name
+ * @param devnum
+ *  Device Number
+ * @return
+ *  
+ */
+static char * capture_find_interface_by_number(const char *url, long devnum)
 {
     TC("Called { %s(%p, %ld)", __func__, url, devnum);
 
+    pcap_if_t *dev, *devlist;
+    long i;
+    char ebuf[PCAP_ERRBUF_SIZE];
+    char *device;
+    int status;
 
-    RVoidPtr(NULL);
+    status = pcap_findalldevs(&devlist, ebuf);
+    if (status < 0) {
+        TE("%s", ebuf);
+        exit(S_ERR_HOST_PROGRAM);
+    }
+    /*
+     * Look for the devnum-th entry in the list of devices (1-based).
+     */
+    for (i = 0, dev = devlist; i < devnum - 1 && dev != NULL; i++, dev = dev->next);
+
+    if (dev == NULL)
+    {
+        pcap_freealldevs(devlist);
+        TE("Invalid adapter index %ld: only %ld interfaces found", devnum, i);
+        exit(S_ERR_HOST_PROGRAM);
+    }
+
+    device = strdup(dev->name);
+    pcap_freealldevs(devlist);
+    
+    RVoidPtr((void *)device);
 }
 
 static void
@@ -1114,6 +1393,8 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
 {
 
     TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
+
+    getchar();
 
     RVoid();
 }
@@ -1130,15 +1411,20 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
  *  if failed, it returns ND_ERR
  *  if cmd -D it returns CP_FAD
  */
-int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
+
+extern int opterr; // 启用错误输出
+extern int optopt; // 捕获选项字符
+opterr = 1;        // 开启错误输出
+
+int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
 {
 
-    TC("Called { %s(%d, %p)", __func__, argc, command);
+    TC("Called { %s(%d, %p)", __func__, cnums, command);
 
     long devnum;
     int op, i, dlt = -1, yflag_dlt = -1, status;
-    char *cmdbuf = NULL, *device = NULL, *RFileName = NULL,
-    *ret = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0}, space[1024] = {0};
+    char *device = NULL, *RFileName = NULL,
+    *ret = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0};
     
     const char *dlt_name = NULL, *yflag_dlt_name = NULL;
     unsigned char *pcap_userdata = NULL;
@@ -1146,17 +1432,37 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
     pcap_if_t *devlist;
     pcap_handler callback;
     bpf_u_int32 netmask = 0;
-    struct bpf_program fcode;
 
     netdissect_options *ndo = &Gndo;
 
     memset(ebuf, 0, sizeof(ebuf));
 
+    memset(space, 0, (1024 * 1024));
+    char * sp = space;
+    int len = (1024 * 1024);
+
     tzset();
 
-    char *const *argv = (char *const *)command;
+    int argc = cnums;
+    char * array[128] = {NULL};
+    array[0] = "capture";
+    argc += 1;
+    for (i = 1; i < argc; i++) {
+        array[i] = command[(i - 1)];
+    }
 
-    while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
+    char *const *argv = (char *const *)array;
+
+    TI("argc: %d", argc);
+    for (i = 0; i < argc; i++) {
+        TI("argv[%d]: %s", i, argv[i]);
+        TI("argc: %d; i: %d", argc, i);
+    }
+
+    TI("??????");
+
+    //while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
+    while ((op = getopt_long(argc, argv, "bdE:hi:ILpQr:y:", longopts, NULL)) != -1)
     {
 
         switch (op)
@@ -1225,7 +1531,7 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
                 yflag_dlt = pcap_datalink_name_to_val(yflag_dlt_name);
                 if (yflag_dlt < 0) {
                     memset(space, 0, 1024);
-                    snprintf(space, 1024, "-Q in/out/inout; %s is error", optarg);
+                    snprintf(space, 1024, "-Q  %s is error", optarg);
                     if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
                     {
                         TE("capture reply to display failed");
@@ -1245,6 +1551,11 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
 
     // end of while(getopt_long)
 
+    if (op == -1)
+    {
+        TI("getopt_long error, optopt = %d\n", optopt);
+    }
+
     if (Dflag) {
         capture_show_devices_to_display();
         RInt(CP_FAD);
@@ -1263,19 +1574,20 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
 
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
-        TI("reading from file %s", RFileName);
+        memset(space, 0, (1024 * 1024));
+        CAPTURE_SHORTEN_CODE(space, sp, len, "reading from file %s", RFileName);
         if (dlt_name == NULL)
         {
-            TI(", link-type %u", dlt);
+            CAPTURE_SHORTEN_CODE(space, sp, len, ", link-type %u", dlt);
         }
         else
         {
-            TI(", link-type %s (%s)", dlt_name, pcap_datalink_val_to_description(dlt));
+            CAPTURE_SHORTEN_CODE(space, sp, len, ", link-type %s (%s)", dlt_name, pcap_datalink_val_to_description(dlt));
         }
-        TI(", snapshot length %d\n", pcap_snapshot(pd));
+        CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d", pcap_snapshot(pd));
 
         if (dlt == DLT_LINUX_SLL2) {
-            TI("Warning: interface names might be incorrect\n");
+            CAPTURE_SHORTEN_CODE(space, sp, len, "Warning: interface names might be incorrect");
         }
 
     }
@@ -1301,38 +1613,32 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
             }
             if (devlist == NULL) {
                 TE("no interfaces available for capture");
-                exit(1);
+                exit(S_ERR_HOST_PROGRAM);
             }
             device = strdup(devlist->name);
             pcap_freealldevs(devlist);
 
         }
 
-        pd = open_interface(device, ndo, ebuf);
+        pd = capture_open_interface(device, ndo, ebuf);
         if (pd == NULL)
         {
-            devnum = parse_interface_number(device);
+            devnum = capture_parse_interface_number(device);
             if (devnum == -1)
             {
                 TE("%s", ebuf);
                 exit(S_ERR_HOST_PROGRAM);
             }
 
-            device = find_interface_by_number(device, devnum);
-            pd = open_interface(device, ndo, ebuf);
+            device = capture_find_interface_by_number(device, devnum);
+            pd = capture_open_interface(device, ndo, ebuf);
             if (pd == NULL) {
                 TE("%s", ebuf);
                 exit(S_ERR_HOST_PROGRAM);
             }
 
         }
-        #if 0
-        if (pcap_setbuff(pd, 16 * 1024 * 1024) == -1)
-        {
-            TE("%s", pcap_geterr(pd));
-            exit(S_ERR_HOST_PROGRAM);
-        }
-        #endif
+        
         if (Lflag) {
             capture_show_datalinktype(pd, device);
             return ND_OK;
@@ -1386,30 +1692,29 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
     callback = print_packet;
     pcap_userdata = (unsigned char *)ndo;
 
-    #if 0
-    // 先保留吧，目前还不知道，谁发送的这两个信号
-    if (RFileName == NULL)
-        (void)setsignal(SIGUSR1, requestinfo);
-    (void)setsignal(SIGUSR2, flushpcap);
-    #endif
-
     if (RFileName == NULL)
     {
-        (void)fprintf(stderr, "%s: ", program_name);
+        memset(space, 0, 8192);
+        CAPTURE_SHORTEN_CODE(space, sp, len, "%s: ", program_name);
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
-        (void)fprintf(stderr, "listening on %s", device);
+        CAPTURE_SHORTEN_CODE(space, sp, len, "listening on %s", device);
         if (dlt_name == NULL)
         {
-            (void)fprintf(stderr, ", link-type %u", dlt);
+            CAPTURE_SHORTEN_CODE(space, sp, len, ", link-type %u", dlt);
         }
         else
         {
-            (void)fprintf(stderr, ", link-type %s (%s)", dlt_name,
-                            pcap_datalink_val_to_description(dlt));
+            CAPTURE_SHORTEN_CODE(space, sp, len, ", link-type %s (%s)", dlt_name,
+                                 pcap_datalink_val_to_description(dlt));
         }
-        (void)fprintf(stderr, ", snapshot length %d bytes\n", ndo->ndo_snaplen);
-        (void)fflush(stderr);
+        CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d bytes\n", ndo->ndo_snaplen);
+    }
+
+    if (unlikely(((capture_reply_to_display(MSGCOMM_SUC, space)) == ND_ERR)))
+    {
+        TE("capture reply to display failed");
+        exit(1);
     }
 
     do
@@ -1424,9 +1729,11 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256])
             TE("%s: pcap_loop: %s\n", program_name, pcap_geterr(pd));
         }
         pcap_close(pd);
+
     } while (ret != NULL);
     
     free(cmdbuf);
+    cmdbuf = NULL;
     pcap_freecode(&fcode);
     exit(status);
 

@@ -117,8 +117,10 @@ extern void display_exit_resource_destruction();
 /**
  * @brief 
  * 	Generate stack trace to file
+ * @param signum
+ * 	signal numbers
  */
-static void sigact_Generate_stack_trace (void) {
+static void sigact_Generate_stack_trace (int signum) {
 
 	TC("Called { %s ()", __func__);
 
@@ -134,7 +136,7 @@ static void sigact_Generate_stack_trace (void) {
 	int fd = open(SIGACT_STACK_INFO, O_RDWR |O_CREAT, 0666);
 
 	char space[64] = {0};
-	snprintf(space, 64, "lCOREID: %d; PID: %d", lcore_id(), getpid());
+	snprintf(space, 64, "lCOREID: %d; PID: %d; SIGNUM: %d\n", lcore_id(), getpid(), signum);
 	write(fd, space, strlen(space));
 
 	backtrace_symbols_fd(array, size, fd);
@@ -155,7 +157,7 @@ void sigact_handle_crash (int signum) {
 
 	TC("Called { %s(%d)", __func__, signum);
 
-	sigact_Generate_stack_trace();
+	sigact_Generate_stack_trace(signum);
 
 	unsigned int lCOREID = lcore_id();
 

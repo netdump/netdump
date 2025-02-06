@@ -394,6 +394,7 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
     message->dir = dir;
     message->msgtype = msgtype;
     message->length = length;
+    memset(message->msg, 0, (message->length + 1));
     if (msg && length > 0)
         memcpy(message->msg, msg, length);
     
@@ -474,6 +475,7 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
     message->dir = tmp->dir;
     message->msgtype = tmp->msgtype;
     message->length = tmp->length;
+    memset(message->msg, 0, (tmp->length + 1));
     if (tmp->length) 
         memcpy(message->msg, tmp->msg, tmp->length);
 
@@ -580,10 +582,10 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
 
     TC("Called { %s(%u, %u, %s, %d)", __func__, dir, msgtype, msg, length);
 
-    if (unlikely(( 
-        ((dir != MSGCOMM_DIR_0TO1) && (dir != MSGCOMM_DIR_1TO0)) || 
-        (msgtype < 0xF0 || msgtype > 0xF3) || (length < 0)
-    ))) {
+    if (unlikely((
+            ((dir != MSGCOMM_DIR_0TO1) && (dir != MSGCOMM_DIR_1TO0)) ||
+            (msgtype < MSGCOMM_LEFT_VAL || msgtype > MSGCOMM_RIGHT_VAL) || (length < 0))))
+    {
         TE("Param is error");
         RInt(ND_ERR);
     }
@@ -650,9 +652,9 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
     }
 
     if (unlikely(
-        ((message->dir != MSGCOMM_DIR_0TO1 && message->dir != MSGCOMM_DIR_1TO0) ||
-        (message->msgtype > 0xF3u || message->msgtype < 0xF0u)))
-    ) {
+            ((message->dir != MSGCOMM_DIR_0TO1 && message->dir != MSGCOMM_DIR_1TO0) ||
+             (message->msgtype > MSGCOMM_RIGHT_VAL || message->msgtype < MSGCOMM_LEFT_VAL))))
+    {
         TE("message is error");
         RInt(ND_ERR);
     }

@@ -284,6 +284,17 @@
 #define SHORTOPTS "b" D_FLAG "E:hi:" I_FLAG "Lp" Q_FLAG "r:y:"
 
 
+/**
+ * @brief
+ *  Shorten the code of the function capture_show_devices_to_display
+ */
+#define CAPTURE_SHORTEN_CODE(space, sp, len, fmt, ...) \
+  do                                                   \
+  {                                                    \
+    int length = len - strlen(sp);                     \
+    snprintf(sp, length, fmt, ##__VA_ARGS__);          \
+    sp = space + strlen(sp);                           \
+  } while (0);
 
 
 typedef enum {
@@ -530,6 +541,18 @@ int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]);
  * @param signo
  *  Captured signal
  */
-void capture_signal_handle(int signo);
+void capture_sig_handle(void);
+
+/**
+ * @brief
+ *  Calling exit after the processing function
+ */
+void capture_atexit_handle(void);
+
+/**
+ * @brief
+ *  Resource Release
+ */
+void capture_resource_release(void);
 
 #endif  // __CAPTURE_H__
