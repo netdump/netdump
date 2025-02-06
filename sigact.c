@@ -133,7 +133,11 @@ static void sigact_Generate_stack_trace (void) {
 
 	int fd = open(SIGACT_STACK_INFO, O_RDWR |O_CREAT, 0666);
 
-    backtrace_symbols_fd(array, size, fd);
+	char space[64] = {0};
+	snprintf(space, 64, "lCOREID: %d; PID: %d", lcore_id(), getpid());
+	write(fd, space, strlen(space));
+
+	backtrace_symbols_fd(array, size, fd);
 
 	close(fd);
 
