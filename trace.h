@@ -210,7 +210,19 @@ void trace_resource_destruction(void);
     do {\
         TC("return } %lu", code);\
         return code;\
-    } while (0);\
+    } while (0);
+
+
+/**
+ * @brief
+ *  Trace 'long' return-values
+ */
+#define RLong(code)              \
+    do                           \
+    {                            \
+        TC("return } %ld", code); \
+        return code;             \
+    } while (0);
 
 
 /**
@@ -279,6 +291,7 @@ void trace_resource_destruction(void);
 #define RChar(code)		        return ((char) code)
 #define RInt(code)		        return code
 #define RUInt(code)             return code
+#define RLong(code)             return code
 #define RULong(code)            return code
 #define RCharPtr(code)			return code
 #define RConstCharPtr(code)		return code
@@ -372,6 +385,7 @@ void trace_resource_destruction(void);
 #define RChar(code)		        return ((char) code)
 #define RInt(code)		        return code
 #define RUInt(code)             return code
+#define RLong(code)             return code
 #define RULong(code)            return code
 #define RCharPtr(code)			return code
 #define RConstCharPtr(code)		return code
