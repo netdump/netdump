@@ -163,7 +163,7 @@ void sigact_handle_crash (int signum) {
 	}
 	else if (GCOREID_CP == lCOREID)
 	{
-		capture_signal_handle(signum);
+		capture_sig_handle();
 	}
 
 	TRACE_DESTRUCTION();
@@ -194,7 +194,7 @@ void sigact_handle_quit (int signum) {
 	}
 	else if (GCOREID_CP == lCOREID)
 	{
-		capture_signal_handle(signum);
+		capture_sig_handle();
 	}
 
 	TRACE_DESTRUCTION();
