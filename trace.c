@@ -122,6 +122,7 @@ int32_t trace_startup (void) {
     error_one_per_line = 1;
 
     T (infomsg, "NETDUMP VERSION %04x-%04x", MAJOR_V, SUB_V);
+    TI("lCOREID: %d; PID: %d", lcore_id(), getpid());
 
     return ND_OK;
 }
