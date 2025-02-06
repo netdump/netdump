@@ -140,7 +140,7 @@ enum {
  * 	Number of memory block elements
  */
 #define MSGCOMM_BLOCK_NUMBERS					64
-#define MSGCOMM_MEMORY_SPACE					1024
+#define MSGCOMM_MEMORY_SPACE					(128 * 1024)
 
 
 /**
