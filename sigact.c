@@ -131,7 +131,7 @@ static void sigact_Generate_stack_trace (int signum) {
 		unlink(SIGACT_STACK_INFO);
 	}
 
-    size = backtrace(array, 10);
+    size = backtrace(array, 16);
 
 	int fd = open(SIGACT_STACK_INFO, O_RDWR |O_CREAT, 0666);
 
