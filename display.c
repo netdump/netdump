@@ -191,12 +191,12 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	show_panel(panel); 
 	update_panels();
 	doupdate();
-	wmove(win, 1, 1);
+	wmove(win, 1, 3);
 	wattrset(win, A_NORMAL);
 	wclrtoeol(win);
 	wattrset(win, A_BOLD);
 	wattron(win, COLOR_PAIR((color)));
-	snprintf(space, 1024 * 1024, "\n%s\n\t%s\n", prefix, msg);
+	snprintf(space, 1024 * 1024, "%s\n\t%s\n", prefix, msg);
 	waddstr(win, space);
 	wattroff(win, COLOR_PAIR((color)));
 	wattron(win, COLOR_PAIR((color)));
@@ -239,6 +239,20 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 	if (unlikely((!command) || (!errwin) || (!errpanel) || (!infowin) || (!infopanel)))
 	{
 		TE("param error; command: %s, errwin: %p, errpanel: %p, infowin: %p, infopanel: %p", command, errwin, errpanel, infowin, infopanel);
+		RInt(ND_ERR);
+	}
+
+	int count = 0, i = 0, len = strlen(command);
+	for (i = 0; i < len; i++)
+	{
+		if (command[i] == '-')
+		{
+			count++;
+		}
+	}
+	if (!count)
+	{
+		display_message_display("ERROR MSG:", "Missing '-' character", errwin, errpanel, 4);
 		RInt(ND_ERR);
 	}
 
