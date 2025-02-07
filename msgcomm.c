@@ -389,7 +389,7 @@ int msgcomm_sendmsg(unsigned int dir, unsigned int msgtype, const char * msg, in
     }
 
     TI("[ {_ring} after dequeue] ring count: %u", ring_count(_ring));
-
+    memset(obj, 0, MSGCOMM_MEMORY_SPACE);
     message_t * message = (message_t *)(obj);
     message->dir = dir;
     message->msgtype = msgtype;
@@ -475,7 +475,7 @@ int msgcomm_recvmsg(unsigned int dir, message_t * message) {
     message->dir = tmp->dir;
     message->msgtype = tmp->msgtype;
     message->length = tmp->length;
-    memset(message->msg, 0, (tmp->length + 1));
+    //memset(message->msg, 0, (tmp->length + 1));
     if (tmp->length) 
         memcpy(message->msg, tmp->msg, tmp->length);
 
