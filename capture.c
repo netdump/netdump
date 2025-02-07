@@ -116,6 +116,12 @@ static char * cmdbuf = NULL;
  */
 static char * space = NULL;
 
+/**
+ * @brief
+ *  Instruction-specific memory
+ */
+static char * cmdmem = NULL;
+
 
 /*
  * Long options.
@@ -262,27 +268,39 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
-    space = malloc((1024 * 1024));
+    space = malloc((1 << 20));
     if (!space)
     {
-        TE("malloc(1024 * 1024) failed");
+        TE("malloc(1 << 20) failed");
         goto label1;
+    }
+
+    cmdmem = malloc((1 << 16));
+    if (!cmdmem) {
+        TE("malloc(1 << 16) failed");
+        goto label2;
     }
 
     if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
         TE("Prctl set name(%s) failed", pname);
-        goto label1;
+        goto label3;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
         TE("Register signal handle failed");
-        goto label1;
+        goto label3;
     }
 
     if (unlikely((capture_loop()) == ND_ERR)) {
         TE("Analysis loop startup failed");
-        goto label1;
+        goto label3;
     }
+
+label3:
+    free(cmdmem);
+
+label2:
+    free(space);
 
 label1:
 
@@ -307,8 +325,8 @@ int capture_loop (void) {
 
     while (1) {
 
-        memset(space, 0, (1024 * 1024));
-        message_t * message = (message_t *)(space);
+        memset(cmdmem, 0, (1 << 16));
+        message_t *message = (message_t *)(cmdmem);
 
         if (unlikely((capture_cmd_from_display (message)) == ND_ERR)) {
             T(erromsg, "capture cmd from display failed");
@@ -321,7 +339,7 @@ int capture_loop (void) {
         TI("message->length: %u", message->length);
         TI("message->msg: %s", message->msg);
 
-        capture_parsing_cmd_and_exec_capture((char*)(space + sizeof(message_t)));
+        capture_parsing_cmd_and_exec_capture((char *)(cmdmem + sizeof(message_t)));
     }
 
     RInt(ND_OK);
@@ -709,6 +727,10 @@ void capture_resource_release(void)
         free(space);
     }
 
+    if (cmdmem) {
+        free(cmdmem);
+    }
+
     pcap_freecode(&fcode);
 
     RVoid();
@@ -764,8 +786,10 @@ static char * capture_copy_argv(char **argv)
     char *src, *dst;
 
     p = argv;
-    if (*p == NULL)
-        return 0;
+    if (*p == NULL) {
+        TE("param is null");
+        RVoidPtr(NULL);
+    }
 
     while (*p)
         len += strlen(*p++) + 1;
@@ -1130,6 +1154,7 @@ static const char * capture_tstamp_precision_to_string(int precision)
         snprintf(ebuf, PCAP_ERRBUF_SIZE, format, ##__VA_ARGS__); \
         TE("%s", ebuf);                                          \
         pcap_close(pc);                                          \
+        pd = NULL;                                              \
         RVoidPtr(NULL);                                          \
     } while (0);
 
@@ -1229,7 +1254,7 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
         }
         else if (status == PCAP_ERROR_NO_SUCH_DEVICE)
         {
-            snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n(%s)", device, 
+            snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n\t(%s)", device, 
                     pcap_statustostr(status), cp);
         }
         else if (status == PCAP_ERROR_PERM_DENIED && *cp != '\0') {
@@ -1240,6 +1265,7 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
             __capture_oi_error_handle__(ebuf, pc,"%s: %s", device, pcap_statustostr(status));
         }
         pcap_close(pc);
+        pd = NULL;
         return (NULL);
     }
     else if (status > 0)
@@ -1455,16 +1481,17 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     memset(ebuf, 0, sizeof(ebuf));
 
+    
     char * sp = space;
     int len = (1 << 20);
-
+    
     Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
 
     tzset();
 
     TI("command: %s", command);
     int tmp = strlen(command), argc = 0;
-    char * argv[16] = {NULL}, * tmpp = NULL;
+    char * argv[64] = {NULL}, * tmpp = NULL;
     for (i = 0; i < tmp; i++) {
         if (!tmpp) {
             tmpp = command + i;
@@ -1538,8 +1565,9 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                     Qflag = PCAP_D_INOUT;
                 }
                 else {
-                    __capture_send_errmsg__(MSGCOMM_ERR, "-Q in/out/inout; %s is error", optarg);
-                    TE("-Q %s is error", optarg);
+                    TI("%s", optarg);
+                    __capture_send_errmsg__(MSGCOMM_ERR, "-Q in/out/inout;", optarg);
+                    TE("-Q %s [ERROR]", optarg);
                     RInt(ND_ERR);
                 }
                 break;
@@ -1644,6 +1672,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         if (Lflag) {
             capture_show_datalinktype(pd, device);
             pcap_close(pd);
+            pd = NULL;
             return ND_OK;
         }
 
@@ -1653,6 +1682,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 TE("%s", pcap_geterr(pd));
                 __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
                 pcap_close(pd);
+                pd = NULL;
                 RInt(ND_ERR);
             }
 
@@ -1681,16 +1711,12 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     }
 
     cmdbuf = capture_copy_argv((char**)(&argv[optind]));
-    if (!cmdbuf) {
-        __capture_send_errmsg__(MSGCOMM_ERR, "Memory allocation failed");
-        pcap_close(pd);
-        RInt(ND_ERR);
-    }
-
+    
     if (pcap_compile(pd, &fcode, cmdbuf, 0, netmask) < 0) {
         TE("%s", pcap_geterr(pd));
         __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
         pcap_close(pd);
+        pd = NULL;
         RInt(ND_ERR);
     }
 
@@ -1698,6 +1724,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         TE("%s", pcap_geterr(pd));
         __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
         pcap_close(pd);
+        pd = NULL;
         RInt(ND_ERR);
     }
 
@@ -1743,6 +1770,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             TE("%s: pcap_loop: %s\n", program_name, pcap_geterr(pd));
         }
         pcap_close(pd);
+        pd = NULL;
 
     } while (ret != NULL);
     
