@@ -256,26 +256,13 @@
  * version of libpcap we're using.
  */
 
-#ifdef HAVE_PCAP_FINDALLDEVS
+
 #define D_FLAG	"D"
-#else
-#define D_FLAG
-#endif
 
-#ifdef HAVE_PCAP_CREATE
 #define I_FLAG		"I"
-#else /* HAVE_PCAP_CREATE */
-#define I_FLAG
-#endif /* HAVE_PCAP_CREATE */
 
-
-#ifdef HAVE_PCAP_SETDIRECTION
 #define Q_FLAG "Q:"
 #define Q_FLAG_USAGE " [ -Q in|out|inout ]"
-#else
-#define Q_FLAG
-#define Q_FLAG_USAGE
-#endif
 
 /**
  * @brief
@@ -291,11 +278,10 @@
 #define CAPTURE_SHORTEN_CODE(space, sp, len, fmt, ...) \
   do                                                   \
   {                                                    \
-    int length = len - strlen(sp);                     \
+    int length = len - strlen(space);                  \
     snprintf(sp, length, fmt, ##__VA_ARGS__);          \
-    sp = space + strlen(sp);                           \
+    sp = space + strlen(space);                        \
   } while (0);
-
 
 typedef enum {
 	S_SUCCESS           = 0, /* not a libnetdissect status */
@@ -519,13 +505,11 @@ int capture_reply_to_display (unsigned int msgtype, const char * reply);
  * @return 
  *  Returns the number of elements in the converted string array
  */
-int display_convert_cmd_to_string_array(const char * command, char argv[128][256]);
+int display_convert_cmd_to_string_array(const char * command, char * argv);
 
 /**
  * @brief
  *  Real command parsing
- * @param argc
- *  Number of commands
  * @param command
  *  Commands to be parsed
  * @return
@@ -533,7 +517,7 @@ int display_convert_cmd_to_string_array(const char * command, char argv[128][256
  *  if failed, it returns ND_ERR
  *  if cmd -D it returns CP_FAD
  */
-int capture_parsing_cmd_and_exec_capture(int argc, char command[128][256]);
+int capture_parsing_cmd_and_exec_capture(char * command);
 
 /**
  * @brief

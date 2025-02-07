@@ -236,6 +236,7 @@ static const status_t status_flags[] = {
     {0, NULL}};
 #endif
 
+
 /**
  * @brief 
  *  The main function of the packet capture function
@@ -261,7 +262,7 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
-    atexit(capture_atexit_handle);
+    //atexit(capture_atexit_handle);
 
     space = malloc((1024 * 1024));
     if (!space)
@@ -308,6 +309,7 @@ int capture_loop (void) {
 
     while (1) {
 
+        memset(space, 0, (1024 * 1024));
         message_t * message = (message_t *)(space);
 
         if (unlikely((capture_cmd_from_display (message)) == ND_ERR)) {
@@ -321,24 +323,7 @@ int capture_loop (void) {
         TI("message->length: %u", message->length);
         TI("message->msg: %s", message->msg);
 
-
-        int argc = 0;
-        char argv[128][256] = {0};
-
-        argc = display_convert_cmd_to_string_array((const char *)(message->msg), argv);
-        if (unlikely((argc < 0))) {
-            TE(" Convert Command to String Array failed");
-            exit(1);
-        }
-
-        TI("argc:%d", argc);
-        int i = 0;
-        for (i = 0; i < argc; i++) {
-            TI("argv[%d]: %s", i, argv[i]);
-        }
-
-        capture_parsing_cmd_and_exec_capture(argc, argv);
-        
+        capture_parsing_cmd_and_exec_capture((char*)(space + sizeof(message_t)));
     }
 
     RInt(ND_OK);
@@ -416,14 +401,16 @@ int capture_reply_to_display (unsigned int msgtype, const char * reply) {
  * @return 
  *  Returns the number of elements in the converted string array
  */
-int display_convert_cmd_to_string_array(const char * command, char argv[128][256]) {
+int display_convert_cmd_to_string_array(const char * command, char * argv) {
 
-    TC("Called { %s(%s)", __func__, command);
+    TC("Called { %s(%s, %p)", __func__, command, argv);
 
     if (unlikely((!command) || (!argv))) {
         TE("param error; command: %p, argv: %p", command, argv);
         return -1; 
     }
+
+    char(*pointer)[128][256] = (char(*)[128][256])argv;
 
     int argc = 0, index = 0, in_arg = 0;
 
@@ -433,16 +420,16 @@ int display_convert_cmd_to_string_array(const char * command, char argv[128][256
                 in_arg = 1;
                 index = 0;
             }
-            argv[argc][index++] = command[i];
+            (*pointer)[argc][index++] = command[i];
         } else if (in_arg) {
-            argv[argc][index] = '\0';
+            (*pointer)[argc][index] = '\0';
             argc++;
             in_arg = 0;
         }
     }
 
     if (in_arg) {
-        argv[argc][index] = '\0';
+        (*pointer)[argc][index] = '\0';
         argc++;
     }
 
@@ -459,15 +446,13 @@ static void capture_usage(void)
     TC("Called { %s(void)", __func__);
 
     char * sp = space;
-    int len = 2048;
+    int len = 4096;
 
-    CAPTURE_SHORTEN_CODE(space, sp, len, "Usage: [-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
+    CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tUsage: \n\t[-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
 
-    CAPTURE_SHORTEN_CODE(space, sp, len, "\t\t[ -E algo:secret ] [ -i interface]" Q_FLAG_USAGE "\n");
+    CAPTURE_SHORTEN_CODE(space, sp, len, "\t[ -E algo:secret ] [ -i interface]" Q_FLAG_USAGE "\n");
 
-    CAPTURE_SHORTEN_CODE(space, sp, len, "\t\t[ -r file ] [ -y datalinktype ]\n");
-
-    TI("%s", space);
+    CAPTURE_SHORTEN_CODE(space, sp, len, "\t[ -r file ] [ -y datalinktype ]\n");
 
     if (unlikely(((capture_reply_to_display(MSGCOMM_HLP, space)) == ND_ERR)))
     {
@@ -632,7 +617,7 @@ void capture_show_devices_to_display (void) {
     for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next)
     {
 
-        CAPTURE_SHORTEN_CODE(space, sp, len, "%d.%s", i + 1, dev->name);
+        CAPTURE_SHORTEN_CODE(space, sp, len, "\n\t%d.%s", i + 1, dev->name);
 
         if (dev->description != NULL) {
             CAPTURE_SHORTEN_CODE(space, sp, len, " (%s)", dev->description);
@@ -689,7 +674,7 @@ void capture_show_devices_to_display (void) {
 #endif
             CAPTURE_SHORTEN_CODE(space, sp, len, "]");
         }
-        CAPTURE_SHORTEN_CODE(space, sp, len, "\n");
+        //CAPTURE_SHORTEN_CODE(space, sp, len, "\n");
     }
 
     pcap_freealldevs(devlist);
@@ -1068,7 +1053,7 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
     char * sp = space;
     int len = (1024 * 1024);
 
-    CAPTURE_SHORTEN_CODE(space, sp, len, "Data link types for ");
+    CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tData link types for ");
     if (supports_monitor_mode) {
         CAPTURE_SHORTEN_CODE(space, sp, len, "%s %s", device, Iflag ? "when in monitor mode" : "when not in monitor mode");
     }
@@ -1082,7 +1067,7 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
         dlt_name = pcap_datalink_val_to_name(dlts[i]);
         if (dlt_name != NULL)
         {
-            CAPTURE_SHORTEN_CODE(space, sp, len, "  %s (%s)", dlt_name, pcap_datalink_val_to_description(dlts[i]));
+            CAPTURE_SHORTEN_CODE(space, sp, len, "\t%s (%s)", dlt_name, pcap_datalink_val_to_description(dlts[i]));
 
             if ((capture_check_is_support_dlt(dlts[i]) == ND_ERR))
             {
@@ -1411,21 +1396,14 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
  *  if failed, it returns ND_ERR
  *  if cmd -D it returns CP_FAD
  */
-
-extern int opterr; // 启用错误输出
-extern int optopt; // 捕获选项字符
-opterr = 1;        // 开启错误输出
-
-int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
+int capture_parsing_cmd_and_exec_capture(char * command)
 {
 
-    TC("Called { %s(%d, %p)", __func__, cnums, command);
+    TC("Called { %s(%p)", __func__, command);
 
-    long devnum;
-    int op, i, dlt = -1, yflag_dlt = -1, status;
-    char *device = NULL, *RFileName = NULL,
-    *ret = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0};
-    
+    long devnum = 0;
+    int op = 0, i, dlt = -1, yflag_dlt = -1, status = 0;
+    char *device = NULL, *RFileName = NULL, *ret = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0};
     const char *dlt_name = NULL, *yflag_dlt_name = NULL;
     unsigned char *pcap_userdata = NULL;
     
@@ -1437,32 +1415,42 @@ int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
 
     memset(ebuf, 0, sizeof(ebuf));
 
-    memset(space, 0, (1024 * 1024));
     char * sp = space;
     int len = (1024 * 1024);
 
+    Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
+
     tzset();
 
-    int argc = cnums;
-    char * array[128] = {NULL};
-    array[0] = "capture";
-    argc += 1;
-    for (i = 1; i < argc; i++) {
-        array[i] = command[(i - 1)];
+    TI("command: %s", command);
+    int tmp = strlen(command), argc = 0;
+    char * argv[16] = {NULL}, * tmpp = NULL;
+    for (i = 0; i < tmp; i++) {
+        if (!tmpp) {
+            tmpp = command + i;
+        }
+        if (command[i] == '\0') {
+            break;
+        }
+        if (command[i] == ' ') {
+            argv[argc++] = tmpp;
+            command[i] = '\0';
+            tmpp = NULL;
+        }
+        if ((i == (tmp-1)) && tmpp) {
+            argv[argc++] = tmpp;
+        }
     }
-
-    char *const *argv = (char *const *)array;
 
     TI("argc: %d", argc);
     for (i = 0; i < argc; i++) {
         TI("argv[%d]: %s", i, argv[i]);
         TI("argc: %d; i: %d", argc, i);
     }
+    
 
-    TI("??????");
-
-    //while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
-    while ((op = getopt_long(argc, argv, "bdE:hi:ILpQr:y:", longopts, NULL)) != -1)
+    optind = 1;
+    while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
     {
 
         switch (op)
@@ -1510,7 +1498,7 @@ int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
                     Qflag = PCAP_D_INOUT;
                 }
                 else {
-                    memset(space, 0, 1024);
+                    memset(space, 0, (1024 * 1024));
                     snprintf(space, 1024, "-Q in/out/inout; %s is error", optarg);
                     if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
                     {
@@ -1530,7 +1518,7 @@ int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
                 yflag_dlt_name = optarg;
                 yflag_dlt = pcap_datalink_name_to_val(yflag_dlt_name);
                 if (yflag_dlt < 0) {
-                    memset(space, 0, 1024);
+                    memset(space, 0, (1024 * 1024));
                     snprintf(space, 1024, "-Q  %s is error", optarg);
                     if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
                     {
@@ -1550,11 +1538,6 @@ int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
     }
 
     // end of while(getopt_long)
-
-    if (op == -1)
-    {
-        TI("getopt_long error, optopt = %d\n", optopt);
-    }
 
     if (Dflag) {
         capture_show_devices_to_display();
@@ -1590,18 +1573,6 @@ int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
             CAPTURE_SHORTEN_CODE(space, sp, len, "Warning: interface names might be incorrect");
         }
 
-    }
-    else if (!device)
-    {
-        int dump_dlt = DLT_EN10MB;
-        
-        if (yflag_dlt != -1) {
-            dump_dlt = yflag_dlt;
-        }
-        else {
-            TW("Warning: assuming Ethernet\n");
-        }
-        pd = pcap_open_dead(dump_dlt, ndo->ndo_snaplen);
     }
     else
     {
@@ -1694,7 +1665,7 @@ int capture_parsing_cmd_and_exec_capture(int cnums, char command[128][256])
 
     if (RFileName == NULL)
     {
-        memset(space, 0, 8192);
+        memset(space, 0, (1024 * 1024));
         CAPTURE_SHORTEN_CODE(space, sp, len, "%s: ", program_name);
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
