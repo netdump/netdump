@@ -191,7 +191,7 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	show_panel(panel); 
 	update_panels();
 	doupdate();
-	wmove(win, 1, 3);
+	wmove(win, 2, 3);
 	wattrset(win, A_NORMAL);
 	wclrtoeol(win);
 	wattrset(win, A_BOLD);
@@ -205,6 +205,7 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	refresh();
 	wrefresh(win);
 	getchar();
+	wclear(win);
 	hide_panel(panel);
 	update_panels();
 	doupdate();
