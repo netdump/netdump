@@ -157,8 +157,8 @@ int display_reply_from_capture (message_t * message);
         G_display.wins[2] = newwin(cmdnlines, cmdncols, cmdnybegin, cmdnxbegin);                                                        \
                                                                                                                                         \
         /* 4. error message show */                                                                                                     \
-        int errnlines = 7;                                                                                                              \
-        int errncols = (COLS / 3);                                                                                                      \
+        int errnlines = 16;                                                                                                             \
+        int errncols = (COLS - 12);                                                                                                     \
         int errnybegin = ((LINES - errnlines) / 2);                                                                                     \
         int errnxbegin = ((COLS - errncols) / 2);                                                                                       \
         G_display.wins[6] = newwin(errnlines, errncols, errnybegin, errnxbegin);                                                        \

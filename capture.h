@@ -539,4 +539,14 @@ void capture_atexit_handle(void);
  */
 void capture_resource_release(void);
 
+/**
+ * @brief
+ *  Send information to the display process
+ * @param msgtype
+ *  Message Type
+ * @param format
+ *  Content Format
+ */
+void __capture_send_errmsg__(int msgtype, const char *format, ...);
+
 #endif  // __CAPTURE_H__

@@ -262,13 +262,11 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
-    //atexit(capture_atexit_handle);
-
     space = malloc((1024 * 1024));
     if (!space)
     {
         TE("malloc(1024 * 1024) failed");
-        exit(1);
+        goto label1;
     }
 
     if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
@@ -603,15 +601,12 @@ void capture_show_devices_to_display (void) {
 
     if (pcap_findalldevs(&devlist, ebuf) < 0) {
         TE("%s", ebuf);
-        if (unlikely(((capture_reply_to_display(MSGCOMM_ERR, "Find All Devs Failed")) == ND_ERR))) {
-            TE("capture reply to display failed");
-            exit(1);
-        }
+        __capture_send_errmsg__(MSGCOMM_ERR, "%s", ebuf);
     }
 
-    memset(space, 0, (1024 * 1024));
+    memset(space, 0, (1 << 20));
     char *sp = space;
-    int len = (1024 * 1024);
+    int len = (1 << 20);
 
     int i = 0;
     for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next)
@@ -701,7 +696,7 @@ void capture_resource_release(void)
 
     if (pd)
     {
-        pcap_breakloop(pd);
+        pcap_close(pd);
     }
 
     if (cmdbuf)
@@ -778,7 +773,7 @@ static char * capture_copy_argv(char **argv)
     buf = (char *)malloc(len);
     if (buf == NULL) {
         TE("%s: malloc", __func__);
-        exit(S_ERR_HOST_PROGRAM);
+        RVoidPtr(NULL);
     }
 
     p = argv;
@@ -1041,17 +1036,19 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
     if (n_dlts < 0)
     {
         TE("%s", pcap_geterr(pc));
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pc));
+        RVoid();
     }
     else if (n_dlts == 0 || !dlts)
     {
         TE("No data link types.");
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_send_errmsg__(MSGCOMM_ERR, "No data link types.");
+        RVoid();
     }
 
-    memset(space, 0, (1024 * 1024));
+    memset(space, 0, (1 << 20));
     char * sp = space;
-    int len = (1024 * 1024);
+    int len = (1 << 20);
 
     CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tData link types for ");
     if (supports_monitor_mode) {
@@ -1124,6 +1121,20 @@ static const char * capture_tstamp_precision_to_string(int precision)
 
 /**
  * @brief
+ *  Only used by the capture_open_interface function
+ */
+#define __capture_oi_error_handle__(ebuf, pc, format, ...)       \
+    do                                                           \
+    {                                                            \
+        memset(ebuf, 0, PCAP_ERRBUF_SIZE);                       \
+        snprintf(ebuf, PCAP_ERRBUF_SIZE, format, ##__VA_ARGS__); \
+        TE("%s", ebuf);                                          \
+        pcap_close(pc);                                          \
+        RVoidPtr(NULL);                                          \
+    } while (0);
+
+/**
+ * @brief
  *  Open a device interface
  * @param device
  *  Device name string
@@ -1147,19 +1158,19 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
     {
         if (strstr(ebuf, "No such device") != NULL) {
             TE("No such device");
-            return (NULL);
+            RVoidPtr(NULL);
         }
         TE("%s", ebuf);
-        exit(S_ERR_HOST_PROGRAM);
+        RVoidPtr(NULL);
     }
 
     status = pcap_set_tstamp_precision(pc, ndo->ndo_tstamp_precision);
     if (status != 0) {
-        TE("%s: Can't set %s second time stamp precision: %s",
-           device,
-           capture_tstamp_precision_to_string(ndo->ndo_tstamp_precision),
-           pcap_statustostr(status));
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_oi_error_handle__(ebuf, pc, 
+                "%s: Can't set %s second time stamp precision: %s", 
+                device,
+                capture_tstamp_precision_to_string(ndo->ndo_tstamp_precision),
+                pcap_statustostr(status));
     }
 
     if (pcap_can_set_rfmon(pc) == 1) {
@@ -1173,38 +1184,38 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
     {
         status = pcap_set_snaplen(pc, ndo->ndo_snaplen);
         if (status != 0) {
-            TE("%s: Can't set snapshot length: %s", device, pcap_statustostr(status));
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc, "%s: Can't set snapshot length: %s", 
+                device, pcap_statustostr(status));
         }
     }
 
     status = pcap_set_promisc(pc, !pflag);
     if (status != 0) {
-        TE("%s: Can't set promiscuous mode: %s", device, pcap_statustostr(status));
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_oi_error_handle__(ebuf, pc, "%s: Can't set promiscuous mode: %s", 
+                device, pcap_statustostr(status));
     }
 
     if (Iflag)
     {
         status = pcap_set_rfmon(pc, 1);
         if (status != 0) {
-            TE("%s: Can't set monitor mode: %s", device, pcap_statustostr(status));
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc, "%s: Can't set monitor mode: %s", 
+                    device, pcap_statustostr(status));
         }
     }
 
     status = pcap_set_timeout(pc, timeout);
     if (status != 0) {
-        TE("%s: pcap_set_timeout failed: %s", device, pcap_statustostr(status));
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_oi_error_handle__(ebuf, pc, "%s: pcap_set_timeout failed: %s", 
+                    device, pcap_statustostr(status));
     }
 
     if (Bflag != 0)
     {
         status = pcap_set_buffer_size(pc, Bflag);
         if (status != 0) {
-            TE("%s: Can't set buffer size: %s", device, pcap_statustostr(status));
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc, "%s: Can't set buffer size: %s", 
+                    device, pcap_statustostr(status));
         }
     }
 
@@ -1214,20 +1225,19 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
         TE("pcap_active failed");
         cp = pcap_geterr(pc);
         if (status == PCAP_ERROR) {
-            TE("%s", cp);
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc, "%s", cp);
         }
         else if (status == PCAP_ERROR_NO_SUCH_DEVICE)
         {
-            snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n(%s)", device, pcap_statustostr(status), cp);
+            snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n(%s)", device, 
+                    pcap_statustostr(status), cp);
         }
         else if (status == PCAP_ERROR_PERM_DENIED && *cp != '\0') {
-            TE("%s: %s\n(%s)", device, pcap_statustostr(status), cp);
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc, "%s: %s\n\t(%s)", device, 
+                    pcap_statustostr(status), cp);
         }
         else {
-            TE("%s: %s", device, pcap_statustostr(status));
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc,"%s: %s", device, pcap_statustostr(status));
         }
         pcap_close(pc);
         return (NULL);
@@ -1250,8 +1260,8 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
     {
         status = pcap_setdirection(pc, Qflag);
         if (status != 0) {
-            TE("%s: pcap_setdirection() failed: %s", device, pcap_geterr(pc));
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_oi_error_handle__(ebuf, pc,"%s: pcap_setdirection() failed: %s", 
+                    device, pcap_geterr(pc));
         }
     }
 
@@ -1314,7 +1324,7 @@ static long capture_parse_interface_number(const char *device)
              * No, it's not an ordinal.
              */
             TE("Invalid adapter index %s", device);
-            exit(S_ERR_HOST_PROGRAM);
+            RLong(-1L);
         }
         RLong(devnum);
     }
@@ -1353,7 +1363,7 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
     status = pcap_findalldevs(&devlist, ebuf);
     if (status < 0) {
         TE("%s", ebuf);
-        exit(S_ERR_HOST_PROGRAM);
+        RVoidPtr(NULL);
     }
     /*
      * Look for the devnum-th entry in the list of devices (1-based).
@@ -1364,7 +1374,7 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
     {
         pcap_freealldevs(devlist);
         TE("Invalid adapter index %ld: only %ld interfaces found", devnum, i);
-        exit(S_ERR_HOST_PROGRAM);
+        RVoidPtr(NULL);
     }
 
     device = strdup(dev->name);
@@ -1382,6 +1392,36 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
     getchar();
 
     RVoid();
+}
+
+/**
+ * @brief
+ *  Send information to the display process
+ * @param msgtype
+ *  Message Type
+ * @param format
+ *  Content Format
+ */
+void __capture_send_errmsg__(int msgtype, const char *format, ...)
+{
+    
+    TC("Called { %s(%d, %s)", __func__, msgtype, format);
+
+    memset(space, 0, (1 << 20));
+
+    va_list args;
+    va_start(args, format);
+    vsnprintf(space, (1 << 20), format, args);
+    va_end(args);
+
+    if (unlikely(((capture_reply_to_display(msgtype, space)) == ND_ERR)))
+    {
+        TE("capture reply to display failed");
+        exit(1);
+    }
+
+    RVoid();
+    
 }
 
 /**
@@ -1416,7 +1456,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     memset(ebuf, 0, sizeof(ebuf));
 
     char * sp = space;
-    int len = (1024 * 1024);
+    int len = (1 << 20);
 
     Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
 
@@ -1498,13 +1538,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                     Qflag = PCAP_D_INOUT;
                 }
                 else {
-                    memset(space, 0, (1024 * 1024));
-                    snprintf(space, 1024, "-Q in/out/inout; %s is error", optarg);
-                    if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
-                    {
-                        TE("capture reply to display failed");
-                        exit(1);
-                    }
+                    __capture_send_errmsg__(MSGCOMM_ERR, "-Q in/out/inout; %s is error", optarg);
                     TE("-Q %s is error", optarg);
                     RInt(ND_ERR);
                 }
@@ -1518,13 +1552,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 yflag_dlt_name = optarg;
                 yflag_dlt = pcap_datalink_name_to_val(yflag_dlt_name);
                 if (yflag_dlt < 0) {
-                    memset(space, 0, (1024 * 1024));
-                    snprintf(space, 1024, "-Q  %s is error", optarg);
-                    if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
-                    {
-                        TE("capture reply to display failed");
-                        exit(1);
-                    }
+                    __capture_send_errmsg__(MSGCOMM_ERR, "-y invalid data link type %s", yflag_dlt_name);
                     TE("-y invalid data link type %s", yflag_dlt_name);
                     RInt(ND_ERR);
                 }
@@ -1546,18 +1574,17 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     if (RFileName != NULL)
     {
-        // 编写一个函数，将这些信息传输给界面显示
-        // 1148 -> 1170 应该是界面的显示信息
         pd = pcap_open_offline_with_tstamp_precision(RFileName, ndo->ndo_tstamp_precision, ebuf);
 
         if (pd == NULL) {
             TE("%s", ebuf);
-            exit(S_ERR_HOST_PROGRAM);
+            __capture_send_errmsg__(MSGCOMM_ERR, "%s", ebuf);
+            RInt(ND_ERR);
         }
 
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
-        memset(space, 0, (1024 * 1024));
+        memset(space, 0, (1 << 20));
         CAPTURE_SHORTEN_CODE(space, sp, len, "reading from file %s", RFileName);
         if (dlt_name == NULL)
         {
@@ -1580,11 +1607,13 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         {
             if (pcap_findalldevs(&devlist, ebuf) == -1) {
                 TE("%s", ebuf);
-                exit(S_ERR_HOST_PROGRAM);
+                __capture_send_errmsg__(MSGCOMM_ERR, "%s", ebuf);
+                RInt(ND_ERR);
             }
             if (devlist == NULL) {
                 TE("no interfaces available for capture");
-                exit(S_ERR_HOST_PROGRAM);
+                __capture_send_errmsg__(MSGCOMM_ERR, "no interfaces available for capture");
+                RInt(ND_ERR);
             }
             device = strdup(devlist->name);
             pcap_freealldevs(devlist);
@@ -1598,20 +1627,23 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             if (devnum == -1)
             {
                 TE("%s", ebuf);
-                exit(S_ERR_HOST_PROGRAM);
+                __capture_send_errmsg__(MSGCOMM_ERR, "%s", ebuf);
+                RInt(ND_ERR);
             }
 
             device = capture_find_interface_by_number(device, devnum);
             pd = capture_open_interface(device, ndo, ebuf);
             if (pd == NULL) {
                 TE("%s", ebuf);
-                exit(S_ERR_HOST_PROGRAM);
+                __capture_send_errmsg__(MSGCOMM_ERR, "%s", ebuf);
+                RInt(ND_ERR);
             }
 
         }
         
         if (Lflag) {
             capture_show_datalinktype(pd, device);
+            pcap_close(pd);
             return ND_OK;
         }
 
@@ -1619,7 +1651,9 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         {
             if (pcap_set_datalink(pd, yflag_dlt) < 0) {
                 TE("%s", pcap_geterr(pd));
-                exit(S_ERR_HOST_PROGRAM);
+                __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
+                pcap_close(pd);
+                RInt(ND_ERR);
             }
 
             TI("%s: data link type %s\n", program_name, pcap_datalink_val_to_name(yflag_dlt));
@@ -1647,15 +1681,24 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     }
 
     cmdbuf = capture_copy_argv((char**)(&argv[optind]));
+    if (!cmdbuf) {
+        __capture_send_errmsg__(MSGCOMM_ERR, "Memory allocation failed");
+        pcap_close(pd);
+        RInt(ND_ERR);
+    }
 
     if (pcap_compile(pd, &fcode, cmdbuf, 0, netmask) < 0) {
         TE("%s", pcap_geterr(pd));
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
+        pcap_close(pd);
+        RInt(ND_ERR);
     }
 
     if (pcap_setfilter(pd, &fcode) < 0) {
         TE("%s", pcap_geterr(pd));
-        exit(S_ERR_HOST_PROGRAM);
+        __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
+        pcap_close(pd);
+        RInt(ND_ERR);
     }
 
     dlt = pcap_datalink(pd);
@@ -1665,7 +1708,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     if (RFileName == NULL)
     {
-        memset(space, 0, (1024 * 1024));
+        memset(space, 0, (1 << 20));
         CAPTURE_SHORTEN_CODE(space, sp, len, "%s: ", program_name);
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
