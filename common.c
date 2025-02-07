@@ -375,7 +375,7 @@ void nd_delay_microsecond (unsigned int sec, unsigned long microseconds) {
  */
 size_t strlcpy(char *dst, const char *src, size_t siz)
 {
-    TC("Called { %s(%p, %p, %ld)", __func__, dst, src, siz);
+    //TC("Called { %s(%p, %p, %ld)", __func__, dst, src, siz);
 
     char *d = dst;
     const char *s = src;
@@ -400,6 +400,6 @@ size_t strlcpy(char *dst, const char *src, size_t siz)
             ;
     }
 
-    //return (s - src - 1); /* count does not include NUL */
-    RULong((s - src - 1));
+    return (s - src - 1); /* count does not include NUL */
+    //RULong((s - src - 1));
 }
