@@ -99,3 +99,20 @@ Solution
 }
 
 
+/*----------------------------------------------------------------------*/
+
+# 1. 设置 core 文件大小无限制
+ulimit -c unlimited
+
+# 2. 配置 core 文件存储路径
+echo "kernel.core_pattern=/tmp/core.%e.%p" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+# 3. 触发段错误并生成 core dump
+./crash
+
+# 4. 查看生成的 core 文件
+ls /tmp/core.*
+
+/*----------------------------------------------------------------------*/
+
