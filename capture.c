@@ -1567,7 +1567,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 else {
                     TI("%s", optarg);
                     __capture_send_errmsg__(MSGCOMM_ERR, "-Q in/out/inout;", optarg);
-                    TE("-Q %s [ERROR]", optarg);
                     RInt(ND_ERR);
                 }
                 break;
@@ -1592,8 +1591,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         }
 
     }
-
-    // end of while(getopt_long)
 
     if (Dflag) {
         capture_show_devices_to_display();
@@ -1712,7 +1709,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     cmdbuf = capture_copy_argv((char**)(&argv[optind]));
     
-    if (pcap_compile(pd, &fcode, cmdbuf, 0, netmask) < 0) {
+    if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0) {
         TE("%s", pcap_geterr(pd));
         __capture_send_errmsg__(MSGCOMM_ERR, "%s", pcap_geterr(pd));
         pcap_close(pd);
