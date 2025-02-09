@@ -338,16 +338,92 @@ void display_handle_winch_signal (int signum) {
 
 	TC("Called { %s(%d)", __func__, signum);
 
-	#if 0
-	display_hide_wins_all();
-	display_exit_TUI_showcase();
-	endwin();
-	refresh();
-	clear();
-	resize_term(0, 0);
-	#endif
-
 	display_G_sigwinch_flag = 1;
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Adjust terminal font size
+ */
+void display_adjust_terminal_font_size (void) {
+
+	TC("Called { %s(void)", __func__);
+
+	int current_font_size = 10;
+
+	const char *term = getenv("TERM");
+
+	if (term == NULL)
+	{
+		return;
+	}
+
+	// 更新字体大小
+	current_font_size += 1;
+
+	// 限制字体大小的范围（例如 8 到 24）
+	if (current_font_size < 8)
+		current_font_size = 8;
+	if (current_font_size > 24)
+		current_font_size = 24;
+
+	if (strstr(term, "xterm") != NULL)
+	{
+		// xterm 或兼容终端
+		char buffer[128];
+		snprintf(buffer, sizeof(buffer), "\e]710;xft:DejaVu Sans Mono:size=%d\a", current_font_size);
+		printw("%s", buffer);
+	}
+	else if (strstr(term, "gnome") != NULL || strstr(term, "konsole") != NULL)
+	{
+		// gnome-terminal 或 konsole
+		if (1 > 0)
+		{
+			printw("\e]50;SetFontSize=+2\a");
+		}
+		else if (1 < 0)
+		{
+			printw("\e]50;SetFontSize=-2\a");
+		}
+	}
+	refresh();
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Restore the default font when exiting the program
+ */
+void display_restore_default_font(void)
+{
+
+	TC("Called { %s(void)", __func__);
+
+	int default_font_size = 0;
+	const char *term = getenv("TERM");
+	if (term == NULL)
+	{
+		return;
+	}
+
+	if (strstr(term, "xterm") != NULL)
+	{
+		// xterm 或兼容终端
+		char buffer[128];
+		snprintf(buffer, sizeof(buffer), "\e]710;xft:DejaVu Sans Mono:size=%d\a", default_font_size);
+		printw("%s", buffer);
+	}
+	else if (strstr(term, "gnome") != NULL || strstr(term, "konsole") != NULL)
+	{
+		// gnome-terminal 或 konsole
+		printw("\e]50;SetFontSize=0\a"); // 重置字体大小
+	}
+	refresh();
 
 	RVoid();
 }
@@ -357,9 +433,12 @@ void display_handle_winch_signal (int signum) {
  * @brief
  * 	dump size infomation
  */
-void diaplay_dump_size_info(void) {
+void diaplay_dump_size_info(void)
+{
 
 	TC("Called { %s(void)", __func__);
+
+	TI("\nLINES: %d; COLS: %d\n", LINES, COLS);
 
 	TI("DISPLAY_WINS_0_NYBEGIN: %d; DISPLAY_WINS_0_NXBEGIN: %d", DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
 	TI("DISPLAY_WINS_0_NLINES: %d; DISPLAY_WINS_0_NCOLS: %d", DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
@@ -380,8 +459,6 @@ void diaplay_dump_size_info(void) {
 
 	RVoid();
 }
-
-
 
 /**
  * @brief
@@ -432,54 +509,6 @@ void display_handle_win_resize(int flag) {
 	}
 
 	erase();
-
-	#if 0
-	TI("DISPLAY_WINS_0_NYBEGIN: %d; DISPLAY_WINS_0_NXBEGIN: %d", DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
-	TI("DISPLAY_WINS_0_NLINES: %d; DISPLAY_WINS_0_NCOLS: %d", DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
-	mvwin(G_display.wins[0], DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
-	wresize(G_display.wins[0], DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
-
-	TI("DISPLAY_WINS_1_NYBEGIN: %d; DISPLAY_WINS_1_NXBEGIN: %ld", DISPLAY_WINS_1_NYBEGIN, DISPLAY_WINS_1_NXBEGIN);
-	TI("DISPLAY_WINS_1_NLINES: %d; DISPLAY_WINS_1_NCOLS: %ld", DISPLAY_WINS_1_NLINES, DISPLAY_WINS_1_NCOLS);
-	mvwin(G_display.wins[1], DISPLAY_WINS_1_NYBEGIN, DISPLAY_WINS_1_NXBEGIN);
-	wresize(G_display.wins[1], DISPLAY_WINS_1_NLINES, DISPLAY_WINS_1_NCOLS);
-
-	TI("DISPLAY_WINS_2_NYBEGIN: %d; DISPLAY_WINS_2_NXBEGIN: %d", DISPLAY_WINS_2_NYBEGIN, DISPLAY_WINS_2_NXBEGIN);
-	TI("DISPLAY_WINS_2_NLINES: %d; DISPLAY_WINS_2_NCOLS: %d", DISPLAY_WINS_2_NLINES, DISPLAY_WINS_2_NCOLS);
-	mvwin(G_display.wins[2], DISPLAY_WINS_2_NYBEGIN, DISPLAY_WINS_2_NXBEGIN);
-	wresize(G_display.wins[2], DISPLAY_WINS_2_NLINES, DISPLAY_WINS_2_NCOLS);
-
-	TI("DISPLAY_WINS_3_NYBEGIN: %d; DISPLAY_WINS_3_NXBEGIN: %d", DISPLAY_WINS_3_NYBEGIN, DISPLAY_WINS_3_NXBEGIN);
-	TI("DISPLAY_WINS_3_NLINES: %d; DISPLAY_WINS_3_NCOLS: %d", DISPLAY_WINS_3_NLINES, DISPLAY_WINS_3_NCOLS);
-	mvwin(G_display.wins[3], DISPLAY_WINS_3_NYBEGIN, DISPLAY_WINS_3_NXBEGIN);
-	wresize(G_display.wins[3], DISPLAY_WINS_3_NLINES, DISPLAY_WINS_3_NCOLS);
-
-	TI("DISPLAY_WINS_4_NYBEGIN: %d; DISPLAY_WINS_4_NXBEGIN: %d", DISPLAY_WINS_4_NYBEGIN, DISPLAY_WINS_4_NXBEGIN);
-	TI("DISPLAY_WINS_4_NLINES: %d; DISPLAY_WINS_4_NCOLS: %d", DISPLAY_WINS_4_NLINES, DISPLAY_WINS_4_NCOLS);
-	mvwin(G_display.wins[4], DISPLAY_WINS_4_NYBEGIN, DISPLAY_WINS_4_NXBEGIN);
-	wresize(G_display.wins[4], DISPLAY_WINS_4_NLINES, DISPLAY_WINS_4_NCOLS);
-
-	TI("DISPLAY_WINS_5_NYBEGIN: %d; DISPLAY_WINS_5_NXBEGIN: %d", DISPLAY_WINS_5_NYBEGIN, DISPLAY_WINS_5_NXBEGIN);
-	TI("DISPLAY_WINS_5_NLINES: %d; DISPLAY_WINS_5_NCOLS: %d", DISPLAY_WINS_5_NLINES, DISPLAY_WINS_5_NCOLS);
-	mvwin(G_display.wins[5], DISPLAY_WINS_5_NYBEGIN, DISPLAY_WINS_5_NXBEGIN);
-	wresize(G_display.wins[5], DISPLAY_WINS_5_NLINES, DISPLAY_WINS_5_NCOLS);
-
-	TI("DISPLAY_WINS_6_NYBEGIN: %d; DISPLAY_WINS_6_NXBEGIN: %d", DISPLAY_WINS_6_NYBEGIN, DISPLAY_WINS_6_NXBEGIN);
-	TI("DISPLAY_WINS_6_NLINES: %d; DISPLAY_WINS_6_NCOLS: %d", DISPLAY_WINS_6_NLINES, DISPLAY_WINS_6_NCOLS);
-	mvwin(G_display.wins[6], DISPLAY_WINS_6_NYBEGIN, DISPLAY_WINS_6_NXBEGIN);
-	wresize(G_display.wins[6], DISPLAY_WINS_6_NLINES, DISPLAY_WINS_6_NCOLS);
-
-	TI("DISPLAY_WINS_7_NYBEGIN: %d; DISPLAY_WINS_7_NXBEGIN: %d", DISPLAY_WINS_7_NYBEGIN, DISPLAY_WINS_7_NXBEGIN);
-	TI("DISPLAY_WINS_7_NLINES: %d; DISPLAY_WINS_7_NCOLS: %d", DISPLAY_WINS_7_NLINES, DISPLAY_WINS_7_NCOLS);
-	mvwin(G_display.wins[7], DISPLAY_WINS_7_NYBEGIN, DISPLAY_WINS_7_NXBEGIN);
-	wresize(G_display.wins[7], DISPLAY_WINS_7_NLINES, DISPLAY_WINS_7_NCOLS);
-
-	touchwin(stdscr);
-	for (i = 0; i < (display_PW_number - 1); i++)
-	{
-		touchwin(G_display.wins[i]);
-	}
-	#endif
 
 	for (i = 0; i < (display_PW_number - 1); i++)
 	{
