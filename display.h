@@ -420,23 +420,23 @@ void diaplay_dump_size_info(void);
 /** Title of the information bar */
 #define WINTITLEINFORMATION     "Information"
 
-    /**
-     * @brief
-     *  Format the title bar title
-     * @param win:
-     *  The window that is designated to format the input title
-     * @param starty:
-     *  The starting position of the title bar relative to the window's Y coordinate
-     * @param startx:
-     *  The starting position of the title bar relative to the window's X coordinate
-     * @param width:
-     *  Width of the title bar
-     * @param string:
-     *  Contents of the title bar
-     * @param color:
-     *  Color attribute of the title bar content
-     */
-    int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+/**
+ * @brief
+ *  Format the title bar title
+ * @param win:
+ *  The window that is designated to format the input title
+ * @param starty:
+ *  The starting position of the title bar relative to the window's Y coordinate
+ * @param startx:
+ *  The starting position of the title bar relative to the window's X coordinate
+ * @param width:
+ *  Width of the title bar
+ * @param string:
+ *  Contents of the title bar
+ * @param color:
+ *  Color attribute of the title bar content
+ */
+int display_format_set_window_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
 /**
  * @brief
