@@ -21,10 +21,30 @@
  * 	display_G_flag = 1; 
  * 	indicates an exception occurs and the system needs to exit
  */
-unsigned char display_G_flag = 0;
+volatile unsigned char display_G_flag = 0;
 
 /**
- * @brief 
+ * @brief
+ * 	Whether the SIGWINCH signal is received
+ * @note
+ * 	The default initial value is 0
+ * 	display_G_sigwinch_flag = 1;
+ * 	After receiving the signal, display_G_sigwinch_flag is set to 1
+ * 	display_G_sigwinch_flag = 0;
+ * 	After redrawing the interface, display_G_sigwinch_flag is set to 0
+ */
+volatile unsigned char display_G_sigwinch_flag = 0;
+
+
+/**
+ * @brief
+ * 	Stores the old values ​​of LINES and COLS
+ */
+volatile unsigned int display_old_lines = 0;
+volatile unsigned int display_old_cols = 0;
+
+/**
+ * @brief
  * 	Define a global variable to store the resources required by TUI
  * @note
  *  G_display.wins[0]: Netdump ASCII world
@@ -33,12 +53,16 @@ unsigned char display_G_flag = 0;
  *  G_display.wins[3]: Brief information display box
  *  G_display.wins[4]: Detailed information display box
  *  G_display.wins[5]: Original hexadecimal information display box
+ * 	G_display.wins[6]: Display error message interface
+ * 	G_display.wins[7]: Display information after executing the command
  *  G_display.panels[0]: The panel associated with G_display.wins[0]
  *  G_display.panels[1]: The panel associated with G_display.wins[1]
  *  G_display.panels[2]: The panel associated with G_display.wins[2]
  *  G_display.panels[3]: The panel associated with G_display.wins[3]
  *  G_display.panels[4]: The panel associated with G_display.wins[4]
  *  G_display.panels[5]: The panel associated with G_display.wins[5]
+ * 	G_display.panels[6]: The panel associated with G_display.wins[6]
+ * 	G_display.panels[7]: The panel associated with G_display.wins[7]
  */
 display_t G_display = {
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
@@ -301,4 +325,219 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 	}
 
 	RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ * 	sigwinch signal processing function
+ * @param signum
+ * 	Signal number
+ */
+void display_handle_winch_signal (int signum) {
+
+	TC("Called { %s(%d)", __func__, signum);
+
+	#if 0
+	display_hide_wins_all();
+	display_exit_TUI_showcase();
+	endwin();
+	refresh();
+	clear();
+	resize_term(0, 0);
+	#endif
+
+	display_G_sigwinch_flag = 1;
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	dump size infomation
+ */
+void diaplay_dump_size_info(void) {
+
+	TC("Called { %s(void)", __func__);
+
+	TI("DISPLAY_WINS_0_NYBEGIN: %d; DISPLAY_WINS_0_NXBEGIN: %d", DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
+	TI("DISPLAY_WINS_0_NLINES: %d; DISPLAY_WINS_0_NCOLS: %d", DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
+	TI("DISPLAY_WINS_1_NYBEGIN: %d; DISPLAY_WINS_1_NXBEGIN: %ld", DISPLAY_WINS_1_NYBEGIN, DISPLAY_WINS_1_NXBEGIN);
+	TI("DISPLAY_WINS_1_NLINES: %d; DISPLAY_WINS_1_NCOLS: %ld", DISPLAY_WINS_1_NLINES, DISPLAY_WINS_1_NCOLS);
+	TI("DISPLAY_WINS_2_NYBEGIN: %d; DISPLAY_WINS_2_NXBEGIN: %d", DISPLAY_WINS_2_NYBEGIN, DISPLAY_WINS_2_NXBEGIN);
+	TI("DISPLAY_WINS_2_NLINES: %d; DISPLAY_WINS_2_NCOLS: %d", DISPLAY_WINS_2_NLINES, DISPLAY_WINS_2_NCOLS);
+	TI("DISPLAY_WINS_3_NYBEGIN: %d; DISPLAY_WINS_3_NXBEGIN: %d", DISPLAY_WINS_3_NYBEGIN, DISPLAY_WINS_3_NXBEGIN);
+	TI("DISPLAY_WINS_3_NLINES: %d; DISPLAY_WINS_3_NCOLS: %d", DISPLAY_WINS_3_NLINES, DISPLAY_WINS_3_NCOLS);
+	TI("DISPLAY_WINS_4_NYBEGIN: %d; DISPLAY_WINS_4_NXBEGIN: %d", DISPLAY_WINS_4_NYBEGIN, DISPLAY_WINS_4_NXBEGIN);
+	TI("DISPLAY_WINS_4_NLINES: %d; DISPLAY_WINS_4_NCOLS: %d", DISPLAY_WINS_4_NLINES, DISPLAY_WINS_4_NCOLS);
+	TI("DISPLAY_WINS_5_NYBEGIN: %d; DISPLAY_WINS_5_NXBEGIN: %d", DISPLAY_WINS_5_NYBEGIN, DISPLAY_WINS_5_NXBEGIN);
+	TI("DISPLAY_WINS_5_NLINES: %d; DISPLAY_WINS_5_NCOLS: %d", DISPLAY_WINS_5_NLINES, DISPLAY_WINS_5_NCOLS);
+	TI("DISPLAY_WINS_6_NYBEGIN: %d; DISPLAY_WINS_6_NXBEGIN: %d", DISPLAY_WINS_6_NYBEGIN, DISPLAY_WINS_6_NXBEGIN);
+	TI("DISPLAY_WINS_6_NLINES: %d; DISPLAY_WINS_6_NCOLS: %d", DISPLAY_WINS_6_NLINES, DISPLAY_WINS_6_NCOLS);
+	TI("DISPLAY_WINS_7_NYBEGIN: %d; DISPLAY_WINS_7_NXBEGIN: %d", DISPLAY_WINS_7_NYBEGIN, DISPLAY_WINS_7_NXBEGIN);
+	TI("DISPLAY_WINS_7_NLINES: %d; DISPLAY_WINS_7_NCOLS: %d", DISPLAY_WINS_7_NLINES, DISPLAY_WINS_7_NCOLS);
+
+	RVoid();
+}
+
+
+
+/**
+ * @brief
+ * 	Redraw the interface after the interface size changes
+ * @param flag
+ * 	Flags for the first TUI interface and the second TUI interface
+ * 	flag = 1 indicates the first TUI interface
+ * 	flag = 2 indicates the second TUI interface
+ */
+void display_handle_win_resize(int flag) {
+
+	TC("Called { %s(void)", __func__);
+
+	display_G_sigwinch_flag = 0;
+
+	display_hide_wins_all();
+
+	struct winsize w;
+
+	int i = 0;
+	for (i = 0; i < 6; i++) { 
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+		if (w.ws_col == display_old_cols && w.ws_row == display_old_lines) {
+			TI("i: %d; w.ws_col == display_old_cols and w.ws_row == display_old_lines", i);
+			continue;
+		}
+		TI("i: %d; display_old_cols: %d; display_old_lines: %d", i, display_old_cols, display_old_lines);
+		display_old_cols = w.ws_col;
+		display_old_lines = w.ws_row;
+		TI("i: %d; display_old_cols: %d; display_old_lines: %d", i, display_old_cols, display_old_lines);
+		TI("i: %d; w.ws_col: %d; w.ws_row: %d", i, w.ws_col, w.ws_row);
+	}
+
+	resizeterm(w.ws_row, w.ws_col);
+
+	if (LINES == w.ws_row && w.ws_col == COLS)
+	{
+		TI("Resize SUC");
+	}
+	else {
+		TI("Resize FAIL");
+	}
+
+	werase(stdscr);
+	for (i = 0; i < (display_PW_number - 1); i++)
+	{
+		werase(G_display.wins[i]);
+	}
+
+	erase();
+
+	#if 0
+	TI("DISPLAY_WINS_0_NYBEGIN: %d; DISPLAY_WINS_0_NXBEGIN: %d", DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
+	TI("DISPLAY_WINS_0_NLINES: %d; DISPLAY_WINS_0_NCOLS: %d", DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
+	mvwin(G_display.wins[0], DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
+	wresize(G_display.wins[0], DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
+
+	TI("DISPLAY_WINS_1_NYBEGIN: %d; DISPLAY_WINS_1_NXBEGIN: %ld", DISPLAY_WINS_1_NYBEGIN, DISPLAY_WINS_1_NXBEGIN);
+	TI("DISPLAY_WINS_1_NLINES: %d; DISPLAY_WINS_1_NCOLS: %ld", DISPLAY_WINS_1_NLINES, DISPLAY_WINS_1_NCOLS);
+	mvwin(G_display.wins[1], DISPLAY_WINS_1_NYBEGIN, DISPLAY_WINS_1_NXBEGIN);
+	wresize(G_display.wins[1], DISPLAY_WINS_1_NLINES, DISPLAY_WINS_1_NCOLS);
+
+	TI("DISPLAY_WINS_2_NYBEGIN: %d; DISPLAY_WINS_2_NXBEGIN: %d", DISPLAY_WINS_2_NYBEGIN, DISPLAY_WINS_2_NXBEGIN);
+	TI("DISPLAY_WINS_2_NLINES: %d; DISPLAY_WINS_2_NCOLS: %d", DISPLAY_WINS_2_NLINES, DISPLAY_WINS_2_NCOLS);
+	mvwin(G_display.wins[2], DISPLAY_WINS_2_NYBEGIN, DISPLAY_WINS_2_NXBEGIN);
+	wresize(G_display.wins[2], DISPLAY_WINS_2_NLINES, DISPLAY_WINS_2_NCOLS);
+
+	TI("DISPLAY_WINS_3_NYBEGIN: %d; DISPLAY_WINS_3_NXBEGIN: %d", DISPLAY_WINS_3_NYBEGIN, DISPLAY_WINS_3_NXBEGIN);
+	TI("DISPLAY_WINS_3_NLINES: %d; DISPLAY_WINS_3_NCOLS: %d", DISPLAY_WINS_3_NLINES, DISPLAY_WINS_3_NCOLS);
+	mvwin(G_display.wins[3], DISPLAY_WINS_3_NYBEGIN, DISPLAY_WINS_3_NXBEGIN);
+	wresize(G_display.wins[3], DISPLAY_WINS_3_NLINES, DISPLAY_WINS_3_NCOLS);
+
+	TI("DISPLAY_WINS_4_NYBEGIN: %d; DISPLAY_WINS_4_NXBEGIN: %d", DISPLAY_WINS_4_NYBEGIN, DISPLAY_WINS_4_NXBEGIN);
+	TI("DISPLAY_WINS_4_NLINES: %d; DISPLAY_WINS_4_NCOLS: %d", DISPLAY_WINS_4_NLINES, DISPLAY_WINS_4_NCOLS);
+	mvwin(G_display.wins[4], DISPLAY_WINS_4_NYBEGIN, DISPLAY_WINS_4_NXBEGIN);
+	wresize(G_display.wins[4], DISPLAY_WINS_4_NLINES, DISPLAY_WINS_4_NCOLS);
+
+	TI("DISPLAY_WINS_5_NYBEGIN: %d; DISPLAY_WINS_5_NXBEGIN: %d", DISPLAY_WINS_5_NYBEGIN, DISPLAY_WINS_5_NXBEGIN);
+	TI("DISPLAY_WINS_5_NLINES: %d; DISPLAY_WINS_5_NCOLS: %d", DISPLAY_WINS_5_NLINES, DISPLAY_WINS_5_NCOLS);
+	mvwin(G_display.wins[5], DISPLAY_WINS_5_NYBEGIN, DISPLAY_WINS_5_NXBEGIN);
+	wresize(G_display.wins[5], DISPLAY_WINS_5_NLINES, DISPLAY_WINS_5_NCOLS);
+
+	TI("DISPLAY_WINS_6_NYBEGIN: %d; DISPLAY_WINS_6_NXBEGIN: %d", DISPLAY_WINS_6_NYBEGIN, DISPLAY_WINS_6_NXBEGIN);
+	TI("DISPLAY_WINS_6_NLINES: %d; DISPLAY_WINS_6_NCOLS: %d", DISPLAY_WINS_6_NLINES, DISPLAY_WINS_6_NCOLS);
+	mvwin(G_display.wins[6], DISPLAY_WINS_6_NYBEGIN, DISPLAY_WINS_6_NXBEGIN);
+	wresize(G_display.wins[6], DISPLAY_WINS_6_NLINES, DISPLAY_WINS_6_NCOLS);
+
+	TI("DISPLAY_WINS_7_NYBEGIN: %d; DISPLAY_WINS_7_NXBEGIN: %d", DISPLAY_WINS_7_NYBEGIN, DISPLAY_WINS_7_NXBEGIN);
+	TI("DISPLAY_WINS_7_NLINES: %d; DISPLAY_WINS_7_NCOLS: %d", DISPLAY_WINS_7_NLINES, DISPLAY_WINS_7_NCOLS);
+	mvwin(G_display.wins[7], DISPLAY_WINS_7_NYBEGIN, DISPLAY_WINS_7_NXBEGIN);
+	wresize(G_display.wins[7], DISPLAY_WINS_7_NLINES, DISPLAY_WINS_7_NCOLS);
+
+	touchwin(stdscr);
+	for (i = 0; i < (display_PW_number - 1); i++)
+	{
+		touchwin(G_display.wins[i]);
+	}
+	#endif
+
+	for (i = 0; i < (display_PW_number - 1); i++)
+	{
+		del_panel(G_display.panels[i]);
+		update_panels();
+		G_display.panels[i] = NULL;
+	}
+
+	for (i = 0; i < (display_PW_number - 1); i++)
+	{
+		if (G_display.wins[i])
+		{
+			delwin(G_display.wins[i]);
+			G_display.wins[i] = NULL;
+		}
+	}
+
+	display_apply_first_tui_wins_resources();
+	display_apply_second_tui_wins_resources();
+
+	display_apply_first_tui_panels_resources();
+	display_apply_second_tui_panels_resources();
+
+	update_panels();
+	doupdate();
+
+	display_draw_netdump_ASCII_world();
+
+	display_draw_author_information();
+
+	display_draw_cmd_input_box();
+
+	display_draw_brief_information_box();
+
+	display_draw_more_information_box();
+
+	display_draw_raw_information_box();
+
+	wnoutrefresh(stdscr);
+	for (i = 0; i < (display_PW_number - 1); i++)
+	{
+		wnoutrefresh(G_display.wins[1]);
+	}
+
+	display_hide_wins_all();
+
+	if (flag == 1)
+	{
+
+		display_hide_wins_3_4_5();
+		display_show_wins_0_1_2();
+	}
+	else if (flag == 2)
+	{
+
+		display_hide_wins_0_1_2();
+		display_show_wins_3_4_5();
+	}
+
+	RVoid();
 }
