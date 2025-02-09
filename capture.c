@@ -1415,7 +1415,7 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
 
     TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
-    getchar();
+    //getchar();
 
     RVoid();
 }
