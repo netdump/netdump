@@ -197,6 +197,12 @@ void display_handle_win_resize(int flag);
 void diaplay_dump_size_info(void);
 
 /**
+ * @brief
+ * 	Detection terminal size
+ */
+void display_check_term_size(void);
+
+/**
  * @brief 
  *  Called ncurses initscr initialize environment
  */
@@ -939,6 +945,8 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         display_initialize_color();                                                                                                     \
                                                                                                                                         \
         if (display_G_flag) goto label;                                                                                                 \
+                                                                                                                                        \
+        display_check_term_size();                                                                                                      \
                                                                                                                                         \
         display_initialize_color_pair();                                                                                                \
                                                                                                                                         \

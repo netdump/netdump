@@ -403,6 +403,7 @@ void display_handle_win_resize(int flag) {
 	display_hide_wins_all();
 
 	werase(stdscr);
+
 	for (i = 0; i < (display_PW_number - 1); i++)
 	{
 		werase(G_display.wins[i]);
@@ -425,6 +426,8 @@ void display_handle_win_resize(int flag) {
 			G_display.wins[i] = NULL;
 		}
 	}
+
+	display_check_term_size();
 
 	struct winsize w;
 
@@ -495,6 +498,58 @@ void display_handle_win_resize(int flag) {
 		display_hide_wins_0_1_2();
 		display_show_wins_3_4_5();
 	}
+
+	RVoid();
+}
+
+/**
+ * @brief
+ * 	Detection terminal size
+ */
+void display_check_term_size(void) 
+{
+
+	TC("Called { %s(void)", __func__);
+
+	int i = 0;
+	struct winsize w;
+
+	for (i = 0; i < 3; i++) {
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+		if (w.ws_row < DISPLAY_EXPECT_TERMINAL_LINES || w.ws_col < DISPLAY_EXPECT_TERMINAL_COLS){
+			//int y = getmaxy(stdscr);
+			wclear(stdscr);
+			refresh();
+			wmove(stdscr, (w.ws_row / 2), 0);
+			wattrset(stdscr, A_NORMAL);
+			wclrtoeol(stdscr);
+			wattrset(stdscr, A_BOLD);
+			wattron(stdscr, COLOR_PAIR((4)));
+			char space[512] = {0};
+			snprintf(space, 512, "\t[%d]\n\tPlease adjust the size of the terminal;"
+								 "\n\tafter three prompts, the program will exit."
+								 "\n\tYou can modify the terminal font size, "
+								 "\n\tOr drag the terminal to a larger screen.",
+					 (i + 1));
+			waddstr(stdscr, space);
+			wattroff(stdscr, COLOR_PAIR((4)));
+			wattron(stdscr, COLOR_PAIR((4)));
+			box(stdscr, 0, 0);
+			wattroff(stdscr, COLOR_PAIR((4)));
+			refresh();
+			wrefresh(stdscr);
+			getchar();
+			wclear(stdscr);
+		}
+		else {
+			TI("To meet the requirements of terminal size");
+			resizeterm(w.ws_row, w.ws_col);
+			RVoid();
+		}
+	}
+
+	TE("The terminal size does not meet the requirements; Kill Will be Called");
+	kill(getpid(), 15);
 
 	RVoid();
 }
