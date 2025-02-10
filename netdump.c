@@ -26,6 +26,8 @@ int main(int argc, char ** argv) {
 
     TC("Called { %s (%d, %p)", __func__, argc, argv);
 
+    sigact_called_prctl_set_value();
+
     if(unlikely((msgcomm_startup()) == ND_ERR)) {
         TE("Msgcomm startup failed");
         goto label1;

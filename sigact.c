@@ -99,6 +99,36 @@ static sigact_t sigact[] = {
  */
 extern void display_exit_resource_destruction();
 
+/**
+ * @brief
+ * 	When the parent process exits, 
+ * 	the child process can also receive the signal that the parent process exits
+ */
+void sigact_called_prctl_set_value (void) {
+
+	TC("Called { %s(void)", __func__);
+
+	if (prctl(PR_SET_PDEATHSIG, SIGQUIT) == -1)
+	{
+		TE("errno: %d; %s", errno, strerror(errno));
+	}
+	if (prctl(PR_SET_PDEATHSIG, SIGINT) == -1)
+	{
+		TE("errno: %d; %s", errno, strerror(errno));
+	}
+	if (prctl(PR_SET_PDEATHSIG, SIGTERM) == -1)
+	{
+		TE("errno: %d; %s", errno, strerror(errno));
+	}
+	if (prctl(PR_SET_PDEATHSIG, SIGPIPE) == -1)
+	{
+		TE("errno: %d; %s", errno, strerror(errno));
+	}
+
+	RVoid();
+}
+
+
 
 /**
  * @brief 

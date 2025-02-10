@@ -79,5 +79,11 @@ void sigact_handle_crash (int signum);
  */
 int sigact_register_signal_handle (void);
 
+/**
+ * @brief
+ * 	When the parent process exits,
+ * 	the child process can also receive the signal that the parent process exits
+ */
+void sigact_called_prctl_set_value(void);
 
 #endif  // __SIGACT_H__
