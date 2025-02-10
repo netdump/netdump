@@ -514,6 +514,11 @@ void display_check_term_size(void)
 	int i = 0;
 	struct winsize w;
 
+	if (LINES >= DISPLAY_EXPECT_TERMINAL_LINES && COLS >= DISPLAY_EXPECT_TERMINAL_COLS)
+	{
+		RVoid();
+	}
+
 	for (i = 0; i < 3; i++) {
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 		if (w.ws_row < DISPLAY_EXPECT_TERMINAL_LINES || w.ws_col < DISPLAY_EXPECT_TERMINAL_COLS){

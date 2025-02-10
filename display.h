@@ -802,7 +802,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
             {                                                                                                                                               \
                 char cmd[1024] = {0};                                                                                                                       \
                 snprintf(cmd, 1024, "%s", "netdump ");                                                                                                      \
-                snprintf(cmd + strlen(cmd), (1024 - strlen(cmd)), "%s", buffer);                                                                            \
+                snprintf(cmd + strlen(cmd), (1024 - strlen(cmd)), "%s ", buffer);                                                                           \
                 if (unlikely(((display_first_tui_handle_logic((const char *)(cmd),                                                                          \
                                                               G_display.wins[6], G_display.panels[6], G_display.wins[7], G_display.panels[7])) == ND_ERR))) \
                 {                                                                                                                                           \

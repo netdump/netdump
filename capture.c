@@ -1450,6 +1450,70 @@ void __capture_send_errmsg__(int msgtype, const char *format, ...)
     
 }
 
+
+/**
+ * @brief
+ *  Check whether the passed parameters meet the requirements
+ * @param command
+ *  The string to be tested
+ */
+int capture_check_command_meet_requirement (const char * command) {
+
+    TC("Called { %s(%s)", __func__, command);
+
+    int len = (int)strlen(command), i = 0, j = 0;
+
+    char * faddr = NULL, * saddr = NULL, * strp = (char *)command;
+
+    for (i = 0; i < len; i++) 
+    {
+        if (strp[i] == '-' && faddr == NULL) {
+            faddr = strp + i;
+        }
+
+        if ((strp[i] == ' ' || (i == (len - 1))) && saddr == NULL && faddr)
+        {
+            saddr = strp + i;
+        }
+
+        if (faddr && saddr) {
+            if ((int)(saddr - faddr) == 2) 
+            {
+                TI("*faddr: %c; *(faddr+1): %c; faddr: %p, saddr: %p", *faddr, *(faddr + 1), faddr, saddr);
+                if (!(strchr(SHORTOPTS, *(faddr + 1)))) {
+                    RInt(ND_ERR);
+                }
+            }
+            else if ((int)(saddr - faddr) > 2)
+            {
+                TI("(sizeof(longopts) / sizeof(struct option)): %ld", (sizeof(longopts) / sizeof(struct option)));
+                for (j = 0; j < ((sizeof(longopts) / sizeof(struct option)) - 1); j++)
+                {
+                    if (!(strncmp((faddr + 2), longopts[j].name, strlen(longopts[j].name))))
+                    {
+                        break;
+                    }
+                }
+                if (j == (sizeof(longopts) / sizeof(struct option)))
+                {
+                    RInt(ND_ERR);
+                }
+            }
+            else 
+            {
+                TE("Unkown Error");
+                RInt(ND_ERR);
+            }
+            faddr = NULL;
+            saddr = NULL;
+        }
+    }
+
+    RInt(ND_OK);
+}
+
+
+
 /**
  * @brief
  *  Real command parsing
@@ -1488,6 +1552,12 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
 
     tzset();
+
+    if ((capture_check_command_meet_requirement(command)) == ND_ERR)
+    {
+        capture_usage();
+        RInt(ND_OK);
+    }
 
     TI("command: %s", command);
     int tmp = strlen(command), argc = 0;
