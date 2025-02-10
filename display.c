@@ -23,6 +23,7 @@
  */
 volatile unsigned char display_G_flag = 0;
 
+
 /**
  * @brief
  * 	Whether the SIGWINCH signal is received
@@ -38,10 +39,17 @@ volatile unsigned char display_G_sigwinch_flag = 0;
 
 /**
  * @brief
- * 	Stores the old values ​​of LINES and COLS
+ * 	Stores the old values ​​of LINES
  */
 volatile unsigned int display_old_lines = 0;
+
+
+/**
+ * @brief
+ * 	Stores the old values ​​of COLS
+ */
 volatile unsigned int display_old_cols = 0;
+
 
 /**
  * @brief
@@ -206,9 +214,10 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 
 	TC("Called { %s(%s, %s, %p, %p, %d)", __func__, prefix, msg, win, panel, color);
 
-	char * space = malloc(1024 * 1024);
+	char * space = malloc(1024 * 2);
 	if (!space) {
-		TE("malloc(1024 * 1024) failed");
+		TE("malloc(1024 * 2) failed; Kill will be called immediately");
+		kill(getpid(), 15);
 		RVoid();
 	}
 
@@ -220,7 +229,7 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	wclrtoeol(win);
 	wattrset(win, A_BOLD);
 	wattron(win, COLOR_PAIR((color)));
-	snprintf(space, 1024 * 1024, "%s\n\t%s\n", prefix, msg);
+	snprintf(space, 1024 * 2, "%s\n\t%s\n", prefix, msg);
 	waddstr(win, space);
 	wattroff(win, COLOR_PAIR((color)));
 	wattron(win, COLOR_PAIR((color)));
@@ -346,91 +355,6 @@ void display_handle_winch_signal (int signum) {
 
 /**
  * @brief
- * 	Adjust terminal font size
- */
-void display_adjust_terminal_font_size (void) {
-
-	TC("Called { %s(void)", __func__);
-
-	int current_font_size = 10;
-
-	const char *term = getenv("TERM");
-
-	if (term == NULL)
-	{
-		return;
-	}
-
-	// 更新字体大小
-	current_font_size += 1;
-
-	// 限制字体大小的范围（例如 8 到 24）
-	if (current_font_size < 8)
-		current_font_size = 8;
-	if (current_font_size > 24)
-		current_font_size = 24;
-
-	if (strstr(term, "xterm") != NULL)
-	{
-		// xterm 或兼容终端
-		char buffer[128];
-		snprintf(buffer, sizeof(buffer), "\e]710;xft:DejaVu Sans Mono:size=%d\a", current_font_size);
-		printw("%s", buffer);
-	}
-	else if (strstr(term, "gnome") != NULL || strstr(term, "konsole") != NULL)
-	{
-		// gnome-terminal 或 konsole
-		if (1 > 0)
-		{
-			printw("\e]50;SetFontSize=+2\a");
-		}
-		else if (1 < 0)
-		{
-			printw("\e]50;SetFontSize=-2\a");
-		}
-	}
-	refresh();
-
-	RVoid();
-}
-
-
-/**
- * @brief
- * 	Restore the default font when exiting the program
- */
-void display_restore_default_font(void)
-{
-
-	TC("Called { %s(void)", __func__);
-
-	int default_font_size = 0;
-	const char *term = getenv("TERM");
-	if (term == NULL)
-	{
-		return;
-	}
-
-	if (strstr(term, "xterm") != NULL)
-	{
-		// xterm 或兼容终端
-		char buffer[128];
-		snprintf(buffer, sizeof(buffer), "\e]710;xft:DejaVu Sans Mono:size=%d\a", default_font_size);
-		printw("%s", buffer);
-	}
-	else if (strstr(term, "gnome") != NULL || strstr(term, "konsole") != NULL)
-	{
-		// gnome-terminal 或 konsole
-		printw("\e]50;SetFontSize=0\a"); // 重置字体大小
-	}
-	refresh();
-
-	RVoid();
-}
-
-
-/**
- * @brief
  * 	dump size infomation
  */
 void diaplay_dump_size_info(void)
@@ -472,35 +396,11 @@ void display_handle_win_resize(int flag) {
 
 	TC("Called { %s(void)", __func__);
 
+	int i = 0;
+
 	display_G_sigwinch_flag = 0;
 
 	display_hide_wins_all();
-
-	struct winsize w;
-
-	int i = 0;
-	for (i = 0; i < 6; i++) { 
-		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-		if (w.ws_col == display_old_cols && w.ws_row == display_old_lines) {
-			TI("i: %d; w.ws_col == display_old_cols and w.ws_row == display_old_lines", i);
-			continue;
-		}
-		TI("i: %d; display_old_cols: %d; display_old_lines: %d", i, display_old_cols, display_old_lines);
-		display_old_cols = w.ws_col;
-		display_old_lines = w.ws_row;
-		TI("i: %d; display_old_cols: %d; display_old_lines: %d", i, display_old_cols, display_old_lines);
-		TI("i: %d; w.ws_col: %d; w.ws_row: %d", i, w.ws_col, w.ws_row);
-	}
-
-	resizeterm(w.ws_row, w.ws_col);
-
-	if (LINES == w.ws_row && w.ws_col == COLS)
-	{
-		TI("Resize SUC");
-	}
-	else {
-		TI("Resize FAIL");
-	}
 
 	werase(stdscr);
 	for (i = 0; i < (display_PW_number - 1); i++)
@@ -524,6 +424,34 @@ void display_handle_win_resize(int flag) {
 			delwin(G_display.wins[i]);
 			G_display.wins[i] = NULL;
 		}
+	}
+
+	struct winsize w;
+
+	for (i = 0; i < 6; i++)
+	{
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+		if (w.ws_col == display_old_cols && w.ws_row == display_old_lines)
+		{
+			TI("i: %d; w.ws_col == display_old_cols and w.ws_row == display_old_lines", i);
+			continue;
+		}
+		TI("i: %d; display_old_cols: %d; display_old_lines: %d", i, display_old_cols, display_old_lines);
+		display_old_cols = w.ws_col;
+		display_old_lines = w.ws_row;
+		TI("i: %d; display_old_cols: %d; display_old_lines: %d", i, display_old_cols, display_old_lines);
+		TI("i: %d; w.ws_col: %d; w.ws_row: %d", i, w.ws_col, w.ws_row);
+	}
+
+	resizeterm(w.ws_row, w.ws_col);
+
+	if (LINES == w.ws_row && w.ws_col == COLS)
+	{
+		TI("Resize SUC");
+	}
+	else
+	{
+		TI("Resize FAIL");
 	}
 
 	display_apply_first_tui_wins_resources();

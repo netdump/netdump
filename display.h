@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
 #include <assert.h>
 #include <sys/ioctl.h>
 
@@ -50,10 +52,29 @@ extern volatile unsigned char display_G_sigwinch_flag;
 
 /**
  * @brief
- * 	Stores the old values ​​of LINES and COLS
+ * 	Stores the old values ​​of LINES
  */
-volatile unsigned int display_old_lines;
-volatile unsigned int display_old_cols;
+extern volatile unsigned int display_old_lines;
+
+/**
+ * @brief
+ * 	Stores the old values ​​of COLS
+ */
+extern volatile unsigned int display_old_cols;
+
+
+/**
+ * @brief
+ *  Desired terminal COLS
+ */
+#define DISPLAY_EXPECT_TERMINAL_COLS            206
+
+/**
+ * @brief
+ *  Desired terminal LINES
+ */
+#define DISPLAY_EXPECT_TERMINAL_LINES           42
+
 
 /**
  * @brief 
