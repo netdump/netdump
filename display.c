@@ -517,7 +517,6 @@ void display_check_term_size(void)
 	for (i = 0; i < 3; i++) {
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 		if (w.ws_row < DISPLAY_EXPECT_TERMINAL_LINES || w.ws_col < DISPLAY_EXPECT_TERMINAL_COLS){
-			//int y = getmaxy(stdscr);
 			wclear(stdscr);
 			refresh();
 			wmove(stdscr, (w.ws_row / 2), 0);
