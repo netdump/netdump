@@ -97,42 +97,55 @@ static int msgcomm_new_init_msgcomm(void)
 
     char *tmp = (char *)(memcomm.faddr);
 
+    memset(tmp, 0, MSGCOMM_RING_T_SIZE);
     msgcomm[0].comm.ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
     tmp += MSGCOMM_RING_T_SIZE;
 
+    memset(tmp, 0, MSGCOMM_RING_T_SIZE);
     msgcomm[0].comm._ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
     tmp += MSGCOMM_RING_T_SIZE;
 
+    memset(tmp, 0, MSGCOMM_RING_T_SIZE);
     msgcomm[1].comm.ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
     tmp += MSGCOMM_RING_T_SIZE;
 
+    memset(tmp, 0, MSGCOMM_RING_T_SIZE);
     msgcomm[1].comm._ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
     tmp += MSGCOMM_RING_T_SIZE;
 
+    memset(tmp, 0, MSGCOMM_ACTUAL_SIZE);
     msgcomm[0].msg.memory = tmp;
     tmp += MSGCOMM_ACTUAL_SIZE;
 
+    memset(tmp, 0, MSGCOMM_ACTUAL_SIZE);
     msgcomm[1].msg.memory = tmp;
     tmp += MSGCOMM_ACTUAL_SIZE;
 
+    memset(tmp, 0, MSGCOMM_SPACE_SIZE);
     memcomm.space = tmp;
     tmp += MSGCOMM_SPACE_SIZE;
 
+    memset(tmp, 0, MSGCOMM_CMDMEM_SIZE);
     memcomm.cmdmem = tmp;
     tmp += MSGCOMM_CMDMEM_SIZE;
 
+    memset(tmp, 0, MSGCOMM_CPINFO_SIZE);
     memcomm.cpinfo = tmp;
     tmp += MSGCOMM_CPINFO_SIZE;
 
+    memset(tmp, 0, MSGCOMM_MEMFLAG_SIZE);
     memcomm.memflag = tmp;
     tmp += MSGCOMM_MEMFLAG_SIZE;
 
+    memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
     memcomm.reserve = tmp;
     tmp += MSGCOMM_RESERVE_SIZE;
 
+    memset(tmp, 0, MSGCOMM_ARGV_SIZE);
     memcomm.argv = (void **)tmp;
     tmp += MSGCOMM_ARGV_SIZE;
 
+    memset(tmp, 0, MSGCOMM_PKTPTRARR_SIZE);
     memcomm.pktptrarr = (void **)tmp;
     tmp += MSGCOMM_PKTPTRARR_SIZE;
 
