@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "common.h"
 #include "ring.h"
@@ -45,10 +48,10 @@ typedef struct {
 	
 	struct {
 		void * memory;
-		void * baseaddr;
+		//void * baseaddr;
         unsigned int dir;
 		unsigned int memspace;
-		char name[COMM_NAMESIZE];
+		//char name[COMM_NAMESIZE];
 	} msg;
 	
 } msgcomm_t;
@@ -147,8 +150,147 @@ enum {
  * @memberof MSGCOMM_BLOCK_NUMBERS
  * 	Number of memory block elements
  */
-#define MSGCOMM_BLOCK_NUMBERS					64
-#define MSGCOMM_MEMORY_SPACE					(128 * 1024)
+#define MSGCOMM_BLOCK_NUMBERS					(1 << 4)
+#define MSGCOMM_MEMORY_SPACE					(1 << 12)
+
+
+/**
+ * @brief
+ * 	Redefine the name of the shared memory file
+ */
+#define MSGCOMM_MEMORY_NAME						".msgcomm.mem"
+
+
+/**
+ * @brief
+ * 	Redefine the base address of shared memory
+ */
+#define MSGCOMM_MEMORY_BASE						(void *)(0x6EE000000000)
+
+/**
+ * @brief
+ * 	Define some structures pointing to shared memory
+ * @memberof space
+ * 	Mainly used in the capture process to send messages to the display process
+ * @memberof cmdmem
+ * 	Mainly used in the capture process to receive messages from the display process
+ * @memberof cpinfo
+ * 	Used to display capture process information in the second TUI interface in the display process
+ * @memberof memflag
+ * 	Used for communication between the display process and the analysis process
+ * @memberof reserve
+ * 	reserve
+ * @memberof argv
+ * 	Pointer array to store the parsed command string
+ * @memberof pktptrarr
+ *	Pointer array to store the addresses of captured data packets
+ * @note
+ * 	space			4K(capture use)
+ *	cmdmem			4K(capture use)
+ *	argv			4K
+ *	cpinfo			4K(display second tui)
+ *	flag			4k(display second tui and capture)
+ *	reserve			32K
+ *	pktsarray		1024 * 1024 * 16
+ */
+typedef struct {
+
+	void * faddr;
+	void * space;
+	void * cmdmem;
+	void * cpinfo;
+	void * memflag;
+	void * reserve;
+	void ** argv;
+	void ** pktptrarr;
+
+} memcomm_t;
+
+
+/**
+ * @brief
+ *  Global variables, used in DP/CP/AA processes
+ */
+extern memcomm_t memcomm;
+
+
+/**
+ * @brief
+ * 	memcomm_t.space size
+ */
+#define MSGCOMM_SPACE_SIZE 						(1 << 12)	// 4096
+
+/**
+ * @brief
+ * 	memcomm_t.cmdmem size
+ */
+#define MSGCOMM_CMDMEM_SIZE 					(1 << 12)	// 4096
+
+/**
+ * @brief
+ * 	memcomm_t.cpinfo size
+ */
+#define MSGCOMM_CPINFO_SIZE 					(1 << 12)	// 4096
+
+/**
+ * @brief
+ * 	memcomm_t.memflag size
+ */
+#define MSGCOMM_MEMFLAG_SIZE 					(1 << 12)	// 4096
+
+/**
+ * @brief
+ * 	memcomm_t.reserve size
+ */
+#define MSGCOMM_RESERVE_SIZE 					(1 << 15) 	// 32K
+
+/**
+ * @brief
+ * 	memcomm_t.argv size
+ */
+#define MSGCOMM_ARGV_SIZE 						(1 << 12) 	// 4096
+
+/**
+ * @brief
+ * 	memcomm_t.pktptrarr size
+ */
+#define MSGCOMM_PKTPTRARR_SIZE 					(1 << 24) 	// 16M
+
+
+/**
+ * @brief
+ * 	Memory length after rounding 4096
+ */
+#define MSGCOMM_RING_T_SIZE						(((((sizeof(ring_t)) + (MSGCOMM_BLOCK_NUMBERS << 3)) >> 12) + 1) << 12)
+
+
+/**
+ * @brief
+ * 	The actual memory size for storing data
+ */
+#define MSGCOMM_ACTUAL_SIZE						(MSGCOMM_MEMORY_SPACE * MSGCOMM_BLOCK_NUMBERS)
+
+
+/**
+ * @brief
+ * 	Unified memory application for communication,
+ * @note
+ * 	_ring * 2 		[sizeof(struct ring) * 2 + MSGCOMM_BLOCK_NUMBERS * 8]
+ * 	ring * 2		[sizeof(struct ring) * 2 + MSGCOMM_BLOCK_NUMBERS * 8]
+ * 	memory * 2		[MSGCOMM_MEMORY_SPACE * MSGCOMM_BLOCK_NUMBERS * 2]
+ */
+#define MSGCOMM_MSGCOMM_MEMORY_SIZE				(((MSGCOMM_RING_T_SIZE) << 2) + ((MSGCOMM_ACTUAL_SIZE) << 1))
+
+/**
+ * @brief
+ * 	Total memory mapped
+ */
+#define	MSGCOMM_MMAP_TOTAL																		\
+	(																							\
+		(MSGCOMM_MSGCOMM_MEMORY_SIZE) + (MSGCOMM_SPACE_SIZE) + (MSGCOMM_CMDMEM_SIZE) +			\
+		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
+		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE)											\
+	)																							\
 
 
 /**
@@ -174,15 +316,15 @@ enum {
 #define MSGCOMM__RING_FNAME_1TO0                "/dev/shm/._Ring1TO0"
 #define MSGCOMM_MEM_FNAME_1TO0                  "/dev/shm/.Mem1TO0"
 
-
-/**
- * @brief 
- *  Message communication resource initialization and startup
- * @return 
- *  If successful, it returns ND_OK; 
- *  if failed, it returns ND_ERR
- */
-int msgcomm_startup(void);
+	/**
+	 * @brief
+	 *  Message communication resource initialization and startup
+	 * @return
+	 *  If successful, it returns ND_OK;
+	 *  if failed, it returns ND_ERR
+	 */
+	int
+	msgcomm_startup(void);
 
 
 /**

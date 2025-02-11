@@ -90,7 +90,7 @@ void ring_dump(const ring_t *r)
 
 	if (unlikely((!r))) return;
 
-	TI("ring <%s>@%p\n", r->name, r);
+	//TI("ring <%s>@%p\n", r->name, r);
 	TI("  flags=%x\n", r->flags);
 	TI("  size=%"PRIu32"\n", r->prod.size);
 	TI("  ct=%"PRIu32"\n", r->cons.tail);
@@ -191,9 +191,9 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 
 	/* init the ring structure */
 	memset(ring, 0, sizeof(*ring));
-	snprintf(ring->name, sizeof(ring->name), "%s", name);
+	//snprintf(ring->name, sizeof(ring->name), "%s", name);
 	ring->flags = flags;
-	ring->count = count;
+	//ring->count = count;
 	ring->prod.watermark = count;
 	ring->prod.sp_enqueue = !!(flags & RING_F_SP_ENQ);
 	ring->cons.sc_dequeue = !!(flags & RING_F_SC_DEQ);
@@ -205,6 +205,42 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 	RVoidPtr(ring);
 }
 
+
+/**
+ * @brief
+ * 	Init memory
+ * @param addr
+ *   Starting address
+ * @param count
+ *   The size of the ring (must be a power of 2).
+ * @param flags
+ *   An OR of the following:
+ *    - RING_F_SP_ENQ: If this flag is set, the default behavior when
+ *      using ``ring_enqueue()`` or ``ring_enqueue_bulk()``
+ *      is "single-producer". Otherwise, it is "multi-producers".
+ *    - RING_F_SC_DEQ: If this flag is set, the default behavior when
+ *      using ``ring_dequeue()`` or ``ring_dequeue_bulk()``
+ *      is "single-consumer". Otherwise, it is "multi-consumers".
+ */
+void *ring_init(void *addr, int count, int flags) 
+{
+	TC("Called {%s(%p, %d, %d)", __func__, addr, count, flags);
+
+	ring_t * ring = (ring_t *)(addr);
+
+	memset(ring, 0, sizeof(*ring));
+
+	ring->flags = flags;
+	ring->prod.watermark = count;
+	ring->prod.sp_enqueue = !!(flags & RING_F_SP_ENQ);
+	ring->cons.sc_dequeue = !!(flags & RING_F_SC_DEQ);
+	ring->prod.size = ring->cons.size = count;
+	ring->prod.mask = ring->cons.mask = count - 1;
+	ring->prod.head = ring->cons.head = 0;
+	ring->prod.tail = ring->cons.tail = 0;
+
+	RVoidPtr((void *)ring);
+}
 
 /**
  * Search a ring from its name
@@ -272,7 +308,7 @@ void ring_free(ring_t *ring) {
 		RVoid();
 	}
 
-    munmap(ring, (ring->count * (sizeof(void *)) + sizeof(ring_t)));
+    munmap(ring, (ring->prod.size * (sizeof(void *)) + sizeof(ring_t)));
 
 	RVoid();
 }

@@ -28,6 +28,7 @@ LDFLAGS = -L ${PCAP_PATH}/lib
 
 
 LINKLIB = 
+LINKLIB += -lrt
 LINKLIB += -lmenuw
 LINKLIB += -lpanelw
 LINKLIB += -lncursesw

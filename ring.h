@@ -152,7 +152,7 @@ enum ring_queue_behavior {
 
 
 /**
- * An RTE ring structure.
+ * An ring structure.
  *
  * The producer and the consumer have a head and a tail index. The particularity
  * of these index is that they are not between 0 and size(ring). These indexes
@@ -162,9 +162,9 @@ enum ring_queue_behavior {
  * a problem.
  */
 typedef struct ring {
-	char name[NAMESIZE];                /**< Name of the ring. */
+	//char name[NAMESIZE];                /**< Name of the ring. */
 	uint32_t flags;                     /**< Flags supplied at creation. */
-	uint32_t count;                     /**< Flags supplied at creation. */
+	//uint32_t count;                     /**< Flags supplied at creation. */
 
 	/** Ring producer status. */
 	struct prod {
@@ -237,11 +237,31 @@ ring_t * ring_create(const char * name, uintptr_t baseaddr, int count, int flags
 
 
 /**
+ * @brief
+ * 	Init memory
+ * @param addr
+ *   Starting address
+ * @param count
+ *   The size of the ring (must be a power of 2).
+ * @param flags
+ *   An OR of the following:
+ *    - RING_F_SP_ENQ: If this flag is set, the default behavior when
+ *      using ``ring_enqueue()`` or ``ring_enqueue_bulk()``
+ *      is "single-producer". Otherwise, it is "multi-producers".
+ *    - RING_F_SC_DEQ: If this flag is set, the default behavior when
+ *      using ``ring_dequeue()`` or ``ring_dequeue_bulk()``
+ *      is "single-consumer". Otherwise, it is "multi-consumers".
+ */
+void *ring_init(void *addr, int count, int flags);
+
+
+/**
  * @brief Destroy the ring queue
  * @param ring 
  * 	 The address of the ring queue
  */
 void ring_free(ring_t *ring);
+
 
 /**
  * Change the high water mark.

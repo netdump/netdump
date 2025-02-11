@@ -289,6 +289,63 @@ void * nd_called_open_mmap_openup_memory (
 
 /**
  * @brief
+ *  Call the mmap function to open up memory space
+ * @param name
+ *  The name of the file
+ * @param baseaddr
+ *  Starting base address
+ * @param memspace
+ *  The size of memory 
+ * @return
+ *  Returns the address of the allocated space if successful,
+ *  otherwise returns NULL
+ */
+void *nd_called_shmopen_mmap_openup_memory (const char *name, void *baseaddr, unsigned int memsize)
+{
+
+    TC("Called { %s(%s, %p, %u)", __func__, name, (void *)baseaddr, memsize);
+
+    int fd = -1;
+    if (unlikely((fd = shm_open(name, O_RDWR | O_CREAT, 0666)) < 0))
+    {
+        TE("%s", strerror(errno));
+        RVoidPtr(NULL);
+    }
+
+    if (unlikely(ftruncate(fd, memsize) == -1))
+    {
+        close(fd);
+        TE("%s", strerror(errno));
+        RVoidPtr(NULL);
+    }
+
+    TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
+
+    void *p = mmap((void *)(align_address((uintptr_t)baseaddr)), memsize,
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+
+    if (unlikely((p == MAP_FAILED)))
+    {
+        close(fd);
+        TE("%s", strerror(errno));
+        RVoidPtr(NULL);
+    }
+
+    if (unlikely((!p)))
+    {
+        close(fd);
+        TE("%s", strerror(errno));
+        RVoidPtr(NULL);
+    }
+
+    close(fd);
+
+    RVoidPtr((p));
+}
+
+
+/**
+ * @brief
  *  Call the mmap function to look up memory space
  * @param name
  *  The name of the file

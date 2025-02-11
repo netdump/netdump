@@ -340,6 +340,8 @@ void display_check_term_size(void);
                                                                                                                                         \
         /* 5. Original hexadecimal information display box */                                                                           \
         G_display.wins[5] = newwin(rwlines, rwcols, rwybegin, rwxbegin);                                                                \
+                                                                                                                                        \
+        G_display.wins[8] = newwin(DISPLAY_WINS_8_NLINES, DISPLAY_WINS_8_NCOLS, DISPLAY_WINS_8_NYBEGIN, DISPLAY_WINS_8_NXBEGIN);        \
     } while (0);                                                                                                                        \
 
 
@@ -352,6 +354,7 @@ void display_check_term_size(void);
         G_display.panels[3] = new_panel(G_display.wins[3]);                                                                             \
         G_display.panels[4] = new_panel(G_display.wins[4]);                                                                             \
         G_display.panels[5] = new_panel(G_display.wins[5]);                                                                             \
+        G_display.panels[8] = new_panel(G_display.wins[8]);                                                                             \
     } while (0);                                                                                                                        \
 
 

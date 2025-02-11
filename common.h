@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <fcntl.h>
 #include <sys/sysinfo.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -231,13 +232,13 @@ typedef struct {
     void * ring;
 	void * _ring;
 	
-	void * baseaddr;
-	void * _baseaddr;
+	//void * baseaddr;
+	//void * _baseaddr;
 
     unsigned long long count;
 	
-	char name[COMM_NAMESIZE];
-	char _name[COMM_NAMESIZE];
+	//char name[COMM_NAMESIZE];
+	//char _name[COMM_NAMESIZE];
 
 } comm_t;
 
@@ -274,6 +275,23 @@ int nd_check_fpath (char * fname);
  */
 void * nd_called_open_mmap_openup_memory (
 	const char * name, void * baseaddr, unsigned int memspace, unsigned int count);
+
+	
+/**
+ * @brief
+ *  Call the mmap function to open up memory space
+ * @param name
+ *  The name of the file
+ * @param baseaddr
+ *  Starting base address
+ * @param memspace
+ *  The size of memory
+ * @return
+ *  Returns the address of the allocated space if successful,
+ *  otherwise returns NULL
+ */
+void *nd_called_shmopen_mmap_openup_memory(
+	const char *name, void *baseaddr, unsigned int memsize);
 
 
 /**

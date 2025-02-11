@@ -28,37 +28,119 @@ static msgcomm_t msgcomm[] = {
     {
         .comm.ring = NULL,
         .comm._ring = NULL,
-        .comm.baseaddr = MSGCOMM_BASE_ADDR_RING0TO1,
-        .comm._baseaddr = MSGCOMM_BASE_ADDR__RING0TO1,
+        //.comm.baseaddr = MSGCOMM_BASE_ADDR_RING0TO1,
+        //.comm._baseaddr = MSGCOMM_BASE_ADDR__RING0TO1,
         .comm.count = MSGCOMM_BLOCK_NUMBERS,
-        .comm.name = MSGCOMM_RING_FNAME_0TO1,
-        .comm._name = MSGCOMM__RING_FNAME_0TO1,
+        //.comm.name = MSGCOMM_RING_FNAME_0TO1,
+        //.comm._name = MSGCOMM__RING_FNAME_0TO1,
 
         .msg.memory = NULL,
-        .msg.baseaddr = MSGCOMM_BASE_ADDR_MEM0TO1,
+        //.msg.baseaddr = MSGCOMM_BASE_ADDR_MEM0TO1,
         .msg.dir = MSGCOMM_DIR_0TO1,
         .msg.memspace = MSGCOMM_MEMORY_SPACE,
-        .msg.name = MSGCOMM_MEM_FNAME_0TO1
+        //.msg.name = MSGCOMM_MEM_FNAME_0TO1
     }, 
     {
         .comm.ring = NULL,
         .comm._ring = NULL,
-        .comm.baseaddr = MSGCOMM_BASE_ADDR_RING1TO0,
-        .comm._baseaddr = MSGCOMM_BASE_ADDR__RING1TO0,
+        //.comm.baseaddr = MSGCOMM_BASE_ADDR_RING1TO0,
+        //.comm._baseaddr = MSGCOMM_BASE_ADDR__RING1TO0,
         .comm.count = MSGCOMM_BLOCK_NUMBERS,
-        .comm.name = MSGCOMM_RING_FNAME_1TO0,
-        .comm._name = MSGCOMM__RING_FNAME_1TO0,
+        //.comm.name = MSGCOMM_RING_FNAME_1TO0,
+        //.comm._name = MSGCOMM__RING_FNAME_1TO0,
 
         .msg.memory = NULL,
-        .msg.baseaddr = MSGCOMM_BASE_ADDR_MEM1TO0,
+        //.msg.baseaddr = MSGCOMM_BASE_ADDR_MEM1TO0,
         .msg.dir = MSGCOMM_DIR_1TO0,
         .msg.memspace = MSGCOMM_MEMORY_SPACE,
-        .msg.name = MSGCOMM_MEM_FNAME_1TO0
+        //.msg.name = MSGCOMM_MEM_FNAME_1TO0
     }
 
 };
 
 
+/**
+ * @brief
+ *  Global variables, used in DP/CP/AA processes
+ */
+memcomm_t memcomm = {
+    .faddr = NULL,
+    .space = NULL,
+    .cmdmem = NULL,
+    .cpinfo = NULL,
+    .memflag = NULL,
+    .reserve = NULL,
+    .argv = NULL,
+    .pktptrarr = NULL
+};
+
+
+/**
+ * @brief
+ *  Initialize the msgcomm_t structure
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+static int msgcomm_new_init_msgcomm(void)
+{
+
+    TC("Called { %s(void)", __func__);
+
+    memcomm.faddr = nd_called_shmopen_mmap_openup_memory(
+        MSGCOMM_MEMORY_NAME, MSGCOMM_MEMORY_BASE, MSGCOMM_MMAP_TOTAL);
+
+    if (unlikely((memcomm.faddr == NULL)))
+    {
+        RInt(ND_ERR);
+    }
+
+    char *tmp = (char *)(memcomm.faddr);
+
+    msgcomm[0].comm.ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
+    tmp += MSGCOMM_RING_T_SIZE;
+
+    msgcomm[0].comm._ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
+    tmp += MSGCOMM_RING_T_SIZE;
+
+    msgcomm[1].comm.ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
+    tmp += MSGCOMM_RING_T_SIZE;
+
+    msgcomm[1].comm._ring = ring_init((void *)tmp, MSGCOMM_BLOCK_NUMBERS, 0);
+    tmp += MSGCOMM_RING_T_SIZE;
+
+    msgcomm[0].msg.memory = tmp;
+    tmp += MSGCOMM_ACTUAL_SIZE;
+
+    msgcomm[1].msg.memory = tmp;
+    tmp += MSGCOMM_ACTUAL_SIZE;
+
+    memcomm.space = tmp;
+    tmp += MSGCOMM_SPACE_SIZE;
+
+    memcomm.cmdmem = tmp;
+    tmp += MSGCOMM_CMDMEM_SIZE;
+
+    memcomm.cpinfo = tmp;
+    tmp += MSGCOMM_CPINFO_SIZE;
+
+    memcomm.memflag = tmp;
+    tmp += MSGCOMM_MEMFLAG_SIZE;
+
+    memcomm.reserve = tmp;
+    tmp += MSGCOMM_RESERVE_SIZE;
+
+    memcomm.argv = (void **)tmp;
+    tmp += MSGCOMM_ARGV_SIZE;
+
+    memcomm.pktptrarr = (void **)tmp;
+    tmp += MSGCOMM_PKTPTRARR_SIZE;
+
+    RInt(ND_OK);
+}
+
+
+#if 0
 /**
  * @brief 
  *  Initialize the msgcomm_t structure
@@ -114,11 +196,14 @@ static int msgcomm_init_msgcomm(msgcomm_t * vmsgcomm) {
         TE("vmsgcomm->comm.ring: %p", vmsgcomm->comm.ring);
         RInt(ND_ERR);
     }
+    
 
     RInt(ND_OK);
 }
+#endif
 
 
+#if 0
 /**
  * 
  */
@@ -162,8 +247,10 @@ static int msgcomm_lookup_msgcomm(msgcomm_t * vmsgcomm) {
 
     RInt(ND_OK);
 }
+#endif
 
 
+#if 0
 /**
  * @brief 
  *  Destroy msgcomm_t structure members
@@ -203,6 +290,7 @@ static int msgcomm_ending_msgcomm(msgcomm_t * vmsgcomm) {
 
     RInt(ND_OK);
 }
+#endif
 
 
 /**
@@ -283,11 +371,15 @@ int msgcomm_startup(void) {
 
     TC("Called { %s()", __func__);
 
+    msgcomm_new_init_msgcomm();
+
     int i = 0;
     for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
 
+        #if 0
         if (unlikely(((msgcomm_init_msgcomm(&(msgcomm[i]))) == ND_ERR)))
             RInt(ND_ERR);
+        #endif
 
         if (unlikely(((msgcomm_enq_ring(&(msgcomm[i]))) == ND_ERR)))
             RInt(ND_ERR);
@@ -308,11 +400,13 @@ int msgcomm_lookup (void) {
 
     TC("Called { %s(void)", __func__);
 
+    #if 0
     int i = 0;
     for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
         if (unlikely(((msgcomm_lookup_msgcomm(&(msgcomm[i]))) == ND_ERR)))
             RInt(ND_ERR);
     }
+    #endif
 
     RInt(ND_OK);
 }
@@ -326,10 +420,16 @@ void msgcomm_ending(void) {
 
     TC("Called { %s()", __func__);
 
+    munmap(memcomm.faddr, MSGCOMM_MMAP_TOTAL);
+
+    shm_unlink(MSGCOMM_MEMORY_NAME);
+
+    #if 0
     int i = 0;
     for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
         msgcomm_ending_msgcomm(&(msgcomm[i]));
     }
+    #endif
 
     RVoid();
 }
@@ -542,18 +642,18 @@ void msgcomm_infodump(void) {
     int i = 0;
     for (i = 0; i < (sizeof(msgcomm) / sizeof(msgcomm_t)); i++) {
         TI("msgcomm[%d]", i);
-        TI("msgcomm[%d].comm.name: %s", i, msgcomm[i].comm.name);
-        TI("msgcomm[%d].comm.baseaddr: %p", i, msgcomm[i].comm.baseaddr);
+        //TI("msgcomm[%d].comm.name: %s", i, msgcomm[i].comm.name);
+        //TI("msgcomm[%d].comm.baseaddr: %p", i, msgcomm[i].comm.baseaddr);
         TI("msgcomm[%d].comm.ring: %p", i, msgcomm[i].comm.ring);
         
-        TI("msgcomm[%d].comm._name: %s", i, msgcomm[i].comm._name);
-        TI("msgcomm[%d].comm._baseaddr: %p", i, msgcomm[i].comm._baseaddr);
+        //TI("msgcomm[%d].comm._name: %s", i, msgcomm[i].comm._name);
+        //TI("msgcomm[%d].comm._baseaddr: %p", i, msgcomm[i].comm._baseaddr);
         TI("msgcomm[%d].comm._ring: %p", i, msgcomm[i].comm._ring);
         
         TI("msgcomm[%d].comm.count: %llu", i, msgcomm[i].comm.count);
 
-        TI("msgcomm[%d].msg.name: %s", i, msgcomm[i].msg.name);
-        TI("msgcomm[%d].msg.baseaddr: %p", i, msgcomm[i].msg.baseaddr);
+        //TI("msgcomm[%d].msg.name: %s", i, msgcomm[i].msg.name);
+        //TI("msgcomm[%d].msg.baseaddr: %p", i, msgcomm[i].msg.baseaddr);
         TI("msgcomm[%d].msg.memory: %p", i, msgcomm[i].msg.memory);
         TI("msgcomm[%d].msg.memspace: %u", i, msgcomm[i].msg.memspace);
         TI("msgcomm[%d].msg.dir: %u", i, msgcomm[i].msg.dir);
