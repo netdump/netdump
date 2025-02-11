@@ -80,7 +80,7 @@ extern volatile unsigned int display_old_cols;
  * @brief 
  *  The number of windows and panels used globally
  */
-#define display_PW_number               9
+#define display_PW_number                       10
 
 
 /**
@@ -107,12 +107,12 @@ extern volatile unsigned int display_old_cols;
 #define DISPLAY_WINS_3_NYBEGIN              (0)
 #define DISPLAY_WINS_3_NXBEGIN              (0)
 
-#define DISPLAY_WINS_4_NLINES               (LINES - DISPLAY_WINS_3_NLINES)
+#define DISPLAY_WINS_4_NLINES               ((LINES - DISPLAY_WINS_3_NLINES) - 1)
 #define DISPLAY_WINS_4_NCOLS                (COLS / 2)
 #define DISPLAY_WINS_4_NYBEGIN              (DISPLAY_WINS_3_NLINES)
 #define DISPLAY_WINS_4_NXBEGIN              (0)
 
-#define DISPLAY_WINS_5_NLINES               (LINES - DISPLAY_WINS_3_NLINES)
+#define DISPLAY_WINS_5_NLINES               ((LINES - DISPLAY_WINS_3_NLINES) - 1)
 #define DISPLAY_WINS_5_NCOLS                (COLS - DISPLAY_WINS_4_NCOLS)
 #define DISPLAY_WINS_5_NYBEGIN              (DISPLAY_WINS_3_NLINES)
 #define DISPLAY_WINS_5_NXBEGIN              (DISPLAY_WINS_4_NCOLS)
@@ -126,6 +126,12 @@ extern volatile unsigned int display_old_cols;
 #define DISPLAY_WINS_7_NCOLS                ((COLS - 8))
 #define DISPLAY_WINS_7_NYBEGIN              ((LINES - DISPLAY_WINS_7_NLINES) / 2)
 #define DISPLAY_WINS_7_NXBEGIN              ((COLS - DISPLAY_WINS_7_NCOLS) / 2)
+
+#define DISPLAY_WINS_8_NLINES               (1)
+#define DISPLAY_WINS_8_NCOLS                (COLS)
+#define DISPLAY_WINS_8_NYBEGIN              (LINES - 1)
+#define DISPLAY_WINS_8_NXBEGIN              (0)
+
 
 /**
  * @brief 
@@ -429,23 +435,35 @@ void display_check_term_size(void);
     } while (0);                                                                                                                        \
 
 
+
+#if 0
+Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
+#endif
+
+
+/** Time bar width */
+#define LENGTHOFTIME            17
 /** Address bar width */
-#define LENGTHOFADDRESS         40
+#define LENGTHOFADDRESS         47
 /** Width of the protocol column */
 #define LENGTHOFPROTOCOL        9
 /** Width of the data length column */
 #define LENGTHOFDATALENGTH      7
 
+
+/** Time bar title */
+#define WINTITLETIME            "Time"
 /** Source address bar title */
-#define WINTITLESOURCE          "Source"
+#define WINTITLESOURCE          "Source.Port"
 /** The title of the destination address bar */
-#define WINTITLEDESTINATION     "Destination"
+#define WINTITLEDESTINATION     "Destination.Port"
 /** Title of the agreement column */
 #define WINTITLEPROTOCOL        "Protocol"
 /** Data length column header */
 #define WINTITLEDATALENGTH      "Length"
 /** Title of the information bar */
-#define WINTITLEINFORMATION     "Information"
+#define WINTITLEINFORMATION     "brief"
+
 
 /**
  * @brief
@@ -483,6 +501,81 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
  *  if failed, it returns ND_ERR
  */
 int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel);
+
+
+/**
+ * @brief
+ *  Brief information display box
+ */
+#define display_draw_brief_information_box()                                                                                            \
+    do {                                                                                                                                \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+		box(G_display.wins[3], 0, 0);                                                                                                   \
+		wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        int line0 = 0, line1 = 1, line2 = 2;                                                                                            \
+        int starty = 1, startx = 1;                                                                                                     \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFTIME, WINTITLETIME, COLOR_PAIR(4));                  \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwaddch(G_display.wins[3], line2, 0, ACS_LTEE);                                                                                \
+        /** (LENGTHOFTIME - 1) change (LENGTHOFTIME) because of mark */                                                                 \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFTIME));                                                          \
+        startx += 1;    /** In order for the mark to be displayed */                                                                    \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFTIME - 1)), ACS_VLINE);                                                   \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFTIME - 1)), ACS_TTEE);                                                    \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFTIME - 1)), ACS_BTEE);                                                    \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFTIME;                                                                                                         \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLESOURCE, COLOR_PAIR(4));             \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                                   \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFADDRESS;                                                                                                      \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLEDESTINATION, COLOR_PAIR(4));        \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                                   \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFADDRESS;                                                                                                      \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));          \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                                  \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                                \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                               \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFPROTOCOL - 1)), ACS_TTEE);                                                \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFPROTOCOL;                                                                                                     \
+        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFDATALENGTH, WINTITLEDATALENGTH, COLOR_PAIR(4));      \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFDATALENGTH - 1));                                                \
+        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFDATALENGTH - 1)), ACS_BTEE);                                              \
+        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFDATALENGTH - 1)), ACS_VLINE);                                             \
+        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFDATALENGTH - 1)), ACS_TTEE);                                              \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        startx += LENGTHOFDATALENGTH;                                                                                                   \
+        int width = COLS - startx;                                                                                                      \
+        display_format_set_window_title(G_display.wins[3], starty, startx, width, WINTITLEINFORMATION, COLOR_PAIR(4));                  \
+        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (width - 1));                                                             \
+        mvwaddch(G_display.wins[3], line2, (COLS - 1), ACS_RTEE);                                                                       \
+        mvwaddch(G_display.wins[3], line1, (COLS - 1), ACS_VLINE);                                                                      \
+        mvwaddch(G_display.wins[3], line0, (COLS - 1), ACS_URCORNER);                                                                   \
+        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+                                                                                                                                        \
+        refresh();                                                                                                                      \
+        wrefresh(G_display.wins[3]);                                                                                                    \
+    } while (0);                                                                                                                        \
+
+#if 0
 
 /**
  * @brief 
@@ -547,6 +640,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         wrefresh(G_display.wins[3]);                                                                                                    \
     } while (0);                                                                                                                        \
 
+#endif
 
 /**
  * @brief 
