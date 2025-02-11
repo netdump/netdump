@@ -63,6 +63,7 @@ volatile unsigned int display_old_cols = 0;
  *  G_display.wins[5]: Original hexadecimal information display box
  * 	G_display.wins[6]: Display error message interface
  * 	G_display.wins[7]: Display information after executing the command
+ * 	G_display.wins[8]: Display Captured packet information
  *  G_display.panels[0]: The panel associated with G_display.wins[0]
  *  G_display.panels[1]: The panel associated with G_display.wins[1]
  *  G_display.panels[2]: The panel associated with G_display.wins[2]
@@ -71,10 +72,11 @@ volatile unsigned int display_old_cols = 0;
  *  G_display.panels[5]: The panel associated with G_display.wins[5]
  * 	G_display.panels[6]: The panel associated with G_display.wins[6]
  * 	G_display.panels[7]: The panel associated with G_display.wins[7]
+ * 	G_display.panels[8]: The panel associated with G_display.wins[8]
  */
 display_t G_display = {
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 
 
@@ -362,7 +364,7 @@ void diaplay_dump_size_info(void)
 
 	TC("Called { %s(void)", __func__);
 
-	TI("\nLINES: %d; COLS: %d\n", LINES, COLS);
+	TI("LINES: %d; COLS: %d\n", LINES, COLS);
 
 	TI("DISPLAY_WINS_0_NYBEGIN: %d; DISPLAY_WINS_0_NXBEGIN: %d", DISPLAY_WINS_0_NYBEGIN, DISPLAY_WINS_0_NXBEGIN);
 	TI("DISPLAY_WINS_0_NLINES: %d; DISPLAY_WINS_0_NCOLS: %d", DISPLAY_WINS_0_NLINES, DISPLAY_WINS_0_NCOLS);
@@ -380,6 +382,8 @@ void diaplay_dump_size_info(void)
 	TI("DISPLAY_WINS_6_NLINES: %d; DISPLAY_WINS_6_NCOLS: %d", DISPLAY_WINS_6_NLINES, DISPLAY_WINS_6_NCOLS);
 	TI("DISPLAY_WINS_7_NYBEGIN: %d; DISPLAY_WINS_7_NXBEGIN: %d", DISPLAY_WINS_7_NYBEGIN, DISPLAY_WINS_7_NXBEGIN);
 	TI("DISPLAY_WINS_7_NLINES: %d; DISPLAY_WINS_7_NCOLS: %d", DISPLAY_WINS_7_NLINES, DISPLAY_WINS_7_NCOLS);
+	TI("DISPLAY_WINS_8_NYBEGIN: %d; DISPLAY_WINS_8_NXBEGIN: %d", DISPLAY_WINS_8_NYBEGIN, DISPLAY_WINS_8_NXBEGIN);
+	TI("DISPLAY_WINS_8_NLINES: %d; DISPLAY_WINS_8_NCOLS: %d", DISPLAY_WINS_8_NLINES, DISPLAY_WINS_8_NCOLS);
 
 	RVoid();
 }
