@@ -674,6 +674,30 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 
 
 /**
+ * @brief
+ *  Real-time display of captured packet information
+ */
+#define display_draw_cpinfo_win()                                                                                                       \
+    do {                                                                                                                                \
+        wclear(G_display.wins[8]);                                                                                                      \
+        refresh();                                                                                                                      \
+	    wrefresh(G_display.wins[8]);                                                                                                    \
+        wmove(G_display.wins[8], 0, 1);                                                                                                 \
+	    wattrset(G_display.wins[8], A_NORMAL);                                                                                          \
+	    wclrtoeol(G_display.wins[8]);                                                                                                   \
+	    wattrset(G_display.wins[8], A_BOLD);                                                                                            \
+	    wattron(G_display.wins[8], COLOR_PAIR((4)));                                                                                    \
+	    waddstr(G_display.wins[8], msgcomm_G_cpinfo);                                                                                   \
+	    wattroff(G_display.wins[8], COLOR_PAIR((4)));                                                                                   \
+	    wattron(G_display.wins[8], COLOR_PAIR((4)));                                                                                    \
+	    wattroff(G_display.wins[8], COLOR_PAIR((4)));                                                                                   \
+	    refresh();                                                                                                                      \
+	    wrefresh(G_display.wins[8]);                                                                                                    \
+    } while (0);                                                                                                                        \
+
+
+
+/**
  * @brief 
  *  Hide All Windows
  */
@@ -713,6 +737,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         for (i = 3; i < 6; i++) {                                                                                                       \
             hide_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        hide_panel(G_display.panels[8]);                                                                                                \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
@@ -743,6 +768,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         for (i = 3; i < 6; i++) {                                                                                                       \
             show_panel(G_display.panels[i]);                                                                                            \
         }                                                                                                                               \
+        show_panel(G_display.panels[8]);                                                                                                \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
@@ -960,6 +986,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 #define display_handle_TUI_second_page()                                                                                                \
     do {                                                                                                                                \
         display_show_wins_3_4_5();                                                                                                      \
+        display_draw_cpinfo_win();                                                                                                      \
         display_set_wins_noecho_and_cbreak();                                                                                           \
         display_disable_cursor();                                                                                                       \
         int ch = 0;                                                                                                                     \
@@ -993,6 +1020,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
                     break;                                                                                                              \
             }                                                                                                                           \
             count ++;                                                                                                                   \
+            display_draw_cpinfo_win();                                                                                                  \
         }                                                                                                                               \
         display_hide_wins_3_4_5();                                                                                                      \
         display_set_wins_echo_and_nocbreak();                                                                                           \

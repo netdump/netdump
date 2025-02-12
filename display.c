@@ -332,7 +332,8 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 	}
 	else if (message->msgtype == MSGCOMM_SUC)
 	{
-		
+		memset(msgcomm_G_cpinfo, 0, MSGCOMM_CPINFO_SIZE);
+		snprintf(msgcomm_G_cpinfo, MSGCOMM_CPINFO_SIZE, "%s", (message->msg));
 	}
 
 	RInt(ND_OK);
@@ -481,6 +482,8 @@ void display_handle_win_resize(int flag) {
 	display_draw_more_information_box();
 
 	display_draw_raw_information_box();
+
+	display_draw_cpinfo_win();
 
 	wnoutrefresh(stdscr);
 	for (i = 0; i < (display_PW_number - 1); i++)
