@@ -1382,6 +1382,8 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
 
     //getchar();
 
+    pcap_breakloop((pcap_t *)user);
+
     RVoid();
 }
 
@@ -1705,7 +1707,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             capture_show_datalinktype(pd, device);
             pcap_close(pd);
             pd = NULL;
-            return ND_OK;
+            RInt(ND_OK);
         }
 
         if (yflag_dlt >= 0)
@@ -1803,6 +1805,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         }
         pcap_close(pd);
         pd = NULL;
+        ret = NULL;
 
     } while (ret != NULL);
     
