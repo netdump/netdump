@@ -106,6 +106,11 @@ enum {
 #define GCOREID_AA      2U
 
 
+/** A string containing the name of the netdump process */
+#define NETDUMP_NAME			"netdump"
+
+#define COMMON_SPACE			" "
+
 /**
  * @brief 
  *  Global process number
