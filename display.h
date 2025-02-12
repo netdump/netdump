@@ -809,6 +809,25 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 
 
 /**
+ * @brief
+ *  start or close [timeout]
+ * @param tt
+ *  timeout
+ */
+#define display_start_or_close_timeout(tt)                                                                                              \
+    do {                                                                                                                                \
+        if (tt)                                                                                                                         \
+        {                                                                                                                               \
+            timeout(tt);                                                                                                                \
+        }                                                                                                                               \
+        else                                                                                                                            \
+        {                                                                                                                               \
+            timeout(0);                                                                                                                 \
+        }                                                                                                                               \
+    } while (0);                                                                                                                        \
+
+
+/**
  * @brief 
  *  Disable Cursor
  */
@@ -988,6 +1007,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         display_show_wins_3_4_5();                                                                                                      \
         display_draw_cpinfo_win();                                                                                                      \
         display_set_wins_noecho_and_cbreak();                                                                                           \
+        display_start_or_close_timeout(1000);                                                                                            \
         display_disable_cursor();                                                                                                       \
         int ch = 0;                                                                                                                     \
         unsigned char count = 0;                                                                                                        \
@@ -1023,6 +1043,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
             display_draw_cpinfo_win();                                                                                                  \
         }                                                                                                                               \
         display_hide_wins_3_4_5();                                                                                                      \
+        display_start_or_close_timeout(0);                                                                                              \
         display_set_wins_echo_and_nocbreak();                                                                                           \
         display_enable_cursor();                                                                                                        \
     } while (0);                                                                                                                        \
