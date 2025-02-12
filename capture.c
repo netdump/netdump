@@ -1112,16 +1112,16 @@ static const char * capture_tstamp_precision_to_string(int precision)
  * @brief
  *  Only used by the capture_open_interface function
  */
-#define __capture_oi_error_handle__(ebuf, pc, format, ...)       \
-    do                                                           \
-    {                                                            \
-        memset(ebuf, 0, PCAP_ERRBUF_SIZE);                       \
-        snprintf(ebuf, PCAP_ERRBUF_SIZE, format, ##__VA_ARGS__); \
-        TE("%s", ebuf);                                          \
-        pcap_close(pc);                                          \
-        pd = NULL;                                              \
-        RVoidPtr(NULL);                                          \
-    } while (0);
+#define __capture_oi_error_handle__(ebuf, pc, format, ...)          \
+    do                                                              \
+    {                                                               \
+        memset(ebuf, 0, PCAP_ERRBUF_SIZE);                          \
+        snprintf(ebuf, PCAP_ERRBUF_SIZE, format, ##__VA_ARGS__);    \
+        TE("%s", ebuf);                                             \
+        pcap_close(pc);                                             \
+        pd = NULL;                                                  \
+        RVoidPtr(NULL);                                             \
+    } while (0);                                                    \
 
 /**
  * @brief
