@@ -170,6 +170,10 @@ enum {
 /**
  * @brief
  * 	Define some structures pointing to shared memory
+ * @memberof faddr
+ * 	Memory mapped address
+ * @memberof buffer
+ * 	DP store user input
  * @memberof space
  * 	Mainly used in the capture process to send messages to the display process
  * @memberof cmdmem
@@ -185,6 +189,7 @@ enum {
  * @memberof pktptrarr
  *	Pointer array to store the addresses of captured data packets
  * @note
+ * 	buffer			4K(display use)
  * 	space			4K(capture use)
  *	cmdmem			4K(capture use)
  *	argv			4K
@@ -196,6 +201,7 @@ enum {
 typedef struct {
 
 	void * faddr;
+	void * buffer;
 	void * space;
 	void * cmdmem;
 	void * cpinfo;
@@ -213,6 +219,66 @@ typedef struct {
  */
 extern memcomm_t memcomm;
 
+
+/**
+ * @brief
+ * 	Memory mapped address	
+ */
+#define msgcomm_G_faddr					(memcomm.faddr)
+
+/**
+ * @brief
+ * 	DP store user input
+ */
+#define msgcomm_G_buffer				(memcomm.buffer)
+
+/**
+ * @brief
+ * 	Mainly used in the capture process to send messages to the display process
+ */
+#define msgcomm_G_sapce					(memcomm.space)
+
+/**
+ * @brief
+ * 	Mainly used in the capture process to receive messages from the display process
+ */
+#define msgcomm_G_cmdmem				(memcomm.cmdmem)
+
+/**
+ * @brief
+ * 	Used to display capture process information in the second TUI interface in the display process
+ */
+#define msgcomm_G_cpinfo				(memcomm.cpinfo)
+
+/**
+ * @brief
+ * 	Used for communication between the display process and the analysis process
+ */
+#define msgcomm_G_memflag				(memcomm.memflag)
+
+/**
+ * @brief
+ * 	reserve
+ */
+#define msgcomm_G_reserve				(memcomm.reserve)
+
+/**
+ * @brief
+ * 	Pointer array to store the parsed command string
+ */
+#define msgcomm_G_argv					(memcomm.argv)
+
+/**
+ * @brief
+ * 	Pointer array to store the addresses of captured data packets
+ */
+#define msgcomm_G_cpktptrarr			(memcomm.pktptrarr)
+
+/**
+ * @brief
+ * 	memcomm.buffer
+ */
+#define MSGCOMM_BUFFER_SIZE						(1 << 12)	// 4096
 
 /**
  * @brief
@@ -289,7 +355,7 @@ extern memcomm_t memcomm;
 	(																							\
 		(MSGCOMM_MSGCOMM_MEMORY_SIZE) + (MSGCOMM_SPACE_SIZE) + (MSGCOMM_CMDMEM_SIZE) +			\
 		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
-		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE)											\
+		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE) + (MSGCOMM_BUFFER_SIZE)					\
 	)																							\
 
 

@@ -65,6 +65,7 @@ static msgcomm_t msgcomm[] = {
  */
 memcomm_t memcomm = {
     .faddr = NULL,
+    .buffer = NULL,
     .space = NULL,
     .cmdmem = NULL,
     .cpinfo = NULL,
@@ -120,6 +121,10 @@ static int msgcomm_new_init_msgcomm(void)
     memset(tmp, 0, MSGCOMM_ACTUAL_SIZE);
     msgcomm[1].msg.memory = tmp;
     tmp += MSGCOMM_ACTUAL_SIZE;
+
+    memset(tmp, 0, MSGCOMM_BUFFER_SIZE);
+    memcomm.buffer = tmp;
+    tmp += MSGCOMM_BUFFER_SIZE;
 
     memset(tmp, 0, MSGCOMM_SPACE_SIZE);
     memcomm.space = tmp;
