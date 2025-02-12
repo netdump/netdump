@@ -180,6 +180,8 @@ enum {
  * 	Mainly used in the capture process to send messages to the display process
  * @memberof cmdmem
  * 	Mainly used in the capture process to receive messages from the display process
+ * @memberof cmdbuf
+ * 	store string that need to compile, used for bpf
  * @memberof cpinfo
  * 	Used to display capture process information in the second TUI interface in the display process
  * @memberof memflag
@@ -207,6 +209,7 @@ typedef struct {
 	void * reply;
 	void * space;
 	void * cmdmem;
+	void * cmdbuf;
 	void * cpinfo;
 	void * memflag;
 	void * reserve;
@@ -252,6 +255,12 @@ extern memcomm_t memcomm;
  * 	Mainly used in the capture process to receive messages from the display process
  */
 #define msgcomm_G_cmdmem				(memcomm.cmdmem)
+
+/**
+ * @brief
+ * 	Mainly used in the capture process to receive messages from the display process
+ */
+#define msgcomm_G_cmdbuf 				(memcomm.cmdbuf)
 
 /**
  * @brief
@@ -306,6 +315,12 @@ extern memcomm_t memcomm;
  * 	memcomm_t.cmdmem size
  */
 #define MSGCOMM_CMDMEM_SIZE 					(1 << 12)	// 4096
+
+/**
+ * @brief
+ * 	memcomm_t.cmdbuf size
+ */
+#define MSGCOMM_CMDBUF_SIZE 					(1 << 12) // 4096
 
 /**
  * @brief
@@ -371,7 +386,7 @@ extern memcomm_t memcomm;
 		(MSGCOMM_MSGCOMM_MEMORY_SIZE) + (MSGCOMM_SPACE_SIZE) + (MSGCOMM_CMDMEM_SIZE) +			\
 		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
 		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE) + (MSGCOMM_BUFFER_SIZE) +				\
-		(MSGCOMM_REPLY_SIZE)																	\
+		(MSGCOMM_REPLY_SIZE) + (MSGCOMM_CMDBUF_SIZE)											\
 	)																							\
 
 

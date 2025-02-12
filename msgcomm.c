@@ -138,6 +138,10 @@ static int msgcomm_new_init_msgcomm(void)
     memcomm.cmdmem = tmp;
     tmp += MSGCOMM_CMDMEM_SIZE;
 
+    memset(tmp, 0, MSGCOMM_CMDBUF_SIZE);
+    memcomm.cmdbuf = tmp;
+    tmp += MSGCOMM_CMDBUF_SIZE;
+
     memset(tmp, 0, MSGCOMM_CPINFO_SIZE);
     memcomm.cpinfo = tmp;
     tmp += MSGCOMM_CPINFO_SIZE;

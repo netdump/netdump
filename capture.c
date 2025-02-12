@@ -72,7 +72,7 @@ static int Bflag = (16 * 1024 * 1024);
  * @brief
  *  Process name
  */
-char *program_name = "Netdump";
+char *program_name = "netdump";
 
 /*
  * This is exported because, in some versions of libpcap, if libpcap
@@ -103,12 +103,6 @@ static pcap_t *pd = NULL;
  *  for "pcap_compile()", "pcap_setfilter()"
  */
 struct bpf_program fcode;
-
-/**
- * @brief
- *  Pointer to the global storage filter command
- */
-static char * cmdbuf = NULL;
 
 /**
  * @brief
@@ -268,39 +262,24 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
-    space = malloc((1 << 20));
-    if (!space)
-    {
-        TE("malloc(1 << 20) failed");
-        goto label1;
-    }
+    space = msgcomm_G_sapce;
 
-    cmdmem = malloc((1 << 16));
-    if (!cmdmem) {
-        TE("malloc(1 << 16) failed");
-        goto label2;
-    }
+    cmdmem = msgcomm_G_cmdmem;
 
     if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
         TE("Prctl set name(%s) failed", pname);
-        goto label3;
+        goto label1;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
         TE("Register signal handle failed");
-        goto label3;
+        goto label1;
     }
 
     if (unlikely((capture_loop()) == ND_ERR)) {
         TE("Analysis loop startup failed");
-        goto label3;
+        goto label1;
     }
-
-label3:
-    free(cmdmem);
-
-label2:
-    free(space);
 
 label1:
 
@@ -325,7 +304,7 @@ int capture_loop (void) {
 
     while (1) {
 
-        memset(cmdmem, 0, (1 << 16));
+        memset(cmdmem, 0, MSGCOMM_CMDMEM_SIZE);
         message_t *message = (message_t *)(cmdmem);
 
         if (unlikely((capture_cmd_from_display (message)) == ND_ERR)) {
@@ -461,8 +440,9 @@ static void capture_usage(void)
 
     TC("Called { %s(void)", __func__);
 
+    memset(space, 0, MSGCOMM_SPACE_SIZE);
     char * sp = space;
-    int len = 4096;
+    int len = MSGCOMM_SPACE_SIZE;
 
     CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tUsage: \n\t[-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
 
@@ -622,9 +602,9 @@ void capture_show_devices_to_display (void) {
         __capture_send_errmsg__(MSGCOMM_ERR, "%s", ebuf);
     }
 
-    memset(space, 0, (1 << 20));
+    memset(space, 0, MSGCOMM_SPACE_SIZE);
     char *sp = space;
-    int len = (1 << 20);
+    int len = MSGCOMM_SPACE_SIZE;
 
     int i = 0;
     for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next)
@@ -717,20 +697,7 @@ void capture_resource_release(void)
         pcap_close(pd);
     }
 
-    if (cmdbuf)
-    {
-        free(cmdbuf);
-    }
-
-    if (space)
-    {
-        free(space);
-    }
-
-    if (cmdmem) {
-        free(cmdmem);
-    }
-
+    
     pcap_freecode(&fcode);
 
     RVoid();
@@ -782,7 +749,6 @@ static char * capture_copy_argv(char **argv)
 
     char **p;
     size_t len = 0;
-    char *buf;
     char *src, *dst;
 
     p = argv;
@@ -794,14 +760,13 @@ static char * capture_copy_argv(char **argv)
     while (*p)
         len += strlen(*p++) + 1;
 
-    buf = (char *)malloc(len);
-    if (buf == NULL) {
-        TE("%s: malloc", __func__);
+    if (!len) {
+        TE("The sum of all string lengths is zero");
         RVoidPtr(NULL);
     }
 
     p = argv;
-    dst = buf;
+    dst = msgcomm_G_cmdbuf;
     while ((src = *p++) != NULL)
     {
         while ((*dst++ = *src++) != '\0')
@@ -810,7 +775,7 @@ static char * capture_copy_argv(char **argv)
     }
     dst[-1] = '\0';
 
-    RVoidPtr(buf);
+    RVoidPtr(msgcomm_G_cmdbuf);
 }
 
 
@@ -1070,9 +1035,9 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
         RVoid();
     }
 
-    memset(space, 0, (1 << 20));
+    memset(space, 0, MSGCOMM_SPACE_SIZE);
     char * sp = space;
-    int len = (1 << 20);
+    int len = MSGCOMM_SPACE_SIZE;
 
     CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tData link types for ");
     if (supports_monitor_mode) {
@@ -1433,11 +1398,11 @@ void __capture_send_errmsg__(int msgtype, const char *format, ...)
     
     TC("Called { %s(%d, %s)", __func__, msgtype, format);
 
-    memset(space, 0, (1 << 20));
+    memset(space, 0, MSGCOMM_SPACE_SIZE);
 
     va_list args;
     va_start(args, format);
-    vsnprintf(space, (1 << 20), format, args);
+    vsnprintf(space, MSGCOMM_SPACE_SIZE, format, args);
     va_end(args);
 
     if (unlikely(((capture_reply_to_display(msgtype, space)) == ND_ERR)))
@@ -1547,8 +1512,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     
     char * sp = space;
-    int len = (1 << 20);
-    
+    int len = MSGCOMM_SPACE_SIZE;
+
     Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
 
     tzset();
@@ -1679,7 +1644,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
-        memset(space, 0, (1 << 20));
+        memset(space, 0, MSGCOMM_SPACE_SIZE);
         CAPTURE_SHORTEN_CODE(space, sp, len, "reading from file %s", RFileName);
         if (dlt_name == NULL)
         {
@@ -1777,7 +1742,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         }
     }
 
-    cmdbuf = capture_copy_argv((char**)(&argv[optind]));
+    char * cmdbuf = capture_copy_argv((char**)(&argv[optind]));
     
     if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0) {
         TE("%s", pcap_geterr(pd));
@@ -1802,7 +1767,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     if (RFileName == NULL)
     {
-        memset(space, 0, (1 << 20));
+        memset(space, 0, MSGCOMM_SPACE_SIZE);
         CAPTURE_SHORTEN_CODE(space, sp, len, "%s: ", program_name);
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
@@ -1841,8 +1806,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     } while (ret != NULL);
     
-    free(cmdbuf);
-    cmdbuf = NULL;
     pcap_freecode(&fcode);
     exit(status);
 
