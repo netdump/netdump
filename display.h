@@ -867,8 +867,9 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
             refresh();                                                                                                                                      \
             wrefresh(G_display.wins[2]);                                                                                                                    \
             int code = OK;                                                                                                                                  \
-            char buffer[1008] = {0};                                                                                                                        \
-            code = wgetnstr(G_display.wins[2], buffer, 1008);                                                                                               \
+            memset(msgcomm_G_buffer, 0, MSGCOMM_BUFFER_SIZE);                                                                                               \
+            snprintf(msgcomm_G_buffer, MSGCOMM_BUFFER_SIZE, "%s%s", NETDUMP_NAME, COMMON_SPACE);                                                            \
+            code = wgetnstr(G_display.wins[2], (msgcomm_G_buffer + strlen(msgcomm_G_buffer)), (MSGCOMM_BUFFER_SIZE - strlen(msgcomm_G_buffer)));            \
             TI("Code: %d; AND; Code: %x", code, code);                                                                                                      \
             if (display_G_sigwinch_flag)                                                                                                                    \
             {                                                                                                                                               \
@@ -882,13 +883,14 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
                 display_G_flag = 1;                                                                                                                         \
                 break;                                                                                                                                      \
             }                                                                                                                                               \
+            snprintf((msgcomm_G_buffer + strlen(msgcomm_G_buffer)), (MSGCOMM_BUFFER_SIZE - strlen(msgcomm_G_buffer)), "%c", ' ');                           \
             attroff(A_BOLD);                                                                                                                                \
             refresh();                                                                                                                                      \
             wrefresh(G_display.wins[2]);                                                                                                                    \
-            mvwprintw(stdscr, 0, 0, "%s\n", buffer);                                                                                                        \
+            mvwprintw(stdscr, 0, 0, "%s\n", msgcomm_G_buffer);                                                                                              \
             refresh();                                                                                                                                      \
             wrefresh(stdscr);                                                                                                                               \
-            if (!strncmp("Quit", buffer, 4))                                                                                                                \
+            if (!strncmp("Quit", msgcomm_G_buffer + strlen(NETDUMP_NAME) + strlen(COMMON_SPACE), 4))                                                        \
             {                                                                                                                                               \
                 /* display_exit_TUI_showcase(); */                                                                                                          \
                 TI("Recv Quit String also exit");                                                                                                           \
@@ -897,10 +899,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
             }                                                                                                                                               \
             else                                                                                                                                            \
             {                                                                                                                                               \
-                char cmd[1024] = {0};                                                                                                                       \
-                snprintf(cmd, 1024, "%s", "netdump ");                                                                                                      \
-                snprintf(cmd + strlen(cmd), (1024 - strlen(cmd)), "%s ", buffer);                                                                           \
-                if (unlikely(((display_first_tui_handle_logic((const char *)(cmd),                                                                          \
+                if (unlikely(((display_first_tui_handle_logic((const char *)(msgcomm_G_buffer),                                                             \
                                                               G_display.wins[6], G_display.panels[6], G_display.wins[7], G_display.panels[7])) == ND_ERR))) \
                 {                                                                                                                                           \
                     TE("Command error; need to again");                                                                                                     \
