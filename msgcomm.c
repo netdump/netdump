@@ -126,6 +126,10 @@ static int msgcomm_new_init_msgcomm(void)
     memcomm.buffer = tmp;
     tmp += MSGCOMM_BUFFER_SIZE;
 
+    memset(tmp, 0, MSGCOMM_REPLY_SIZE);
+    memcomm.reply = tmp;
+    tmp += MSGCOMM_REPLY_SIZE;
+
     memset(tmp, 0, MSGCOMM_SPACE_SIZE);
     memcomm.space = tmp;
     tmp += MSGCOMM_SPACE_SIZE;

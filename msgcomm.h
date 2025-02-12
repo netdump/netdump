@@ -174,6 +174,8 @@ enum {
  * 	Memory mapped address
  * @memberof buffer
  * 	DP store user input
+ * @memberof reply
+ * 	show CP reply DP message
  * @memberof space
  * 	Mainly used in the capture process to send messages to the display process
  * @memberof cmdmem
@@ -202,6 +204,7 @@ typedef struct {
 
 	void * faddr;
 	void * buffer;
+	void * reply;
 	void * space;
 	void * cmdmem;
 	void * cpinfo;
@@ -231,6 +234,12 @@ extern memcomm_t memcomm;
  * 	DP store user input
  */
 #define msgcomm_G_buffer				(memcomm.buffer)
+
+/**
+ * @brief
+ * 	DP store user input
+ */
+#define msgcomm_G_reply					(memcomm.reply)
 
 /**
  * @brief
@@ -276,9 +285,15 @@ extern memcomm_t memcomm;
 
 /**
  * @brief
- * 	memcomm.buffer
+ * 	memcomm.buffer size
  */
 #define MSGCOMM_BUFFER_SIZE						(1 << 12)	// 4096
+
+/**
+ * @brief
+ * 	memcomm.reply size
+ */
+#define MSGCOMM_REPLY_SIZE						(1 << 12)	// 4096
 
 /**
  * @brief
@@ -355,7 +370,8 @@ extern memcomm_t memcomm;
 	(																							\
 		(MSGCOMM_MSGCOMM_MEMORY_SIZE) + (MSGCOMM_SPACE_SIZE) + (MSGCOMM_CMDMEM_SIZE) +			\
 		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
-		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE) + (MSGCOMM_BUFFER_SIZE)					\
+		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE) + (MSGCOMM_BUFFER_SIZE) +				\
+		(MSGCOMM_REPLY_SIZE)																	\
 	)																							\
 
 

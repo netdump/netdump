@@ -216,13 +216,6 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 
 	TC("Called { %s(%s, %s, %p, %p, %d)", __func__, prefix, msg, win, panel, color);
 
-	char * space = malloc(1024 * 2);
-	if (!space) {
-		TE("malloc(1024 * 2) failed; Kill will be called immediately");
-		kill(getpid(), 15);
-		RVoid();
-	}
-
 	show_panel(panel); 
 	update_panels();
 	doupdate();
@@ -231,8 +224,9 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	wclrtoeol(win);
 	wattrset(win, A_BOLD);
 	wattron(win, COLOR_PAIR((color)));
-	snprintf(space, 1024 * 2, "%s\n\t%s\n", prefix, msg);
-	waddstr(win, space);
+	memset(msgcomm_G_reply, 0, MSGCOMM_REPLY_SIZE);
+	snprintf(msgcomm_G_reply, MSGCOMM_REPLY_SIZE, "%s\n\t%s\n", prefix, msg);
+	waddstr(win, msgcomm_G_reply);
 	wattroff(win, COLOR_PAIR((color)));
 	wattron(win, COLOR_PAIR((color)));
 	box(win, 0, 0);
@@ -245,7 +239,6 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	update_panels();
 	doupdate();
 
-	free(space);
 	RVoid();
 }
 
