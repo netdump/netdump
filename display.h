@@ -1007,17 +1007,18 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         display_show_wins_3_4_5();                                                                                                      \
         display_draw_cpinfo_win();                                                                                                      \
         display_set_wins_noecho_and_cbreak();                                                                                           \
-        display_start_or_close_timeout(1000);                                                                                            \
+        display_start_or_close_timeout(1000);                                                                                           \
         display_disable_cursor();                                                                                                       \
-        int ch = 0;                                                                                                                     \
+        unsigned char ch = 0;                                                                                                           \
         unsigned char count = 0;                                                                                                        \
         while(1) {	                                                                                                                    \
+            flushinp();                                                                                                                 \
             ch = getch();                                                                                                               \
             if (display_G_sigwinch_flag) {                                                                                              \
                 display_handle_win_resize(2);                                                                                           \
                 continue;                                                                                                               \
             }                                                                                                                           \
-            if (ch == 80) {                                                                                                             \
+            if (ch == 'Q') {                                                                                                            \
                 break;                                                                                                                  \
             }                                                                                                                           \
             switch(ch) {	                                                                                                            \
