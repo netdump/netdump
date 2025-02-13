@@ -1380,9 +1380,24 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
 
     TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
-    //getchar();
+    static unsigned char count = 0;
 
-    pcap_breakloop((pcap_t *)user);
+    TI("count: %d\n", count);
+    TI("sp aligned 2: %lld", COMM_ALIGNED_VALUE(sp, 2));
+    TI("sp aligned 4: %lld", COMM_ALIGNED_VALUE(sp, 4));
+    TI("sp aligned 8: %lld", COMM_ALIGNED_VALUE(sp, 8));
+    TI("sp aligned 16: %lld", COMM_ALIGNED_VALUE(sp, 16));
+    TI("sp aligned 32: %lld", COMM_ALIGNED_VALUE(sp, 32));
+    TI("sp aligned 64: %lld", COMM_ALIGNED_VALUE(sp, 64));
+    TI("sp aligned 128: %lld", COMM_ALIGNED_VALUE(sp, 128));
+    TI("sp aligned 256: %lld", COMM_ALIGNED_VALUE(sp, 256));
+
+    if (count >= 16) {
+        pcap_breakloop((pcap_t *)user);
+        TI("Complate Called pcap_breakloop");
+    }
+
+    count ++;
 
     RVoid();
 }
@@ -1794,7 +1809,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     do
     {
-        status = pcap_loop(pd, -1, callback, pcap_userdata);
+        status = pcap_loop(pd, -1, callback, (unsigned char *)pd);
+        TI("pcap_loop return value: %d", status);
         if (status == -2)
         {
             ret = NULL;
@@ -1810,7 +1826,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     } while (ret != NULL);
     
     pcap_freecode(&fcode);
-    exit(status);
+    //exit(status);
 
     RInt(ND_OK);
 }
