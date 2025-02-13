@@ -320,7 +320,7 @@ extern memcomm_t memcomm;
  * @brief
  * 	memcomm_t.cmdbuf size
  */
-#define MSGCOMM_CMDBUF_SIZE 					(1 << 12) // 4096
+#define MSGCOMM_CMDBUF_SIZE 					(1 << 12) 	// 4096
 
 /**
  * @brief
@@ -387,7 +387,134 @@ extern memcomm_t memcomm;
 		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
 		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE) + (MSGCOMM_BUFFER_SIZE) +				\
 		(MSGCOMM_REPLY_SIZE) + (MSGCOMM_CMDBUF_SIZE)											\
-	)																							\
+	)
+
+/**
+ * @brief
+ * 	State transfer structure
+ * @memberof _pause
+ * 	Stores the pause status value
+ * @memberof _continue
+ * 	Stores the continue status value
+ * @memberof _exit
+ * 	Store exit status value
+ * @memberof _top
+ * 	Store the top status value
+ * @memberof _bottom
+ * 	Store the bottom status value
+ * @memberof _win3_curline
+ * 	Current line number of window 3
+ * @memberof _win4_curline
+ *	Current line number of window 4
+ * @memberof _win5_curline
+ *	Current line number of window 5
+ * @memberof _G_CPnumber
+ * 	Current page number
+ * @memberof _G_CSnumber
+ *	Global scope index
+ * @memberof _C_CSnumber
+ * 	Indexes in the cache
+ * @memberof _NOpackages
+ * 	Number of packages
+ * @memberof _NObytes
+ * 	Number of bytes
+ * @memberof _reserve
+ * 	Retention and filling
+ * @note
+ *	[ _pause & _continue & _exit ] from DP to CP ; The value is 1, indicating that it is set.
+ *	[ _G_CSnumber & _C_CSnumber ] from DP to CP
+ *	[ _NOpackages & _NObytes ] from CP to DP ;
+ */
+typedef struct {
+
+	volatile unsigned char _pause;
+	volatile unsigned char _continue;
+	volatile unsigned char _exit;
+	volatile unsigned char _top;
+	volatile unsigned char _bottom;
+	volatile unsigned char _win3_curline;
+	volatile unsigned char _win4_curline;
+	volatile unsigned char _win5_curline;
+	volatile unsigned long _G_CPnumber;
+	volatile unsigned long _G_CSnumber;
+	volatile unsigned long _C_CSnumber;
+	volatile unsigned long _NOpackages;
+	volatile unsigned long _NObytes;
+	volatile unsigned char _reserve[16];
+
+} _status_t;
+
+
+/**
+ * @brief
+ *  Global pointer to (struct _status_t) type
+ */
+extern _status_t * G_status_ptr;
+
+
+/**
+ * @brief
+ * 	The address of _pause
+ */
+#define msgcomm_st_pause					(&(G_status_ptr->_pause))
+
+
+/**
+ * @brief
+ * 	The address of _continue
+ */
+#define msgcomm_st_continue					(&(G_status_ptr->_continue))
+
+
+/**
+ * @brief
+ * 	The address of _exit
+ */
+#define msgcomm_st_exit						(&(G_status_ptr->_exit))
+
+
+/**
+ * @brief
+ * 	The address of _NOpackages
+ */
+#define msgcomm_st_NOpackages				(&(G_status_ptr->_NOpackages))
+
+
+/**
+ * @brief
+ * 	The address of _NObytes
+ */
+#define msgcomm_st_NObytes					(&(G_status_ptr->_NObytes))
+
+
+/**
+ * @brief
+ * 	Passing state values ​​between processes
+ * @param address
+ * 	The address of the state variable to be passed
+ * @param value
+ * 	The state value that needs to be passed
+ */
+#define msgcomm_transfer_status_change(address, value)											\
+	do {																						\
+		__atomic_store_n((address), value, __ATOMIC_RELEASE);									\
+		__atomic_thread_fence(__ATOMIC_RELEASE);												\
+	} while (0);
+
+
+/**
+ * @brief
+ * 	Receive the transmitted status value
+ * @param address
+ * 	Get the address of the status value
+ * @param variable
+ * 	Store the obtained status value
+ */
+#define msgcomm_receive_status_value(address, variable)											\
+	do {																						\
+		__atomic_thread_fence(__ATOMIC_ACQUIRE);												\
+		variable = __atomic_load_n(address, __ATOMIC_ACQUIRE);									\
+	} while (0);																				\
 
 
 /**
@@ -413,15 +540,16 @@ extern memcomm_t memcomm;
 #define MSGCOMM__RING_FNAME_1TO0                "/dev/shm/._Ring1TO0"
 #define MSGCOMM_MEM_FNAME_1TO0                  "/dev/shm/.Mem1TO0"
 
-	/**
-	 * @brief
-	 *  Message communication resource initialization and startup
-	 * @return
-	 *  If successful, it returns ND_OK;
-	 *  if failed, it returns ND_ERR
-	 */
-	int
-	msgcomm_startup(void);
+
+/**
+ * @brief
+ *  Message communication resource initialization and startup
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int
+msgcomm_startup(void);
 
 
 /**
