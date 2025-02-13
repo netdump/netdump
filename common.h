@@ -197,6 +197,15 @@ void nd_check_kernel_version(void);
 
 
 /**
+ * @brief
+ * 	Check if it is aligned relative to a value
+ * The value must be an exponent of 2.
+ */
+#define COMM_ALIGNED_VALUE(detected, value)					(((unsigned long long)(detected) & ((value) - 1)))
+															
+
+
+/**
  * @brief 
  * 	It is to page align the incoming address addr
  * @param addr 
