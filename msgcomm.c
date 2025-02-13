@@ -78,6 +78,13 @@ memcomm_t memcomm = {
 };
 
 
+/** 
+ * @brief 
+ *  Global pointer to (struct _status_t) type 
+ */
+_status_t * G_status_ptr = NULL;
+
+
 /**
  * @brief
  *  Initialize the msgcomm_t structure
@@ -151,6 +158,8 @@ static int msgcomm_new_init_msgcomm(void)
     memset(tmp, 0, MSGCOMM_MEMFLAG_SIZE);
     memcomm.memflag = tmp;
     tmp += MSGCOMM_MEMFLAG_SIZE;
+
+    G_status_ptr = (_status_t *)memcomm.memflag;
 
     memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
     memcomm.reserve = tmp;
