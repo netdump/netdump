@@ -333,69 +333,71 @@ struct netdissect_saved_packet_info {
 #define ND_TRUNCATED 1
 
 struct netdissect_options {
-  int ndo_bflag;		/* print 4 byte ASes in ASDOT notation */
-  int ndo_eflag;		/* print ethernet header */
-  int ndo_fflag;		/* don't translate "foreign" IP address */
-  int ndo_Kflag;		/* don't check IP, TCP or UDP checksums */
-  int ndo_nflag;		/* leave addresses as numbers */
-  int ndo_Nflag;		/* remove domains from printed host names */
-  int ndo_qflag;		/* quick (shorter) output */
-  int ndo_Sflag;		/* print raw TCP sequence numbers */
-  int ndo_tflag;		/* print packet arrival time */
-  int ndo_uflag;		/* Print undecoded NFS handles */
-  int ndo_vflag;		/* verbosity level */
-  int ndo_xflag;		/* print packet in hex */
-  int ndo_Xflag;		/* print packet in hex/ASCII */
-  int ndo_Aflag;		/* print packet only in ASCII observing TAB,
-				 * LF, CR and SPACE as graphical chars
-				 */
-  int ndo_Hflag;		/* dissect 802.11s draft mesh standard */
-  const char *ndo_protocol;	/* protocol */
-  jmp_buf ndo_early_end;	/* jmp_buf for setjmp()/longjmp() */
-  void *ndo_last_mem_p;		/* pointer to the last allocated memory chunk */
-  int ndo_packet_number;	/* print a packet number in the beginning of line */
-  int ndo_suppress_default_print; /* don't use default_print() for unknown packet types */
-  int ndo_tstamp_precision;	/* requested time stamp precision */
-  const char *program_name;	/* Name of the program using the library */
+	int ndo_bflag; 		/* print 4 byte ASes in ASDOT notation */
+	int ndo_eflag;		/* print ethernet header */
+	int ndo_fflag;		/* don't translate "foreign" IP address */
+	int ndo_Kflag;		/* don't check IP, TCP or UDP checksums */
+	int ndo_nflag;		/* leave addresses as numbers */
+	int ndo_Nflag;		/* remove domains from printed host names */
+	int ndo_qflag;		/* quick (shorter) output */
+	int ndo_Sflag;		/* print raw TCP sequence numbers */
+	int ndo_tflag;		/* print packet arrival time */
+	int ndo_uflag;		/* Print undecoded NFS handles */
+	int ndo_vflag;		/* verbosity level */
+	int ndo_xflag;		/* print packet in hex */
+	int ndo_Xflag;		/* print packet in hex/ASCII */
+	int ndo_Aflag;		/* print packet only in ASCII observing TAB,
+						* LF, CR and SPACE as graphical chars
+						*/
+	int ndo_Hflag;		/* dissect 802.11s draft mesh standard */
+	const char *ndo_protocol;	/* protocol */
+	jmp_buf ndo_early_end;	/* jmp_buf for setjmp()/longjmp() */
+	void *ndo_last_mem_p;		/* pointer to the last allocated memory chunk */
+	int ndo_packet_number;	/* print a packet number in the beginning of line */
+	int ndo_suppress_default_print; /* don't use default_print() for unknown packet types */
+	int ndo_tstamp_precision;	/* requested time stamp precision */
+	const char *program_name;	/* Name of the program using the library */
 
-  char *ndo_espsecret;
-  struct sa_list *ndo_sa_list_head;  /* used by print-esp.c */
-  struct sa_list *ndo_sa_default;
+	char *ndo_espsecret;
+	struct sa_list *ndo_sa_list_head;  /* used by print-esp.c */
+	struct sa_list *ndo_sa_default;
 
-  char *ndo_sigsecret;		/* Signature verification secret key */
+	char *ndo_sigsecret;		/* Signature verification secret key */
 
-  int   ndo_packettype;	/* as specified by -T */
+	int   ndo_packettype;	/* as specified by -T */
 
-  int   ndo_snaplen;
-  int   ndo_ll_hdr_len;	/* link-layer header length */
+	int   ndo_snaplen;
+	int   ndo_ll_hdr_len;	/* link-layer header length */
 
-  /*global pointers to beginning and end of current packet (during printing) */
-  const unsigned char *ndo_packetp;
-  const unsigned char *ndo_snapend;
+	/*global pointers to beginning and end of current packet (during printing) */
+	const unsigned char *ndo_packetp;
+	const unsigned char *ndo_snapend;
 
-  /* stack of saved packet boundary and buffer information */
-  struct netdissect_saved_packet_info *ndo_packet_info_stack;
+	/* stack of saved packet boundary and buffer information */
+	struct netdissect_saved_packet_info *ndo_packet_info_stack;
 
-  /* pointer to the if_printer function */
-  if_printer ndo_if_printer;
+	/* pointer to the if_printer function */
+	if_printer ndo_if_printer;
 
-  /* pointer to void function to output stuff */
-  void (*ndo_default_print)(netdissect_options *,
-			    const unsigned char *bp, unsigned int length);
+	#if 0
+	/* pointer to void function to output stuff */
+	void (*ndo_default_print)(netdissect_options *,
+				const unsigned char *bp, unsigned int length);
 
-  /* pointer to function to do regular output */
-  int  (*ndo_printf)(netdissect_options *,
-		     const char *fmt, ...)
-		     PRINTFLIKE_FUNCPTR(2, 3);
-  /* pointer to function to output errors */
-  void NORETURN_FUNCPTR (*ndo_error)(netdissect_options *,
-				     status_exit_codes_t status,
-				     const char *fmt, ...)
-				     PRINTFLIKE_FUNCPTR(3, 4);
-  /* pointer to function to output warnings */
-  void (*ndo_warning)(netdissect_options *,
-		      const char *fmt, ...)
-		      PRINTFLIKE_FUNCPTR(2, 3);
+	/* pointer to function to do regular output */
+	int  (*ndo_printf)(netdissect_options *,
+				const char *fmt, ...)
+				PRINTFLIKE_FUNCPTR(2, 3);
+	/* pointer to function to output errors */
+	void NORETURN_FUNCPTR (*ndo_error)(netdissect_options *,
+						status_exit_codes_t status,
+						const char *fmt, ...)
+						PRINTFLIKE_FUNCPTR(3, 4);
+	/* pointer to function to output warnings */
+	void (*ndo_warning)(netdissect_options *,
+				const char *fmt, ...)
+				PRINTFLIKE_FUNCPTR(2, 3);
+	#endif
 };
 
 
