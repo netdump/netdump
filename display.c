@@ -557,3 +557,87 @@ void display_check_term_size(void)
 
 	RVoid();
 }
+
+
+/**
+ * @brief
+ * 	The execution logic of the second TUI interface
+ */
+void display_second_tui_exec_logic (void) {
+
+	TC("Called { %s(void)", __func__);
+
+	display_show_wins_3_4_5();
+	display_draw_cpinfo_win();
+	display_set_wins_noecho_and_cbreak();
+	display_start_or_close_timeout(1000);
+	display_disable_cursor();
+	unsigned char ch = 0;
+	unsigned char count = 0;
+	msgcomm_clear_G_status();
+
+	while (1)
+	{
+		flushinp();
+		ch = getch();
+		if (display_G_sigwinch_flag)
+		{
+			display_handle_win_resize(2);
+			continue;
+		}
+		if ('q' == ch) 
+		{
+			TI("ch: %u", ch);
+			msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_EXIT);
+			// Whether the CP process needs to return the exit status
+			break;
+		}
+		else if ('s' == ch) 
+		{
+			TI("ch: %u", ch);
+			msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_SAVE);
+			// Pop-up prompt window & Check whether the data is saved
+			break;
+		}
+		switch (ch)
+		{
+			case 9:
+				TI("ch: %u", ch);
+				switch (((count % 3) + 3))
+				{
+					case 3:
+						//display_select_3_windows();
+						break;
+					case 4:
+						//display_select_4_windows();
+						break;
+					case 5:
+						//display_select_5_windows();
+						break;
+					default:
+						break;
+				}
+				break;
+			case 'p':
+				TI("ch: %u", ch);
+				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_PAUSE);
+				break;
+			case 'c':
+				TI("ch: %u", ch);
+				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
+				break;
+			default:
+				TI("ch: %u", ch);
+				break;
+		}
+		count++;
+		display_draw_cpinfo_win();
+	}
+
+	display_hide_wins_3_4_5();
+	display_start_or_close_timeout(0);
+	display_set_wins_echo_and_nocbreak();
+	display_enable_cursor();
+
+	RVoid();
+}
