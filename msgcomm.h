@@ -392,11 +392,9 @@ extern memcomm_t memcomm;
 /**
  * @brief
  * 	State transfer structure
- * @memberof _pause
+ * @memberof _runflag_
  * 	Stores the pause status value
- * @memberof _continue
  * 	Stores the continue status value
- * @memberof _exit
  * 	Store exit status value
  * @memberof _top
  * 	Store the top status value
@@ -408,6 +406,10 @@ extern memcomm_t memcomm;
  *	Current line number of window 4
  * @memberof _win5_curline
  *	Current line number of window 5
+ * @memberof _cppc
+ * 	Command parameter parsing completed
+ * @memberof padding
+ *	padding
  * @memberof _G_CPnumber
  * 	Current page number
  * @memberof _G_CSnumber
@@ -421,26 +423,31 @@ extern memcomm_t memcomm;
  * @memberof _reserve
  * 	Retention and filling
  * @note
- *	[ _pause & _continue & _exit ] from DP to CP ; The value is 1, indicating that it is set.
+ *	[ _runflag_ ] from DP to CP ;
+ *	[ cppc ] from CP to AA
  *	[ _G_CSnumber & _C_CSnumber ] from DP to CP
  *	[ _NOpackages & _NObytes ] from CP to DP ;
  */
 typedef struct {
 
-	volatile unsigned char _pause;
-	volatile unsigned char _continue;
-	volatile unsigned char _exit;
+	volatile unsigned int _runflag_;
+	
 	volatile unsigned char _top;
 	volatile unsigned char _bottom;
 	volatile unsigned char _win3_curline;
 	volatile unsigned char _win4_curline;
+
 	volatile unsigned char _win5_curline;
+
+	volatile unsigned char _cppc;
+	volatile unsigned char _padding[6];
+
 	volatile unsigned long _G_CPnumber;
 	volatile unsigned long _G_CSnumber;
 	volatile unsigned long _C_CSnumber;
 	volatile unsigned long _NOpackages;
 	volatile unsigned long _NObytes;
-	volatile unsigned char _reserve[16];
+	volatile unsigned char _reserve[200];
 
 } _status_t;
 
@@ -453,24 +460,62 @@ extern _status_t * G_status_ptr;
 
 
 /**
- * @brief
- * 	The address of _pause
+ * @brief Clear the global status value
  */
-#define msgcomm_st_pause					(&(G_status_ptr->_pause))
+#define msgcomm_clear_G_status()												\
+	do {																		\
+		memset(G_status_ptr, 0, sizeof(_status_t));								\
+		__atomic_thread_fence(__ATOMIC_RELEASE);								\
+	} while (0);
 
 
 /**
  * @brief
- * 	The address of _continue
+ * 	The address of _runflag_
+ * @note
+ * 	A value of 1 means pause
+ * 	A value of 2 means continue
+ * 	A value of 4 means exit.
+ * 	A value of 8 means exit.
  */
-#define msgcomm_st_continue					(&(G_status_ptr->_continue))
+#define msgcomm_st_runflag					(&(G_status_ptr->_runflag_))
 
 
 /**
- * @brief
- * 	The address of _exit
+ * @brief Pause Value
  */
-#define msgcomm_st_exit						(&(G_status_ptr->_exit))
+#define MSGCOMM_ST_PAUSE					(0x01)			
+
+
+/**
+ * @brief Continue Value
+ */
+#define MSGCOMM_ST_CONTINUE					(0x02)
+
+
+/**
+ * @brief Exit Value
+ */
+#define MSGCOMM_ST_EXIT						(0x04)
+
+
+/**
+ * @brief Save Value
+ */
+#define MSGCOMM_ST_SAVE						(0x08)
+
+
+/**
+ * @brief The address of _cppc
+ */
+#define msgcomm_st_cppc						(&(G_status_ptr->_cppc))
+
+
+/**
+ * @brief CPPC Value
+ * @note 1 indicates command parameter parsing is complete
+ */
+#define MSGCOMM_ST_CPPC						(0x01)
 
 
 /**
@@ -514,7 +559,14 @@ extern _status_t * G_status_ptr;
 	do {																						\
 		__atomic_thread_fence(__ATOMIC_ACQUIRE);												\
 		variable = __atomic_load_n(address, __ATOMIC_ACQUIRE);									\
-	} while (0);																				\
+	} while (0);
+
+
+/**
+ * @brief
+ *  Allocate a block of memory for shared parameters between CP and AA processes
+ */
+extern void * G_cp_aa_shared_param;
 
 
 /**
@@ -540,16 +592,15 @@ extern _status_t * G_status_ptr;
 #define MSGCOMM__RING_FNAME_1TO0                "/dev/shm/._Ring1TO0"
 #define MSGCOMM_MEM_FNAME_1TO0                  "/dev/shm/.Mem1TO0"
 
-
-/**
- * @brief
- *  Message communication resource initialization and startup
- * @return
- *  If successful, it returns ND_OK;
- *  if failed, it returns ND_ERR
- */
-int
-msgcomm_startup(void);
+	/**
+	 * @brief
+	 *  Message communication resource initialization and startup
+	 * @return
+	 *  If successful, it returns ND_OK;
+	 *  if failed, it returns ND_ERR
+	 */
+	int
+	msgcomm_startup(void);
 
 
 /**
