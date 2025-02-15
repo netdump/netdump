@@ -508,6 +508,12 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 
 /**
  * @brief
+ * 	The execution logic of the second TUI interface
+ */
+void display_second_tui_exec_logic(void);
+
+/**
+ * @brief
  *  Brief information display box
  */
 #define display_draw_brief_information_box()                                                                                            \
@@ -998,6 +1004,7 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 } while (0);                                                                                                                            \
 
 
+#if 0
 /**
  * @brief 
  *  Handle TUI second page
@@ -1047,6 +1054,18 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
         display_start_or_close_timeout(0);                                                                                              \
         display_set_wins_echo_and_nocbreak();                                                                                           \
         display_enable_cursor();                                                                                                        \
+    } while (0);
+
+#endif
+
+
+/**
+ * @brief 
+ *  Handle TUI second page
+ */
+#define display_handle_TUI_second_page()                                                                                                \
+    do {                                                                                                                                \
+        display_second_tui_exec_logic();                                                                                                \
     } while (0);                                                                                                                        \
 
 
@@ -1128,14 +1147,13 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
                                                                                                                                         \
 label:                                                                                                                                  \
         display_exit_TUI_showcase();                                                                                                    \
-    } while (0);                                                                                                                        \
-
+    } while (0);
 
 /**
- * @brief 
+ * @brief
  *  TUI shows process exit resource destruction
  */
-extern void display_exit_resource_destruction ();
+extern void display_exit_resource_destruction();
 
 
 #endif  // __DISPLAY_H__
