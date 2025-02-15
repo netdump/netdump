@@ -208,6 +208,8 @@ struct netdissect_options Gndo = {
     .ndo_packet_info_stack = NULL,
     /* pointer to the if_printer function */
     .ndo_if_printer = NULL,
+
+    #if 0
     /* pointer to void function to output stuff */
     .ndo_default_print = NULL,
     /* pointer to function to do regular output */
@@ -215,7 +217,9 @@ struct netdissect_options Gndo = {
     /* pointer to function to output errors */
     .ndo_error = NULL,
     /* pointer to function to output warnings */
-    .ndo_warning = NULL};
+    .ndo_warning = NULL
+    #endif
+};
 
 /**
  * @brief
@@ -1374,15 +1378,48 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
     RVoidPtr((void *)device);
 }
 
-static void
-print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
+
+/**
+ * @brief
+ *  Copy data to shared memory
+ * @param user
+ *  Pointer to pcap_t type
+ * @param h
+ *  Generic per-packet information
+ * @param sp
+ *  Pointer to data
+ */
+static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
 {
 
     TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
-    static unsigned char count = 0;
+    unsigned int tmp = 0;
+    msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
+
+    TI("runflag: %u", tmp);
+
+    if (MSGCOMM_ST_PAUSE == tmp) {
+        RVoid();
+    }
+
+    if (MSGCOMM_ST_EXIT == tmp || MSGCOMM_ST_SAVE == tmp) 
+    {
+        pcap_breakloop((pcap_t *)user);
+        TI("Complate Called pcap_breakloop");
+        RVoid();
+    }
+
+    static unsigned int count = 0;
+    TI("count: %d", count++);
+
+    nd_delay_microsecond(0, 10000);
+
+#if 0
+    //static unsigned char count = 0;
 
     TI("count: %d\n", count);
+
     TI("sp aligned 2: %lld", COMM_ALIGNED_VALUE(sp, 2));
     TI("sp aligned 4: %lld", COMM_ALIGNED_VALUE(sp, 4));
     TI("sp aligned 8: %lld", COMM_ALIGNED_VALUE(sp, 8));
@@ -1392,15 +1429,12 @@ print_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned ch
     TI("sp aligned 128: %lld", COMM_ALIGNED_VALUE(sp, 128));
     TI("sp aligned 256: %lld", COMM_ALIGNED_VALUE(sp, 256));
 
-    if (count >= 16) {
-        pcap_breakloop((pcap_t *)user);
-        TI("Complate Called pcap_breakloop");
-    }
-
-    count ++;
+    //count ++;
+    #endif
 
     RVoid();
 }
+
 
 /**
  * @brief
@@ -1429,7 +1463,6 @@ void __capture_send_errmsg__(int msgtype, const char *format, ...)
     }
 
     RVoid();
-    
 }
 
 
@@ -1515,9 +1548,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     long devnum = 0;
     int op = 0, i, dlt = -1, yflag_dlt = -1, status = 0;
-    char *device = NULL, *RFileName = NULL, *ret = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0};
+    char *device = NULL, *RFileName = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0};
     const char *dlt_name = NULL, *yflag_dlt_name = NULL;
-    unsigned char *pcap_userdata = NULL;
     
     pcap_if_t *devlist;
     pcap_handler callback;
@@ -1779,8 +1811,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     dlt = pcap_datalink(pd);
     ndo->ndo_if_printer = NULL;
-    callback = print_packet;
-    pcap_userdata = (unsigned char *)ndo;
+    callback = capture_copy_packet;
 
     if (RFileName == NULL)
     {
@@ -1807,26 +1838,52 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         exit(1);
     }
 
-    do
+    memset(G_cp_aa_shared_param, 0, sizeof(struct netdissect_options));
+    ndo = (struct netdissect_options *) G_cp_aa_shared_param;
+    *ndo = Gndo;
+
+    msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
+
+    while (1)
     {
+
         status = pcap_loop(pd, -1, callback, (unsigned char *)pd);
+
         TI("pcap_loop return value: %d", status);
+
         if (status == -2)
         {
-            ret = NULL;
+            
         }
         if (status == -1)
         {
             TE("%s: pcap_loop: %s\n", program_name, pcap_geterr(pd));
-        }
-        pcap_close(pd);
-        pd = NULL;
-        ret = NULL;
+            __capture_send_errmsg__(MSGCOMM_ERR, 
+                "%s\n\n\tPlease press 'q' to exit this interface and view the error message", 
+                pcap_geterr(pd)
+            );
 
-    } while (ret != NULL);
-    
+            // need to exit second tui 
+        }
+
+        unsigned int tmp = 0;
+        msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
+
+        TI("runflag: %u", tmp);
+
+        if (MSGCOMM_ST_EXIT == tmp)
+            break;
+
+        if (MSGCOMM_ST_SAVE == tmp)
+        {
+            // Called capture save function
+            break;
+        }
+    }
+
+    pcap_close(pd);
+    pd = NULL;
     pcap_freecode(&fcode);
-    //exit(status);
 
     RInt(ND_OK);
 }
