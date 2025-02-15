@@ -87,6 +87,12 @@ _status_t * G_status_ptr = NULL;
 
 /**
  * @brief
+ *  Allocate a block of memory for shared parameters between CP and AA processes
+ */
+void * G_cp_aa_shared_param = NULL;
+
+/**
+ * @brief
  *  Initialize the msgcomm_t structure
  * @return
  *  If successful, it returns ND_OK;
@@ -160,6 +166,8 @@ static int msgcomm_new_init_msgcomm(void)
     tmp += MSGCOMM_MEMFLAG_SIZE;
 
     G_status_ptr = (_status_t *)memcomm.memflag;
+
+    G_cp_aa_shared_param = (void *)(G_status_ptr + 1);
 
     memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
     memcomm.reserve = tmp;
