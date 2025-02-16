@@ -72,7 +72,11 @@ uintptr_t align_address(uintptr_t addr)
         page_size = 4096;
 	}
 
-	RULong(((addr + page_size - 1) & ~(page_size - 1)));
+    #if 0
+    long page_size = (1 << 21);
+    #endif
+
+    RULong(((addr + page_size - 1) & ~(page_size - 1)));
 }
 
 
@@ -243,9 +247,9 @@ int nd_check_fpath (char * fname) {
  *  otherwise returns NULL
  */
 void * nd_called_open_mmap_openup_memory (
-    const char * name, void * baseaddr, unsigned int memspace, unsigned int count) {
+    const char * name, void * baseaddr, unsigned long long memspace, unsigned int count) {
 
-    TC("Called { %s(%s, %p, %u, %u)", __func__, name, (void *)baseaddr, memspace, count);
+    TC("Called { %s(%s, %p, %llu, %u)", __func__, name, (void *)baseaddr, memspace, count);
 
     if (unlikely((!(POWEROF2(count))))) {
 		TE("POWEROF2(%d) is False", count);
@@ -266,10 +270,10 @@ void * nd_called_open_mmap_openup_memory (
 
 	TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
 
-    void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
-				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd , 0);
+    void *p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace),
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED /*| MAP_POPULATE | MAP_HUGETLB */, fd, 0);
 
-	if(unlikely((p == MAP_FAILED))) {
+    if(unlikely((p == MAP_FAILED))) {
 		close(fd);
 		TE("%s", strerror(errno));
 		RVoidPtr(NULL);
@@ -322,7 +326,7 @@ void *nd_called_shmopen_mmap_openup_memory (const char *name, void *baseaddr, un
     TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
 
     void *p = mmap((void *)(align_address((uintptr_t)baseaddr)), memsize,
-                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED /*| MAP_POPULATE | MAP_HUGETLB */, fd, 0);
 
     if (unlikely((p == MAP_FAILED)))
     {
@@ -377,8 +381,8 @@ void * nd_called_mmap_lookup_memory (
 
 	TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
 
-    void * p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace), 
-				PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd , 0);
+    void *p = mmap((void *)(align_address((uintptr_t)baseaddr)), (count * memspace),
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
 
     if(unlikely((p == MAP_FAILED) || (p == NULL))){
         close(fd);
