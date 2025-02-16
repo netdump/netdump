@@ -23,17 +23,47 @@
 #include "common.h"
 #include "ring.h"
 
+
 /**
- * @brief
- *  Capture the parsed packet header
+ * @brief Global ctoa shared memory pointer variable
  */
-typedef struct {
+extern void * G_ctoa_shm_mem;
 
-    long dlt;
-    struct pcap_pkthdr pphdr;
-    char data[0];
 
-} ctoa_t;
+/**
+ * @brief Global ctoa shared memory cursor
+ */
+extern void * G_ctos_shm_mem_cursor;
+
+
+/**
+ * @brief ctoa shared memory file path
+ */
+#define CTOACOMM_SHM_FILEPATH                   "/var/log/netdump/"
+
+
+/**
+ * @brief ctoa shared memory file name
+ */
+#define CTOACOMM_SHM_FILENAME                   ".ctoacomm.mem"
+
+
+/**
+ * @brief Full file name
+ */
+#define CTOACOMM_SHM_FULLNAME                   "/var/log/netdump/.ctoacomm.mem"
+
+
+/**
+ * @brief ctoa shared memory file size
+ */
+#define CTOACOMM_SHM_FILESIZE                   ((1ULL << 32))
+
+
+/**
+ * @brief ctoa shared memory starting base address
+ */
+#define CTOACOMM_SHM_BASEADDR                   ((void *)(0x6EEE00000000))
 
 
 #endif  // __CTOACOMM_H__
