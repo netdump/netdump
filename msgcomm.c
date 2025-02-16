@@ -91,6 +91,13 @@ _status_t * G_status_ptr = NULL;
  */
 void * G_cp_aa_shared_param = NULL;
 
+
+/**
+ * @brief Global cp and aa share address information
+ */
+ctoaaddr_t * G_cp_aa_shared_addr_info = NULL;
+
+
 /**
  * @brief
  *  Initialize the msgcomm_t structure
@@ -161,6 +168,10 @@ static int msgcomm_new_init_msgcomm(void)
     memcomm.cpinfo = tmp;
     tmp += MSGCOMM_CPINFO_SIZE;
 
+    memset(tmp, 0, MSGCOMM_ARGV_SIZE);
+    memcomm.argv = (void **)tmp;
+    tmp += MSGCOMM_ARGV_SIZE;
+
     memset(tmp, 0, MSGCOMM_MEMFLAG_SIZE);
     memcomm.memflag = tmp;
     tmp += MSGCOMM_MEMFLAG_SIZE;
@@ -169,17 +180,15 @@ static int msgcomm_new_init_msgcomm(void)
 
     G_cp_aa_shared_param = (void *)(G_status_ptr + 1);
 
+    memset(tmp, 0, MSGCOMM_PKTPTRARR_SIZE);
+    memcomm.pktptrarr = tmp;
+    tmp += MSGCOMM_PKTPTRARR_SIZE;
+
+    G_cp_aa_shared_addr_info = (ctoaaddr_t *)memcomm.pktptrarr;
+
     memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
     memcomm.reserve = tmp;
     tmp += MSGCOMM_RESERVE_SIZE;
-
-    memset(tmp, 0, MSGCOMM_ARGV_SIZE);
-    memcomm.argv = (void **)tmp;
-    tmp += MSGCOMM_ARGV_SIZE;
-
-    memset(tmp, 0, MSGCOMM_PKTPTRARR_SIZE);
-    memcomm.pktptrarr = (void **)tmp;
-    tmp += MSGCOMM_PKTPTRARR_SIZE;
 
     RInt(ND_OK);
 }
@@ -703,6 +712,23 @@ void msgcomm_infodump(void) {
         TI("msgcomm[%d].msg.memspace: %u", i, msgcomm[i].msg.memspace);
         TI("msgcomm[%d].msg.dir: %u", i, msgcomm[i].msg.dir);
     }
+
+
+    TI("================ Dump Msgcomm Mem Address ================");
+
+    TI("memcomm.faddr: %p", memcomm.faddr);
+    TI("memcomm.buffer: %p", memcomm.buffer);
+    TI("memcomm.reply: %p", memcomm.reply);
+    TI("memcomm.space: %p", memcomm.space);
+    TI("memcomm.cmdmem: %p", memcomm.cmdmem);
+    TI("memcomm.cmdbuf: %p", memcomm.cmdbuf);
+    TI("memcomm.cpinfo: %p", memcomm.cpinfo);
+    TI("memcomm.argv: %p", memcomm.argv);
+    TI("memcomm.memflag: %p", memcomm.memflag);
+    TI("memcomm.pktptrarr: %p", memcomm.pktptrarr);
+    TI("memcomm.reserve: %p", memcomm.reserve);
+
+    TI("==========================================================");
 
     RVoid();
 }
