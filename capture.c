@@ -322,6 +322,12 @@ int capture_loop (void) {
         TI("message->length: %u", message->length);
         TI("message->msg: %s", message->msg);
 
+        #if 0
+        // 还未实现
+        G_ctos_shm_mem_cursor = G_ctoa_shm_mem;
+        memset((void *)G_cp_aa_shared_addr_info, 0, MSGCOMM_PKTPTRARR_SIZE);
+        #endif
+        
         capture_parsing_cmd_and_exec_capture((char *)(cmdmem + sizeof(message_t)));
     }
 
@@ -1415,6 +1421,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     nd_delay_microsecond(0, 10000);
 
+
+
 #if 0
     //static unsigned char count = 0;
 
@@ -1575,7 +1583,9 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     TI("command: %s", command);
     int tmp = strlen(command), argc = 0;
-    char * argv[64] = {NULL}, * tmpp = NULL;
+    //char * argv[64] = {NULL}, * tmpp = NULL;
+    memset(msgcomm_G_argv, 0, MSGCOMM_ARGV_SIZE);
+    char ** argv = (char **)msgcomm_G_argv, *tmpp = NULL;
     for (i = 0; i < tmp; i++) {
         if (!tmpp) {
             tmpp = command + i;
