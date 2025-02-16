@@ -20,6 +20,14 @@
 
 int main(int argc, char ** argv) {
 
+    #if 1
+    if (geteuid() != 0)
+    {
+        fprintf(stderr, "\n\tOperation not permitted!\n\n\tNeed root privileges to use!\n\n");
+        return 1;
+    }
+    #endif
+
     ND_CHECK_KERNEL_VERSION();
 
     TRACE_STARTUP();
