@@ -151,7 +151,7 @@ enum {
  * 	Number of memory block elements
  */
 #define MSGCOMM_BLOCK_NUMBERS					(1 << 4)
-#define MSGCOMM_MEMORY_SPACE					(1 << 12)
+#define MSGCOMM_MEMORY_SPACE					(1 << 11)
 
 
 /**
@@ -211,11 +211,10 @@ typedef struct {
 	void * cmdmem;
 	void * cmdbuf;
 	void * cpinfo;
-	void * memflag;
-	void * reserve;
 	void ** argv;
-	void ** pktptrarr;
-
+	void * memflag;
+	void * pktptrarr;
+	void * reserve;
 } memcomm_t;
 
 
@@ -296,43 +295,43 @@ extern memcomm_t memcomm;
  * @brief
  * 	memcomm.buffer size
  */
-#define MSGCOMM_BUFFER_SIZE						(1 << 12)	// 4096
+#define MSGCOMM_BUFFER_SIZE						(1 << 11)	// 2048
 
 /**
  * @brief
  * 	memcomm.reply size
  */
-#define MSGCOMM_REPLY_SIZE						(1 << 12)	// 4096
+#define MSGCOMM_REPLY_SIZE						(1 << 11)	// 2048
 
 /**
  * @brief
  * 	memcomm_t.space size
  */
-#define MSGCOMM_SPACE_SIZE 						(1 << 12)	// 4096
+#define MSGCOMM_SPACE_SIZE 						(1 << 11)	// 2048
 
 /**
  * @brief
  * 	memcomm_t.cmdmem size
  */
-#define MSGCOMM_CMDMEM_SIZE 					(1 << 12)	// 4096
+#define MSGCOMM_CMDMEM_SIZE 					(1 << 11)	// 2048
 
 /**
  * @brief
  * 	memcomm_t.cmdbuf size
  */
-#define MSGCOMM_CMDBUF_SIZE 					(1 << 12) 	// 4096
+#define MSGCOMM_CMDBUF_SIZE 					(1 << 11) 	// 2048
 
 /**
  * @brief
  * 	memcomm_t.cpinfo size
  */
-#define MSGCOMM_CPINFO_SIZE 					(1 << 12)	// 4096
+#define MSGCOMM_CPINFO_SIZE 					(1 << 11)	// 2048
 
 /**
  * @brief
  * 	memcomm_t.memflag size
  */
-#define MSGCOMM_MEMFLAG_SIZE 					(1 << 12)	// 4096
+#define MSGCOMM_MEMFLAG_SIZE 					(1 << 11)	// 2048
 
 /**
  * @brief
@@ -344,7 +343,7 @@ extern memcomm_t memcomm;
  * @brief
  * 	memcomm_t.argv size
  */
-#define MSGCOMM_ARGV_SIZE 						(1 << 12) 	// 4096
+#define MSGCOMM_ARGV_SIZE 						(1 << 11) 	// 2048
 
 /**
  * @brief
@@ -357,7 +356,7 @@ extern memcomm_t memcomm;
  * @brief
  * 	Memory length after rounding 4096
  */
-#define MSGCOMM_RING_T_SIZE						(((((sizeof(ring_t)) + (MSGCOMM_BLOCK_NUMBERS << 3)) >> 12) + 1) << 12)
+#define MSGCOMM_RING_T_SIZE						(((((sizeof(ring_t)) + (MSGCOMM_BLOCK_NUMBERS << 3)) >> 11) + 1) << 11)
 
 
 /**
@@ -567,6 +566,23 @@ extern _status_t * G_status_ptr;
  *  Allocate a block of memory for shared parameters between CP and AA processes
  */
 extern void * G_cp_aa_shared_param;
+
+
+/**
+ * @brief Store the first address and index of the data packet
+ */
+typedef struct {
+
+	unsigned long long index;
+	void ** pktaddrarray[(MSGCOMM_PKTPTRARR_SIZE - 1)];
+
+} ctoaaddr_t;
+
+
+/**
+ * @brief Global cp and aa share address information
+ */
+extern ctoaaddr_t * G_cp_aa_shared_addr_info;
 
 
 /**
