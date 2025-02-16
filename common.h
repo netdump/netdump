@@ -288,7 +288,7 @@ int nd_check_fpath (char * fname);
  *  otherwise returns NULL
  */
 void * nd_called_open_mmap_openup_memory (
-	const char * name, void * baseaddr, unsigned int memspace, unsigned int count);
+	const char * name, void * baseaddr, unsigned long long memspace, unsigned int count);
 
 	
 /**
