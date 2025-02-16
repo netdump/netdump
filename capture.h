@@ -36,6 +36,7 @@
 #include "trace.h"
 #include "sigact.h"
 #include "msgcomm.h"
+#include "ctoacomm.h"
 
 
 /**
