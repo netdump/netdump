@@ -232,6 +232,8 @@ int nd_check_fpath (char * fname) {
 
 
 /** =========================================================================================== */
+#if 0
+
 /**
  * @brief The code between the dividing lines is about hugepage.
  */
@@ -898,6 +900,162 @@ int nd_fallback_hugepage_setting (void)
 }
 
 
+#if 0
+
+
+/**
+ * @note
+ * 
+ * Currently, the hugepage code is not used.
+ * 
+ * Use when debugging performance.
+ * 
+ * This commented out code still needs to be polished
+ * 
+ * The corresponding original file name is hugepage.c
+ * 
+ * The original question and answer file name is sethugepages.txt
+ * 
+ * The above two files are stored in the upper directory netdump-back
+ * 
+ */
+
+ 
+/**
+ * @brief
+ *  The mmap function maps large page memory
+ */
+static void * nd_mmap_hp_mem(void) 
+{
+
+    char name[256] = {0};
+    sprintf(name, "%s/%s", nd_G_store_mountpoint, "ndhp");
+    fprintf(stderr, "[%d] name: %s\n", __LINE__, name);
+
+    int fd = open(name, O_CREAT | O_RDWR, 0666);
+    if (fd < 0) 
+    {
+        fprintf(stderr, "[%d][errno: %d]errmsg: %s\n", __LINE__, errno, strerror(errno));
+        return NULL;
+    }
+
+    int ret = ftruncate(fd, (1<<23));
+    if (ret < 0) {
+        fprintf(stderr, "[%d][errno: %d]errmsg: %s\n", __LINE__, errno, strerror(errno));
+        close(fd);
+        return NULL;
+    }
+#define MAP_HUGE_2MB (21 << MAP_HUGE_SHIFT)
+    void * mem = mmap(NULL, (1<<23), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_HUGETLB, fd, 0);
+    if (MAP_FAILED == mem) {
+        fprintf(stderr, "[%d][errno: %d]errmsg: %s\n", __LINE__, errno, strerror(errno));
+        close(fd);
+        unlink(name);
+        return NULL;
+    }
+
+    close(fd);
+
+    return mem;
+}
+
+
+/**
+ * @brief
+ */
+static int nd_munmap_hp_mem(void * mem) 
+{
+
+    munmap(mem, (1<<23));
+
+    char name[256] = {0};
+    sprintf(name, "%s/%s", nd_G_store_mountpoint, "ndhp");
+
+    fprintf(stderr, "[%d] name: %s\n", __LINE__, name);
+
+    unlink(name);
+
+    return 0;
+}
+
+
+
+int main () 
+{
+
+    int ret = -1;
+
+    ret = nd_mount_hugetlbfs();
+    fprintf(stderr, "[%d] nd_mount_hugetlbfs return: %d\n", __LINE__, ret);
+    getchar();
+
+
+    ret = -1;
+    ret = nd_disable_transparent_hugepages();
+    fprintf(stderr, "[%d] nd_disable_transparent_hugepages return: %d\n", __LINE__, ret);
+    getchar();
+
+
+    ret = -1;
+    ret = nd_set_hugepages_incremental(2048, HUGEPAGE_2MB);
+    fprintf(stderr, "[%d] nd_set_hugepages_incremental return: %d\n", __LINE__, ret);
+    getchar();
+
+
+    ret = -1;
+    ret = nd_mount_hugetlbfs();
+    fprintf(stderr, "[%d] nd_mount_hugetlbfs return: %d\n", __LINE__, ret);
+    getchar();
+
+
+    ret = -1;
+    int Rtotal = 0, Rfree = 0;
+    ret = nd_validate_hugepage_distribution (&Rtotal, &Rfree);
+    fprintf(stderr, "[%d] nd_validate_hugepage_distribution return %d\n", __LINE__, ret);
+    fprintf(stderr, "[%d] total: %d; free: %d\n", __LINE__, Rtotal, Rfree);
+    getchar();
+
+
+    // mmap
+    void * mem = nd_mmap_hp_mem();
+    if (!mem) {
+        fprintf(stderr, "[%d] nd_mmap_hp_mem return %p", __LINE__, mem);
+    }
+    else {
+        fprintf(stderr, "[%d] nd_mmap_hp_mem return %p", __LINE__, mem);
+    }
+    getchar();
+
+    // munmap
+    nd_munmap_hp_mem(mem);
+    getchar();
+
+
+
+    ret = -1;
+    ret = nd_set_hugepages_incremental((-2048), HUGEPAGE_2MB);
+    fprintf(stderr, "[%d] nd_set_hugepages_incremental return: %d\n", __LINE__, ret);
+    getchar();
+
+
+    ret = -1;
+    Rtotal = 0, Rfree = 0;
+    ret = nd_validate_hugepage_distribution (&Rtotal, &Rfree);
+    fprintf(stderr, "[%d] nd_validate_hugepage_distribution return %d\n", __LINE__, ret);
+    fprintf(stderr, "[%d] total: %d; free: %d\n", __LINE__, Rtotal, Rfree);
+    getchar();
+
+
+    ret = -1;
+    ret = nd_recover_transparent_hugepages();
+    fprintf(stderr, "[%d] nd_recover_transparent_hugepages return: %d\n", __LINE__, ret);
+    getchar();
+
+    return 0;
+}
+
+#endif
+#endif
 
 /** =========================================================================================== */
 
