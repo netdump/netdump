@@ -1535,6 +1535,57 @@ int capture_check_command_meet_requirement (const char * command) {
     RInt(ND_OK);
 }
 
+/**
+ * @brief
+ *  Converts a command in string format to a command in pointer array format
+ * @param command
+ *  Commands in string format
+ * @return
+ *  Returns the number of converted
+ */
+int capture_convert_command_to_argv(char * command) 
+{
+
+    TC("called { %s(%s)", __func__, command);
+
+    int tmp = strlen(command), nums = 0, i = 0;
+
+    memset(msgcomm_G_argv, 0, MSGCOMM_ARGV_SIZE);
+
+    char **argv = (char **)msgcomm_G_argv, *tmpp = NULL;
+
+    for (i = 0; i < tmp; i++)
+    {
+        if (!tmpp)
+        {
+            tmpp = command + i;
+        }
+        if (command[i] == '\0')
+        {
+            break;
+        }
+        if (command[i] == ' ')
+        {
+            argv[nums++] = tmpp;
+            command[i] = '\0';
+            tmpp = NULL;
+        }
+        if ((i == (tmp - 1)) && tmpp)
+        {
+            argv[nums++] = tmpp;
+        }
+    }
+
+    TI("nums: %d", nums);
+    for (i = 0; i < nums; i++)
+    {
+        TI("argv[%d]: %s", i, argv[i]);
+        TI("argc: %d; i: %d", nums, i);
+    }
+
+    RInt(nums);
+}
+
 
 
 /**
@@ -1567,7 +1618,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     memset(ebuf, 0, sizeof(ebuf));
 
-    
     char * sp = space;
     int len = MSGCOMM_SPACE_SIZE;
 
@@ -1581,34 +1631,14 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         RInt(ND_OK);
     }
 
-    TI("command: %s", command);
-    int tmp = strlen(command), argc = 0;
-    //char * argv[64] = {NULL}, * tmpp = NULL;
-    memset(msgcomm_G_argv, 0, MSGCOMM_ARGV_SIZE);
-    char ** argv = (char **)msgcomm_G_argv, *tmpp = NULL;
-    for (i = 0; i < tmp; i++) {
-        if (!tmpp) {
-            tmpp = command + i;
-        }
-        if (command[i] == '\0') {
-            break;
-        }
-        if (command[i] == ' ') {
-            argv[argc++] = tmpp;
-            command[i] = '\0';
-            tmpp = NULL;
-        }
-        if ((i == (tmp-1)) && tmpp) {
-            argv[argc++] = tmpp;
-        }
+    int argc = 0;
+    if (unlikely(!(argc = capture_convert_command_to_argv(command)))) 
+    {
+        capture_usage();
+        RInt(ND_OK);
     }
 
-    TI("argc: %d", argc);
-    for (i = 0; i < argc; i++) {
-        TI("argv[%d]: %s", i, argv[i]);
-        TI("argc: %d; i: %d", argc, i);
-    }
-    
+    char **argv = (char **)msgcomm_G_argv;
 
     optind = 1;
     while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
