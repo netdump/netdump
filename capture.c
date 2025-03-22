@@ -1849,7 +1849,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             CAPTURE_SHORTEN_CODE(space, sp, len, ", link-type %s (%s)", dlt_name,
                                  pcap_datalink_val_to_description(dlt));
         }
-        CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d bytes\n", ndo->ndo_snaplen);
+        CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d bytes\n", pcap_snapshot(pd));
     }
 
     if (unlikely(((capture_reply_to_display(MSGCOMM_SUC, space)) == ND_ERR)))
