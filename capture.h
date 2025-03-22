@@ -550,6 +550,6 @@ void capture_resource_release(void);
  * @param format
  *  Content Format
  */
-void __capture_send_errmsg__(int msgtype, const char *format, ...);
+void capture_send_errmsg(int msgtype, const char *format, ...);
 
 #endif  // __CAPTURE_H__
