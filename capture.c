@@ -1189,7 +1189,7 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
     if (status != 0) {
         capture_oi_error_handle(ebuf, pc, "%s: Can't set snapshot length: %s", device, pcap_statustostr(status));
     }
-    
+
     status = pcap_set_promisc(pc, !pflag);
     if (status != 0) {
         capture_oi_error_handle(ebuf, pc, "%s: Can't set promiscuous mode: %s", device, pcap_statustostr(status));
@@ -1256,6 +1256,8 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
             capture_oi_error_handle(ebuf, pc,"%s: pcap_setdirection() failed: %s", device, pcap_geterr(pc));
         }
     }
+
+    TI("pcap_snapshot return value :%d", pcap_snapshot(pc));
 
     RVoidPtr((void *)pc);
 }
@@ -1808,6 +1810,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             }
         }
 
+        #if 0
         i = pcap_snapshot(pd);
         TI("pcap_snapshot return value :%d", i);
         if (ndo->ndo_snaplen < i)
@@ -1821,6 +1824,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             TW("snaplen lowered from %d to %d", ndo->ndo_snaplen, i);
             ndo->ndo_snaplen = i;
         }
+        #endif
     }
 
     char * cmdbuf = capture_copy_argv((char**)(&argv[optind]));
