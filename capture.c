@@ -70,7 +70,8 @@ static int Bflag = (16 * 1024 * 1024);
  * @brief
  *  Timestamp accuracy
  */
-static int tstamp_precision = 0;
+#define CAPTURE_TSTAMP_PRECISION    0
+static int tstamp_precision = CAPTURE_TSTAMP_PRECISION;
 
 /**
  * @brief
@@ -196,7 +197,7 @@ struct netdissect_options Gndo = {
     .ndo_last_mem_p = NULL,
     .ndo_packet_number = 1,
     .ndo_suppress_default_print = 1,
-    .ndo_tstamp_precision = 0,
+    .ndo_tstamp_precision = CAPTURE_TSTAMP_PRECISION,
     .program_name = "netdump",
     .ndo_espsecret = NULL,
     .ndo_sa_list_head = NULL,
@@ -1719,7 +1720,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     if (RFileName != NULL)
     {
-        pd = pcap_open_offline_with_tstamp_precision(RFileName, ndo->ndo_tstamp_precision, ebuf);
+        pd = pcap_open_offline_with_tstamp_precision(RFileName, tstamp_precision, ebuf);
 
         if (pd == NULL) {
             TE("%s", ebuf);
