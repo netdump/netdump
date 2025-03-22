@@ -1600,7 +1600,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     TC("Called { %s(%p)", __func__, command);
 
     long devnum = 0;
-    int op = 0, i, dlt = -1, yflag_dlt = -1, status = 0;
+    int op = 0, dlt = -1, yflag_dlt = -1, status = 0;
     char *device = NULL, *RFileName = NULL, ebuf[PCAP_ERRBUF_SIZE] = {0};
     const char *dlt_name = NULL, *yflag_dlt_name = NULL;
     
@@ -1809,22 +1809,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 pcap_set_datalink(pd, DLT_LINUX_SLL2);
             }
         }
-
-        #if 0
-        i = pcap_snapshot(pd);
-        TI("pcap_snapshot return value :%d", i);
-        if (ndo->ndo_snaplen < i)
-        {
-            if (ndo->ndo_snaplen != 0)
-                TW("snaplen raised from %d to %d", ndo->ndo_snaplen, i);
-            ndo->ndo_snaplen = i;
-        }
-        else if (ndo->ndo_snaplen > i)
-        {
-            TW("snaplen lowered from %d to %d", ndo->ndo_snaplen, i);
-            ndo->ndo_snaplen = i;
-        }
-        #endif
     }
 
     char * cmdbuf = capture_copy_argv((char**)(&argv[optind]));
