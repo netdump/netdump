@@ -1185,14 +1185,11 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
         supports_monitor_mode = 0;
     }
 
-    if (ndo->ndo_snaplen != 0)
-    {
-        status = pcap_set_snaplen(pc, ndo->ndo_snaplen);
-        if (status != 0) {
-            capture_oi_error_handle(ebuf, pc, "%s: Can't set snapshot length: %s", device, pcap_statustostr(status));
-        }
+    status = pcap_set_snaplen(pc, MAXIMUM_SNAPLEN);
+    if (status != 0) {
+        capture_oi_error_handle(ebuf, pc, "%s: Can't set snapshot length: %s", device, pcap_statustostr(status));
     }
-
+    
     status = pcap_set_promisc(pc, !pflag);
     if (status != 0) {
         capture_oi_error_handle(ebuf, pc, "%s: Can't set promiscuous mode: %s", device, pcap_statustostr(status));
@@ -1211,12 +1208,9 @@ static pcap_t * capture_open_interface(const char *device, netdissect_options *n
         capture_oi_error_handle(ebuf, pc, "%s: pcap_set_timeout failed: %s", device, pcap_statustostr(status));
     }
 
-    if (Bflag != 0)
-    {
-        status = pcap_set_buffer_size(pc, Bflag);
-        if (status != 0) {
-            capture_oi_error_handle(ebuf, pc, "%s: Can't set buffer size: %s", device, pcap_statustostr(status));
-        }
+    status = pcap_set_buffer_size(pc, Bflag);
+    if (status != 0) {
+        capture_oi_error_handle(ebuf, pc, "%s: Can't set buffer size: %s", device, pcap_statustostr(status));
     }
 
     status = pcap_activate(pc);
@@ -1500,6 +1494,7 @@ int capture_check_command_meet_requirement (const char * command) {
             if ((int)(saddr - faddr) == 2) 
             {
                 TI("*faddr: %c; *(faddr+1): %c; faddr: %p, saddr: %p", *faddr, *(faddr + 1), faddr, saddr);
+                TI("\n");
                 if (!(strchr(SHORTOPTS, *(faddr + 1)))) {
                     RInt(ND_ERR);
                 }
@@ -1577,7 +1572,7 @@ int capture_convert_command_to_argv(char * command)
     for (i = 0; i < nums; i++)
     {
         TI("argv[%d]: %s", i, argv[i]);
-        TI("argc: %d; i: %d", nums, i);
+        TI("nums: %d; i: %d", nums, i);
     }
 
     RInt(nums);
@@ -1814,6 +1809,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         }
 
         i = pcap_snapshot(pd);
+        TI("pcap_snapshot return value :%d", i);
         if (ndo->ndo_snaplen < i)
         {
             if (ndo->ndo_snaplen != 0)
