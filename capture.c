@@ -1736,7 +1736,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             }
             device = strdup(devlist->name);
             pcap_freealldevs(devlist);
-
         }
 
         pd = capture_open_interface(device, ndo, ebuf);
