@@ -15,7 +15,6 @@
 #include "msgcomm.h"
 
 
-
 /**
  * @brief 
  *  list available devices and exit
@@ -1377,6 +1376,107 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
     RVoidPtr((void *)device);
 }
 
+/**
+ * @brief The Code for debug
+ */
+#if 1
+void print_mac(const char * label, const unsigned char * mac)
+{
+    TI("%s %02x:%02x:%02x:%02x:%02x:%02x", label, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
+void print_payload(const unsigned char * payload, int len)
+{
+    char buffer[96] = {0};
+    TI("Payload (first %d bytes): ", len);
+    for (int i = 0; i < len; i++)
+    {
+        sprintf(buffer + strlen(buffer), "%02x ", payload[i]);
+    }
+    TI("%s", buffer);
+}
+
+void packet_handler(unsigned char * args, const struct pcap_pkthdr *header, const unsigned char *packet)
+{
+    struct ether_header *eth_header = (struct ether_header *)packet;
+    uint16_t eth_type = ntohs(eth_header->ether_type);
+    int ip_header_len = 0;
+
+    print_mac("Source MAC:", eth_header->ether_shost);
+    print_mac("Destination MAC:", eth_header->ether_dhost);
+
+    if (eth_type == ETHERTYPE_IP)
+    { // IPv4
+        struct iphdr *ip_header = (struct iphdr *)(packet + sizeof(struct ether_header));
+        struct in_addr src_ip, dst_ip;
+        src_ip.s_addr = ip_header->saddr;
+        dst_ip.s_addr = ip_header->daddr;
+
+        TI("Protocol: IPv4");
+        TI("Source IP: %s", inet_ntoa(src_ip));
+        TI("Destination IP: %s", inet_ntoa(dst_ip));
+
+        ip_header_len = ip_header->ihl * 4;
+    }
+    else if (eth_type == ETHERTYPE_IPV6)
+    { // IPv6
+        struct ip6_hdr *ip6_header = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
+        char src_ip[INET6_ADDRSTRLEN], dst_ip[INET6_ADDRSTRLEN];
+
+        inet_ntop(AF_INET6, &ip6_header->ip6_src, src_ip, sizeof(src_ip));
+        inet_ntop(AF_INET6, &ip6_header->ip6_dst, dst_ip, sizeof(dst_ip));
+
+        TI("Protocol: IPv6");
+        TI("Source IP: %s", src_ip);
+        TI("Destination IP: %s", dst_ip);
+
+        ip_header_len = sizeof(struct ip6_hdr);
+    }
+    else if (eth_type == ETHERTYPE_ARP)
+    { // ARP
+        TI("Protocol: ARP (Skipping IP and ports)");
+        return;
+    }
+    else
+    {
+        TI("Unknown protocol: 0x%04x", eth_type);
+        return;
+    }
+
+    // 计算 IP 头部后的数据偏移
+    const unsigned char *transport_header = packet + sizeof(struct ether_header) + ip_header_len;
+    uint8_t protocol = eth_type == ETHERTYPE_IP ? ((struct iphdr *)(packet + sizeof(struct ether_header)))->protocol : 0;
+
+    if (protocol == IPPROTO_TCP)
+    { // TCP
+        struct tcphdr *tcp_header = (struct tcphdr *)transport_header;
+        TI("Source Port: %u", ntohs(tcp_header->source));
+        TI("Destination Port: %u", ntohs(tcp_header->dest));
+
+        // 计算 TCP 负载起始位置
+        int tcp_header_len = tcp_header->doff * 4;
+        const unsigned char *payload = transport_header + tcp_header_len;
+        int payload_len = header->caplen - (payload - packet);
+
+        print_payload(payload, payload_len > 16 ? 16 : payload_len);
+    }
+    else if (protocol == IPPROTO_UDP)
+    { // UDP
+        struct udphdr *udp_header = (struct udphdr *)transport_header;
+        TI("Source Port: %u", ntohs(udp_header->source));
+        TI("Destination Port: %u", ntohs(udp_header->dest));
+
+        // 计算 UDP 负载起始位置
+        const unsigned char *payload = transport_header + sizeof(struct udphdr);
+        int payload_len = header->caplen - (payload - packet);
+
+        print_payload(payload, payload_len > 16 ? 16 : payload_len);
+    }
+
+    return ;
+}
+
+#endif
 
 /**
  * @brief
@@ -1395,43 +1495,10 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     unsigned int tmp = 0;
     msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
+    if (MSGCOMM_ST_PAUSE == tmp)
+        return ;
 
-    TI("runflag: %u", tmp);
-
-    if (MSGCOMM_ST_PAUSE == tmp) {
-        RVoid();
-    }
-
-    if (MSGCOMM_ST_EXIT == tmp || MSGCOMM_ST_SAVE == tmp) 
-    {
-        pcap_breakloop((pcap_t *)user);
-        TI("Complate Called pcap_breakloop");
-        RVoid();
-    }
-
-    static unsigned int count = 0;
-    TI("count: %d", count++);
-
-    nd_delay_microsecond(0, 10000);
-
-
-
-#if 0
-    //static unsigned char count = 0;
-
-    TI("count: %d\n", count);
-
-    TI("sp aligned 2: %lld", COMM_ALIGNED_VALUE(sp, 2));
-    TI("sp aligned 4: %lld", COMM_ALIGNED_VALUE(sp, 4));
-    TI("sp aligned 8: %lld", COMM_ALIGNED_VALUE(sp, 8));
-    TI("sp aligned 16: %lld", COMM_ALIGNED_VALUE(sp, 16));
-    TI("sp aligned 32: %lld", COMM_ALIGNED_VALUE(sp, 32));
-    TI("sp aligned 64: %lld", COMM_ALIGNED_VALUE(sp, 64));
-    TI("sp aligned 128: %lld", COMM_ALIGNED_VALUE(sp, 128));
-    TI("sp aligned 256: %lld", COMM_ALIGNED_VALUE(sp, 256));
-
-    //count ++;
-    #endif
+    packet_handler(NULL, h, sp);
 
     RVoid();
 }
@@ -1579,7 +1646,6 @@ int capture_convert_command_to_argv(char * command)
 
     RInt(nums);
 }
-
 
 
 /**
@@ -1828,9 +1894,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         pd = NULL;
         RInt(ND_ERR);
     }
-
-    dlt = pcap_datalink(pd);
-    ndo->ndo_if_printer = NULL;
+    
     callback = capture_copy_packet;
 
     if (RFileName == NULL)
@@ -1864,38 +1928,60 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
 
+    struct pollfd fds;
+    int fd, ret;
+    fd = pcap_get_selectable_fd(pd);
+    if (fd == -1)
+    {
+        TE("pcap_get_selectable_fd() failed: Not supported.");
+        pcap_close(pd);
+        return 1;
+    }
+    fds.fd = fd;
+    fds.events = POLLIN;
+
     while (1)
     {
 
-        status = pcap_loop(pd, -1, callback, (unsigned char *)pd);
-
-        TI("pcap_loop return value: %d", status);
-
-        if (status == -2)
-        {
-            
-        }
-        if (status == -1)
-        {
-            TE("%s: pcap_loop: %s\n", program_name, pcap_geterr(pd));
-            capture_send_errmsg(MSGCOMM_ERR, "%s\n\n\tPlease press 'q' to exit this interface and view the error message", 
-                pcap_geterr(pd)
-            );
-
-            // need to exit second tui 
-        }
-
         unsigned int tmp = 0;
         msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
-
-        TI("runflag: %u", tmp);
 
         if (MSGCOMM_ST_EXIT == tmp)
             break;
 
         if (MSGCOMM_ST_SAVE == tmp)
         {
-            // Called capture save function
+            break;
+        }
+
+        ret = poll(&fds, 1, 1000);
+
+        if (ret >= 0) 
+        {
+            if (ret) {
+                status = pcap_dispatch(pd, 1, callback, NULL);
+
+                TI("pcap_dispatch return value: %d", status);
+
+                if (status == -2)
+                {
+                }
+                if (status == -1)
+                {
+                    TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
+                    capture_send_errmsg(MSGCOMM_ERR, "%s\n\n\tPlease press 'q' to exit this interface and view the error message",
+                                        pcap_geterr(pd));
+
+                    // need to exit second tui
+                }
+            }
+            else {
+                //TI("Timeout: No packets received in %d ms.", 1000);
+            }
+        }
+        else
+        {
+            TE("poll() error; errno: %d; errmsg: %s", errno, strerror(errno));
             break;
         }
     }
