@@ -14,6 +14,8 @@
 #ifndef __CAPTURE_H__
 #define __CAPTURE_H__
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,7 +27,17 @@
 #include <getopt.h>
 #include <setjmp.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <poll.h>
 
+#if 1
+#include <net/ethernet.h> // 以太网帧
+#include <netinet/ip.h>	  // IPv4 头部
+#include <netinet/ip6.h>  // IPv6 头部
+#include <netinet/tcp.h>  // TCP 头部
+#include <netinet/udp.h>  // UDP 头部
+#include <arpa/inet.h>
+#endif
 
 #include "bpf.h"
 #include "pcap/pcap.h"
