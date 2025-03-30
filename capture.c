@@ -1950,9 +1950,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             break;
 
         if (MSGCOMM_ST_SAVE == tmp)
-        {
             break;
-        }
 
         ret = poll(&fds, 1, 1000);
 
@@ -1965,6 +1963,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
                 if (status == -2)
                 {
+                    TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
+                    break;
                 }
                 if (status == -1)
                 {
@@ -1973,10 +1973,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                                         pcap_geterr(pd));
 
                     // need to exit second tui
+                    break;
                 }
-            }
-            else {
-                //TI("Timeout: No packets received in %d ms.", 1000);
             }
         }
         else
