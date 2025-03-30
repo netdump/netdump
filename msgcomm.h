@@ -475,7 +475,7 @@ extern _status_t * G_status_ptr;
  * 	A value of 1 means pause
  * 	A value of 2 means continue
  * 	A value of 4 means exit.
- * 	A value of 8 means exit.
+ * 	A value of 8 means save & exit.
  */
 #define msgcomm_st_runflag					(&(G_status_ptr->_runflag_))
 
