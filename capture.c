@@ -120,7 +120,6 @@ static char * space = NULL;
  */
 static char * cmdmem = NULL;
 
-
 /*
  * Long options.
  *
@@ -331,7 +330,10 @@ int capture_loop (void) {
         G_ctos_shm_mem_cursor = G_ctoa_shm_mem;
         memset((void *)G_cp_aa_shared_addr_info, 0, MSGCOMM_PKTPTRARR_SIZE);
         #endif
-        
+
+        msgcomm_zero_variable(msgcomm_st_NObytes);
+        msgcomm_zero_variable(msgcomm_st_NOpackages);
+
         capture_parsing_cmd_and_exec_capture((char *)(cmdmem + sizeof(message_t)));
     }
 
@@ -1498,6 +1500,9 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     if (MSGCOMM_ST_PAUSE == tmp)
         return ;
 
+    msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
+    msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
+
     packet_handler(NULL, h, sp);
 
     RVoid();
@@ -1671,7 +1676,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     const char *dlt_name = NULL, *yflag_dlt_name = NULL;
     
     pcap_if_t *devlist;
-    pcap_handler callback;
     bpf_u_int32 netmask = 0;
 
     netdissect_options *ndo = &Gndo;
@@ -1895,8 +1899,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         RInt(ND_ERR);
     }
     
-    callback = capture_copy_packet;
-
     if (RFileName == NULL)
     {
         memset(space, 0, MSGCOMM_SPACE_SIZE);
@@ -1913,7 +1915,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             CAPTURE_SHORTEN_CODE(space, sp, len, ", link-type %s (%s)", dlt_name,
                                  pcap_datalink_val_to_description(dlt));
         }
-        CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d bytes\n", pcap_snapshot(pd));
+        CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d bytes", pcap_snapshot(pd));
     }
 
     if (unlikely(((capture_reply_to_display(MSGCOMM_SUC, space)) == ND_ERR)))
@@ -1957,7 +1959,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         if (ret >= 0) 
         {
             if (ret) {
-                status = pcap_dispatch(pd, 1, callback, NULL);
+                status = pcap_dispatch(pd, 1, capture_copy_packet, NULL);
 
                 TI("pcap_dispatch return value: %d", status);
 
