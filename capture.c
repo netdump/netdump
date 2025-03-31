@@ -1936,6 +1936,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     if (fd == -1)
     {
         TE("pcap_get_selectable_fd() failed: Not supported.");
+        // need to exit second tui
         pcap_close(pd);
         return 1;
     }
