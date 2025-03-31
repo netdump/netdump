@@ -542,7 +542,7 @@ extern _status_t * G_status_ptr;
 #define msgcomm_transfer_status_change(address, value)											\
 	do {																						\
 		__atomic_store_n((address), value, __ATOMIC_RELEASE);									\
-		__atomic_thread_fence(__ATOMIC_RELEASE);												\
+		/*__atomic_thread_fence(__ATOMIC_RELEASE);*/											\
 	} while (0);
 
 
@@ -556,9 +556,35 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_receive_status_value(address, variable)											\
 	do {																						\
-		__atomic_thread_fence(__ATOMIC_ACQUIRE);												\
+		/*__atomic_thread_fence(__ATOMIC_ACQUIRE);*/											\
 		variable = __atomic_load_n(address, __ATOMIC_ACQUIRE);									\
 	} while (0);
+
+
+/**
+ * @brief
+ * 	Adds a value to the specified variable.
+ * @param address
+ * 	Specify the address of the data
+ * @param value
+ *	Accumulated value
+ */
+#define msgcomm_increase_data_value(address, value)												\
+	do {																						\
+		__atomic_fetch_add(address, value, __ATOMIC_SEQ_CST);									\
+	} while(0);
+
+
+/**
+ * @brief
+ * 	Sets the specified variable to zero
+ * @param address
+ * 	Specify the address of the data
+ */
+#define msgcomm_zero_variable(address)															\
+	do {																						\
+		__atomic_store_n(address, 0, __ATOMIC_SEQ_CST);											\
+	} while(0);
 
 
 /**
