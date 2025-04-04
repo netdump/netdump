@@ -585,6 +585,18 @@ void display_second_tui_exec_logic (void) {
 			display_handle_win_resize(2);
 			continue;
 		}
+
+		unsigned int tmp = 0;
+		msgcomm_receive_status_value(msgcomm_st_runflag_c2d, tmp);
+		if (tmp == MSGCOMM_ST_C2D_FD_ERR || 
+			tmp == MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR || 
+			tmp == MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR || 
+			tmp == MSGCOMM_ST_C2D_POLL_ERR)
+		{
+			TE("Capture Process Error; ErrCode: %hu", tmp);
+			break;
+		}
+
 		if ('q' == ch) 
 		{
 			TI("ch: %u", ch);
