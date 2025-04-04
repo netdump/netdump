@@ -2018,7 +2018,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         if (ret >= 0) 
         {
             if (ret) {
-                status = pcap_dispatch(pd, 1, capture_copy_packet, NULL);
+                status = pcap_dispatch(pd, -1, capture_copy_packet, NULL);
                 if (status == -2)
                 {
                     TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
