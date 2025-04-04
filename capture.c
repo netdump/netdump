@@ -1496,9 +1496,65 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
     unsigned int tmp = 0;
+    int invalid_header = 0;
     msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
     if (MSGCOMM_ST_PAUSE == tmp)
         return ;
+
+    if (h->caplen == 0)
+    {
+        invalid_header = 1;
+        TI("[Invalid header: caplen==0");
+    }
+    if (h->len == 0)
+    {
+        if (!invalid_header)
+        {
+            invalid_header = 1;
+            TI("[Invalid header:");
+        }
+        else
+            TI(",");
+        TI(" len==0");
+    }
+    else if (h->len < h->caplen)
+    {
+        if (!invalid_header)
+        {
+            invalid_header = 1;
+            TI("[Invalid header:");
+        }
+        else
+            TI(",");
+        TI(" len(%u) < caplen(%u)", h->len, h->caplen);
+    }
+    if (h->caplen > MAXIMUM_SNAPLEN)
+    {
+        if (!invalid_header)
+        {
+            invalid_header = 1;
+            TI("[Invalid header:");
+        }
+        else
+            TI(",");
+        TI(" caplen(%u) > %u", h->caplen, MAXIMUM_SNAPLEN);
+    }
+    if (h->len > MAXIMUM_SNAPLEN)
+    {
+        if (!invalid_header)
+        {
+            invalid_header = 1;
+            TI("[Invalid header:");
+        }
+        else
+            TI(",");
+        TI(" len(%u) > %u", h->len, MAXIMUM_SNAPLEN);
+    }
+    if (invalid_header)
+    {
+        TI("]\n");
+        RVoid();
+    }
 
     msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
     msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
@@ -1936,9 +1992,11 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     if (fd == -1)
     {
         TE("pcap_get_selectable_fd() failed: Not supported.");
-        // need to exit second tui
         pcap_close(pd);
-        return 1;
+        pd = NULL;
+        pcap_freecode(&fcode);
+        msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
+        RInt(ND_ERR);
     }
     fds.fd = fd;
     fds.events = POLLIN;
@@ -1961,21 +2019,16 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         {
             if (ret) {
                 status = pcap_dispatch(pd, 1, capture_copy_packet, NULL);
-
-                TI("pcap_dispatch return value: %d", status);
-
                 if (status == -2)
                 {
                     TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
+                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
                     break;
                 }
                 if (status == -1)
                 {
                     TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-                    capture_send_errmsg(MSGCOMM_ERR, "%s\n\n\tPlease press 'q' to exit this interface and view the error message",
-                                        pcap_geterr(pd));
-
-                    // need to exit second tui
+                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
                     break;
                 }
             }
@@ -1983,6 +2036,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         else
         {
             TE("poll() error; errno: %d; errmsg: %s", errno, strerror(errno));
+            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_POLL_ERR);
             break;
         }
     }
