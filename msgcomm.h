@@ -423,14 +423,16 @@ extern memcomm_t memcomm;
  * 	Retention and filling
  * @note
  *	[ _runflag_ ] from DP to CP ;
+ * 	[ _runflag_c2d ] from CP to DP ;
  *	[ cppc ] from CP to AA
  *	[ _G_CSnumber & _C_CSnumber ] from DP to CP
  *	[ _NOpackages & _NObytes ] from CP to DP ;
  */
 typedef struct {
 
-	volatile unsigned int _runflag_;
-	
+	volatile unsigned short _runflag_;
+	volatile unsigned short _runflag_c2d;
+
 	volatile unsigned char _top;
 	volatile unsigned char _bottom;
 	volatile unsigned char _win3_curline;
@@ -502,6 +504,18 @@ extern _status_t * G_status_ptr;
  * @brief Save Value
  */
 #define MSGCOMM_ST_SAVE						(0x08)
+
+
+/**
+ * @brief The address of _runflag_ capture to display
+ */
+#define msgcomm_st_runflag_c2d				(&(G_status_ptr->_runflag_c2d))
+
+
+/**
+ * @brief Unable to obtain a valid file descriptor
+ */
+#define MSGCOMM_ST_C2D_FD_ERR				(0x01)
 
 
 /**
