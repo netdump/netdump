@@ -519,6 +519,24 @@ extern _status_t * G_status_ptr;
 
 
 /**
+ * @brief pcap_breakloop function is called
+ */
+#define MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR	(0x02)
+
+
+/**
+ * @brief pcap_dispatch function error
+ */
+#define MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR	(0x04)
+
+
+/**
+ * @brief poll function error
+ */
+#define MSGCOMM_ST_C2D_POLL_ERR				(0x08)
+
+
+/**
  * @brief The address of _cppc
  */
 #define msgcomm_st_cppc						(&(G_status_ptr->_cppc))
