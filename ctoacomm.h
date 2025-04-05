@@ -89,6 +89,13 @@ extern void *G_ctoa_shm_mem_rp;
 
 /**
  * @brief
+ *  Make memory address 8-byte aligned
+ */
+#define CTOACOMM_ADDR_ALIGN(address)            (((uintptr_t)(address) + 7) & ~(7))
+
+
+/**
+ * @brief
  *  Inter-process communication resource initialization operation
  * @return
  *  If successful, it returns ND_OK;
