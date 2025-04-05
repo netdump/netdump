@@ -283,6 +283,8 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
+    ctoacomm_memory_load();
+
     if (unlikely((capture_loop()) == ND_ERR)) {
         TE("Analysis loop startup failed");
         goto label1;
