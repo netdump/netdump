@@ -313,6 +313,10 @@ int capture_loop (void) {
 
     while (1) {
 
+        ctoacomm_memory_load();
+
+        G_ctoa_shm_mem_wp = CTOACOMM_SHM_BASEADDR;
+
         memset(cmdmem, 0, MSGCOMM_CMDMEM_SIZE);
         message_t *message = (message_t *)(cmdmem);
 
@@ -1561,7 +1565,14 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
     msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
 
-    packet_handler(NULL, h, sp);
+    G_ctoa_shm_mem_wp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp);
+
+    datastore_t * ds = (datastore_t *)(G_ctoa_shm_mem_wp);
+    ds->pkthdr = *h;
+    memcpy(ds->data, sp, h->len);
+    G_ctoa_shm_mem_wp += sizeof(struct pcap_pkthdr) + h->len;
+
+    __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
 
     RVoid();
 }
