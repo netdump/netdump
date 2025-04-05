@@ -74,7 +74,7 @@ memcomm_t memcomm = {
     .memflag = NULL,
     .reserve = NULL,
     .argv = NULL,
-    .pktptrarr = NULL
+    //.pktptrarr = NULL
 };
 
 
@@ -85,6 +85,7 @@ memcomm_t memcomm = {
 _status_t * G_status_ptr = NULL;
 
 
+#if 0
 /**
  * @brief
  *  Allocate a block of memory for shared parameters between CP and AA processes
@@ -96,6 +97,7 @@ void * G_cp_aa_shared_param = NULL;
  * @brief Global cp and aa share address information
  */
 ctoaaddr_t * G_cp_aa_shared_addr_info = NULL;
+#endif
 
 
 /**
@@ -178,6 +180,7 @@ static int msgcomm_new_init_msgcomm(void)
 
     G_status_ptr = (_status_t *)memcomm.memflag;
 
+    #if 0
     G_cp_aa_shared_param = (void *)(G_status_ptr + 1);
 
     memset(tmp, 0, MSGCOMM_PKTPTRARR_SIZE);
@@ -185,6 +188,7 @@ static int msgcomm_new_init_msgcomm(void)
     tmp += MSGCOMM_PKTPTRARR_SIZE;
 
     G_cp_aa_shared_addr_info = (ctoaaddr_t *)memcomm.pktptrarr;
+    #endif
 
     memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
     memcomm.reserve = tmp;
@@ -725,7 +729,7 @@ void msgcomm_infodump(void) {
     TI("memcomm.cpinfo: %p", memcomm.cpinfo);
     TI("memcomm.argv: %p", memcomm.argv);
     TI("memcomm.memflag: %p", memcomm.memflag);
-    TI("memcomm.pktptrarr: %p", memcomm.pktptrarr);
+    //TI("memcomm.pktptrarr: %p", memcomm.pktptrarr);
     TI("memcomm.reserve: %p", memcomm.reserve);
 
     TI("==========================================================");
