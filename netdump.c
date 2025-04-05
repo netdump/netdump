@@ -36,9 +36,16 @@ int main(int argc, char ** argv) {
 
     sigact_called_prctl_set_value();
 
-    if(unlikely((msgcomm_startup()) == ND_ERR)) {
+    if(unlikely((msgcomm_startup()) == ND_ERR)) 
+    {
         TE("Msgcomm startup failed");
         goto label1;
+    }
+
+    if (unlikely((ctoacomm_startup()) == ND_ERR)) 
+    {
+        TE("ctoacomm startup failed");
+        goto label2;
     }
 
     msgcomm_infodump();
@@ -47,23 +54,27 @@ int main(int argc, char ** argv) {
 
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
         TE("Fork Capture failed");
-        goto label2;
+        goto label3;
     }
 
     if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
         TE("Fork Analysis failed");
         kill(childpid[GCOREID_CP], SIGTERM);
-        goto label2;
+        goto label3;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
         TE("Register signal handle failed");
-        goto label2;
+        goto label3;
     }
 
     display_startup_TUI_showcase();
 
     netdump_kill();
+
+label3:
+
+    ctoacomm_ending();
 
 label2:
 
