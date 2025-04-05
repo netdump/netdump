@@ -213,7 +213,7 @@ typedef struct {
 	void * cpinfo;
 	void ** argv;
 	void * memflag;
-	void * pktptrarr;
+	//void * pktptrarr;
 	void * reserve;
 } memcomm_t;
 
@@ -289,7 +289,7 @@ extern memcomm_t memcomm;
  * @brief
  * 	Pointer array to store the addresses of captured data packets
  */
-#define msgcomm_G_cpktptrarr			(memcomm.pktptrarr)
+//#define msgcomm_G_cpktptrarr			(memcomm.pktptrarr)
 
 /**
  * @brief
@@ -349,7 +349,7 @@ extern memcomm_t memcomm;
  * @brief
  * 	memcomm_t.pktptrarr size
  */
-#define MSGCOMM_PKTPTRARR_SIZE 					(1 << 24) 	// 16M
+//#define MSGCOMM_PKTPTRARR_SIZE 					(1 << 24) 	// 16M
 
 
 /**
@@ -384,7 +384,7 @@ extern memcomm_t memcomm;
 	(																							\
 		(MSGCOMM_MSGCOMM_MEMORY_SIZE) + (MSGCOMM_SPACE_SIZE) + (MSGCOMM_CMDMEM_SIZE) +			\
 		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
-		(MSGCOMM_ARGV_SIZE) + (MSGCOMM_PKTPTRARR_SIZE) + (MSGCOMM_BUFFER_SIZE) +				\
+		(MSGCOMM_ARGV_SIZE) + /*(MSGCOMM_PKTPTRARR_SIZE)*/ + (MSGCOMM_BUFFER_SIZE) +			\
 		(MSGCOMM_REPLY_SIZE) + (MSGCOMM_CMDBUF_SIZE)											\
 	)
 
@@ -619,6 +619,7 @@ extern _status_t * G_status_ptr;
 	} while(0);
 
 
+#if 0
 /**
  * @brief
  *  Allocate a block of memory for shared parameters between CP and AA processes
@@ -641,6 +642,7 @@ typedef struct {
  * @brief Global cp and aa share address information
  */
 extern ctoaaddr_t * G_cp_aa_shared_addr_info;
+#endif
 
 
 /**
@@ -666,15 +668,15 @@ extern ctoaaddr_t * G_cp_aa_shared_addr_info;
 #define MSGCOMM__RING_FNAME_1TO0                "/dev/shm/._Ring1TO0"
 #define MSGCOMM_MEM_FNAME_1TO0                  "/dev/shm/.Mem1TO0"
 
-	/**
-	 * @brief
-	 *  Message communication resource initialization and startup
-	 * @return
-	 *  If successful, it returns ND_OK;
-	 *  if failed, it returns ND_ERR
-	 */
-	int
-	msgcomm_startup(void);
+/**
+ * @brief
+ *  Message communication resource initialization and startup
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int
+msgcomm_startup(void);
 
 
 /**
