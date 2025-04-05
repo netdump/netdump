@@ -93,7 +93,7 @@ void ctoacomm_ending (void)
 
     TC("Called { %s()", __func__);
 
-    munmap(G_ctoa_shm_mem, CTOACOMM_SHM_FILESIZE);
+    munmap(CTOACOMM_SHM_BASEADDR, CTOACOMM_SHM_FILESIZE);
 
     shm_unlink(CTOACOMM_SHM_FILENAME);
 
