@@ -30,15 +30,6 @@
 #include <stddef.h>
 #include <poll.h>
 
-#if 1
-#include <net/ethernet.h> // 以太网帧
-#include <netinet/ip.h>	  // IPv4 头部
-#include <netinet/ip6.h>  // IPv6 头部
-#include <netinet/tcp.h>  // TCP 头部
-#include <netinet/udp.h>  // UDP 头部
-#include <arpa/inet.h>
-#endif
-
 #include "bpf.h"
 #include "pcap/pcap.h"
 #include "pcap/dlt.h"
