@@ -1463,14 +1463,13 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     G_ctoa_shm_mem_wp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp);
 
-    TI("pre wp address: %p", G_ctoa_shm_mem_wp);
-
     datastore_t * ds = (datastore_t *)(G_ctoa_shm_mem_wp);
+
     ds->pkthdr = *h;
-    TI("h->ts.tv_sec: %lu, h->ts.tv_usec: %lu, h->caplen: %u, h->len: %u", h->ts.tv_sec, h->ts.tv_usec, h->caplen, h->len);
+    
     memcpy(ds->data, sp, h->len);
+    
     G_ctoa_shm_mem_wp += (sizeof(struct pcap_pkthdr) + h->len);
-    TI("after wp address: %p; sizeof(struct pcap_pkthdr): %lu; h->len: %u", G_ctoa_shm_mem_wp, sizeof(struct pcap_pkthdr), h->len);
 
     __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
 

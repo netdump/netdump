@@ -86,6 +86,12 @@ void print_payload(const unsigned char *payload, int len)
 
 void packet_handler(unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet)
 {
+
+    TC("Called { %s(%p, %p, %p)", __func__, args, header, packet);
+
+    TI("header->ts.tv_sec: %lu, header->ts.tv_usec: %lu, header->caplen: %u, header->len: %u", 
+            header->ts.tv_sec, header->ts.tv_usec, header->caplen, header->len);
+
     struct ether_header *eth_header = (struct ether_header *)packet;
     uint16_t eth_type = ntohs(eth_header->ether_type);
     int ip_header_len = 0;
@@ -161,7 +167,7 @@ void packet_handler(unsigned char *args, const struct pcap_pkthdr *header, const
         print_payload(payload, payload_len > 16 ? 16 : payload_len);
     }
 
-    return;
+    RVoid();
 }
 
 #endif
@@ -192,24 +198,15 @@ int analysis_loop (void) {
             continue;
         }
 
-        #if 1
         G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
+        
         datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
 
-        TI("pre rp %p", ds);
-
-        struct pcap_pkthdr * pkthdr = &(ds->pkthdr);
-        TI("pkthdr->ts.tv_sec: %lu, pkthdr->ts.tv_usec: %lu, pkthdr->caplen: %u, pkthdr->len: %u", 
-                pkthdr->ts.tv_sec, pkthdr->ts.tv_usec, pkthdr->caplen, pkthdr->len);
-
-        packet_handler(NULL, NULL, ds->data);
+        packet_handler(NULL, &(ds->pkthdr), ds->data);
 
         G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
-        TI("after rp: %p; sizeof(struct pcap_pkthdr): %lu; ds->pkthdr.len: %u", G_ctoa_shm_mem_rp, sizeof(struct pcap_pkthdr), ds->pkthdr.len);
-
         count++;
-        #endif
     }
 
     RInt(ND_OK);
