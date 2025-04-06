@@ -14,6 +14,8 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
