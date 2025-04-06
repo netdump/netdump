@@ -19,11 +19,28 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/prctl.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <ctype.h>
+#include <getopt.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <poll.h>
+
+#if 1
+#include <net/ethernet.h> // 以太网帧
+#include <netinet/ip.h>   // IPv4 头部
+#include <netinet/ip6.h>  // IPv6 头部
+#include <netinet/tcp.h>  // TCP 头部
+#include <netinet/udp.h>  // UDP 头部
+#include <arpa/inet.h>
+#endif
 
 #include "common.h"
 #include "trace.h"
 #include "sigact.h"
 #include "ctoacomm.h"
+#include "msgcomm.h"
 
 
 /**
