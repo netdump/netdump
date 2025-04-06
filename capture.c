@@ -1959,6 +1959,11 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     pd = NULL;
     pcap_freecode(&fcode);
 
+    msgcomm_zero_variable(msgcomm_st_NObytes);
+    msgcomm_zero_variable(msgcomm_st_NOpackages);
+    msgcomm_zero_variable(msgcomm_st_runflag);
+    msgcomm_zero_variable(msgcomm_st_runflag_c2d);
+
     RInt(ND_OK);
 }
 
