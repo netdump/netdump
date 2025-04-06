@@ -1384,107 +1384,6 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
     RVoidPtr((void *)device);
 }
 
-/**
- * @brief The Code for debug
- */
-#if 1
-void print_mac(const char * label, const unsigned char * mac)
-{
-    TI("%s %02x:%02x:%02x:%02x:%02x:%02x", label, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-}
-
-void print_payload(const unsigned char * payload, int len)
-{
-    char buffer[96] = {0};
-    TI("Payload (first %d bytes): ", len);
-    for (int i = 0; i < len; i++)
-    {
-        sprintf(buffer + strlen(buffer), "%02x ", payload[i]);
-    }
-    TI("%s", buffer);
-}
-
-void packet_handler(unsigned char * args, const struct pcap_pkthdr *header, const unsigned char *packet)
-{
-    struct ether_header *eth_header = (struct ether_header *)packet;
-    uint16_t eth_type = ntohs(eth_header->ether_type);
-    int ip_header_len = 0;
-
-    print_mac("Source MAC:", eth_header->ether_shost);
-    print_mac("Destination MAC:", eth_header->ether_dhost);
-
-    if (eth_type == ETHERTYPE_IP)
-    { // IPv4
-        struct iphdr *ip_header = (struct iphdr *)(packet + sizeof(struct ether_header));
-        struct in_addr src_ip, dst_ip;
-        src_ip.s_addr = ip_header->saddr;
-        dst_ip.s_addr = ip_header->daddr;
-
-        TI("Protocol: IPv4");
-        TI("Source IP: %s", inet_ntoa(src_ip));
-        TI("Destination IP: %s", inet_ntoa(dst_ip));
-
-        ip_header_len = ip_header->ihl * 4;
-    }
-    else if (eth_type == ETHERTYPE_IPV6)
-    { // IPv6
-        struct ip6_hdr *ip6_header = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
-        char src_ip[INET6_ADDRSTRLEN], dst_ip[INET6_ADDRSTRLEN];
-
-        inet_ntop(AF_INET6, &ip6_header->ip6_src, src_ip, sizeof(src_ip));
-        inet_ntop(AF_INET6, &ip6_header->ip6_dst, dst_ip, sizeof(dst_ip));
-
-        TI("Protocol: IPv6");
-        TI("Source IP: %s", src_ip);
-        TI("Destination IP: %s", dst_ip);
-
-        ip_header_len = sizeof(struct ip6_hdr);
-    }
-    else if (eth_type == ETHERTYPE_ARP)
-    { // ARP
-        TI("Protocol: ARP (Skipping IP and ports)");
-        return;
-    }
-    else
-    {
-        TI("Unknown protocol: 0x%04x", eth_type);
-        return;
-    }
-
-    // 计算 IP 头部后的数据偏移
-    const unsigned char *transport_header = packet + sizeof(struct ether_header) + ip_header_len;
-    uint8_t protocol = eth_type == ETHERTYPE_IP ? ((struct iphdr *)(packet + sizeof(struct ether_header)))->protocol : 0;
-
-    if (protocol == IPPROTO_TCP)
-    { // TCP
-        struct tcphdr *tcp_header = (struct tcphdr *)transport_header;
-        TI("Source Port: %u", ntohs(tcp_header->source));
-        TI("Destination Port: %u", ntohs(tcp_header->dest));
-
-        // 计算 TCP 负载起始位置
-        int tcp_header_len = tcp_header->doff * 4;
-        const unsigned char *payload = transport_header + tcp_header_len;
-        int payload_len = header->caplen - (payload - packet);
-
-        print_payload(payload, payload_len > 16 ? 16 : payload_len);
-    }
-    else if (protocol == IPPROTO_UDP)
-    { // UDP
-        struct udphdr *udp_header = (struct udphdr *)transport_header;
-        TI("Source Port: %u", ntohs(udp_header->source));
-        TI("Destination Port: %u", ntohs(udp_header->dest));
-
-        // 计算 UDP 负载起始位置
-        const unsigned char *payload = transport_header + sizeof(struct udphdr);
-        int payload_len = header->caplen - (payload - packet);
-
-        print_payload(payload, payload_len > 16 ? 16 : payload_len);
-    }
-
-    return ;
-}
-
-#endif
 
 /**
  * @brief
@@ -1562,17 +1461,21 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         RVoid();
     }
 
-    msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
-    msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
-
     G_ctoa_shm_mem_wp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp);
+
+    TI("pre wp address: %p", G_ctoa_shm_mem_wp);
 
     datastore_t * ds = (datastore_t *)(G_ctoa_shm_mem_wp);
     ds->pkthdr = *h;
+    TI("h->ts.tv_sec: %lu, h->ts.tv_usec: %lu, h->caplen: %u, h->len: %u", h->ts.tv_sec, h->ts.tv_usec, h->caplen, h->len);
     memcpy(ds->data, sp, h->len);
-    G_ctoa_shm_mem_wp += sizeof(struct pcap_pkthdr) + h->len;
+    G_ctoa_shm_mem_wp += (sizeof(struct pcap_pkthdr) + h->len);
+    TI("after wp address: %p; sizeof(struct pcap_pkthdr): %lu; h->len: %u", G_ctoa_shm_mem_wp, sizeof(struct pcap_pkthdr), h->len);
 
     __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
+
+    msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
+    msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
 
     RVoid();
 }
