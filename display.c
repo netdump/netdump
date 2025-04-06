@@ -576,6 +576,11 @@ void display_second_tui_exec_logic (void) {
 	unsigned char count = 0;
 	msgcomm_clear_G_status();
 
+	msgcomm_zero_variable(msgcomm_st_NObytes);
+	msgcomm_zero_variable(msgcomm_st_NOpackages);
+	msgcomm_zero_variable(msgcomm_st_runflag);
+	msgcomm_zero_variable(msgcomm_st_runflag_c2d);
+
 	while (1)
 	{
 		flushinp();
