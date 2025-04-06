@@ -193,8 +193,12 @@ int analysis_loop (void) {
             if (count > tmp) 
             {
                 count = 0;
+                G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
             }
-            nd_delay_microsecond(1, 1000);
+            else 
+            {
+                nd_delay_microsecond(1, 1000);
+            }
             continue;
         }
 
