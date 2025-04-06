@@ -337,9 +337,6 @@ int capture_loop (void) {
         memset((void *)G_cp_aa_shared_addr_info, 0, MSGCOMM_PKTPTRARR_SIZE);
         #endif
 
-        msgcomm_zero_variable(msgcomm_st_NObytes);
-        msgcomm_zero_variable(msgcomm_st_NOpackages);
-
         capture_parsing_cmd_and_exec_capture((char *)(cmdmem + sizeof(message_t)));
     }
 
