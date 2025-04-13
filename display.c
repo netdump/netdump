@@ -53,6 +53,14 @@ volatile unsigned int display_old_cols = 0;
 
 /**
  * @brief
+ * 	The number of lines that can be displayed in window 3/4/5
+ */
+volatile unsigned short display_G_win3_context_lines = 0;
+volatile unsigned short display_G_win4_context_lines = 0;
+volatile unsigned short display_G_win5_context_lines = 0;
+
+/**
+ * @brief
  * 	Define a global variable to store the resources required by TUI
  * @note
  *  G_display.wins[0]: Netdump ASCII world
@@ -499,6 +507,10 @@ void display_handle_win_resize(int flag) {
 		display_show_wins_3_4_5();
 	}
 
+	display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);
+	display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);
+	display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);
+
 	RVoid();
 }
 
@@ -625,17 +637,18 @@ void display_second_tui_exec_logic (void) {
 				switch (((count % 3) + 3))
 				{
 					case 3:
-						//display_select_3_windows();
+						display_select_3_windows();
 						break;
 					case 4:
-						//display_select_4_windows();
+						display_select_4_windows();
 						break;
 					case 5:
-						//display_select_5_windows();
+						display_select_5_windows();
 						break;
 					default:
 						break;
 				}
+				count++;
 				break;
 			case 'p':
 				TI("ch: %u", ch);
@@ -649,7 +662,6 @@ void display_second_tui_exec_logic (void) {
 				TI("ch: %u", ch);
 				break;
 		}
-		count++;
 		display_draw_cpinfo_win();
 	}
 

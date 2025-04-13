@@ -65,6 +65,15 @@ extern volatile unsigned int display_old_cols;
 
 /**
  * @brief
+ * 	The number of lines that can be displayed in window 3/4/5
+ */
+extern volatile unsigned short display_G_win3_context_lines;
+extern volatile unsigned short display_G_win4_context_lines;
+extern volatile unsigned short display_G_win5_context_lines;
+
+
+/**
+ * @brief
  *  Desired terminal COLS
  */
 #define DISPLAY_EXPECT_TERMINAL_COLS            206
@@ -1081,6 +1090,9 @@ void display_second_tui_exec_logic(void);
         while (1) {                                                                                                                     \
             display_handle_TUI_first_page();                                                                                            \
             if (display_G_flag) break;                                                                                                  \
+            display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);                                                               \
+            display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);                                                               \
+            display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);                                                               \
             display_handle_TUI_second_page();                                                                                           \
         }                                                                                                                               \
     } while (0);
