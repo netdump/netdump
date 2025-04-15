@@ -214,7 +214,7 @@ typedef struct {
 	void ** argv;
 	void * memflag;
 	//void * pktptrarr;
-	void * reserve;
+	//void * reserve;
 } memcomm_t;
 
 
@@ -277,7 +277,7 @@ extern memcomm_t memcomm;
  * @brief
  * 	reserve
  */
-#define msgcomm_G_reserve				(memcomm.reserve)
+//#define msgcomm_G_reserve				(memcomm.reserve)
 
 /**
  * @brief
@@ -331,13 +331,13 @@ extern memcomm_t memcomm;
  * @brief
  * 	memcomm_t.memflag size
  */
-#define MSGCOMM_MEMFLAG_SIZE 					(1 << 11)	// 2048
+#define MSGCOMM_MEMFLAG_SIZE 					(1 << 8)	// 256
 
 /**
  * @brief
  * 	memcomm_t.reserve size
  */
-#define MSGCOMM_RESERVE_SIZE 					(1 << 15) 	// 32K
+//#define MSGCOMM_RESERVE_SIZE 					(1 << 15) 	// 32K
 
 /**
  * @brief
@@ -383,8 +383,8 @@ extern memcomm_t memcomm;
 #define	MSGCOMM_MMAP_TOTAL																		\
 	(																							\
 		(MSGCOMM_MSGCOMM_MEMORY_SIZE) + (MSGCOMM_SPACE_SIZE) + (MSGCOMM_CMDMEM_SIZE) +			\
-		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + (MSGCOMM_RESERVE_SIZE) +				\
-		(MSGCOMM_ARGV_SIZE) + /*(MSGCOMM_PKTPTRARR_SIZE)*/ + (MSGCOMM_BUFFER_SIZE) +			\
+		(MSGCOMM_CPINFO_SIZE) + (MSGCOMM_MEMFLAG_SIZE) + /*(MSGCOMM_RESERVE_SIZE) +	*/			\
+		(MSGCOMM_ARGV_SIZE) + /*(MSGCOMM_PKTPTRARR_SIZE) + */(MSGCOMM_BUFFER_SIZE) +			\
 		(MSGCOMM_REPLY_SIZE) + (MSGCOMM_CMDBUF_SIZE)											\
 	)
 

@@ -72,7 +72,7 @@ memcomm_t memcomm = {
     .cmdbuf = NULL,
     .cpinfo = NULL,
     .memflag = NULL,
-    .reserve = NULL,
+    //.reserve = NULL,
     .argv = NULL,
     //.pktptrarr = NULL
 };
@@ -190,9 +190,11 @@ static int msgcomm_new_init_msgcomm(void)
     G_cp_aa_shared_addr_info = (ctoaaddr_t *)memcomm.pktptrarr;
     #endif
 
+    #if 0
     memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
     memcomm.reserve = tmp;
     tmp += MSGCOMM_RESERVE_SIZE;
+    #endif
 
     RInt(ND_OK);
 }
@@ -730,7 +732,7 @@ void msgcomm_infodump(void) {
     TI("memcomm.argv: %p", memcomm.argv);
     TI("memcomm.memflag: %p", memcomm.memflag);
     //TI("memcomm.pktptrarr: %p", memcomm.pktptrarr);
-    TI("memcomm.reserve: %p", memcomm.reserve);
+    //TI("memcomm.reserve: %p", memcomm.reserve);
 
     TI("==========================================================");
 
