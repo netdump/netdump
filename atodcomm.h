@@ -14,6 +14,37 @@
 #ifndef __ATODCOMM_H__
 #define __ATODCOMM_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include "common.h"
+
+
+/**
+ * @brief
+ *  ATOD memory start address
+ */
+#define ATODCOMM_SHM_BASEADDR       ((void *)(0x6EFE00000000))
+
+
+/**
+ * @brief
+ *  Specify the size of the dataroom
+ */
+#define INFONODE_DATAROOM_SIZE      (73728UL)   // 72K
+
+
+/**
+ * @brief
+ *  Specify the number of nodes
+ */
+#define INFONODE_NUMBER             (64UL)
+
 
 /**
  * @brief
@@ -36,6 +67,13 @@
  *  Stores the length of a string
  * @memberof brief
  *  Stores brief information string
+ * @memberof flag
+ *  The protocol type of the corresponding layer of storage
+ *  flag[2]
+ *  flag[3]
+ *  flag[4]
+ * @memberof dataroom
+ *  Space for storing detailed analysis of the protocol
  */
 typedef struct infonode_s 
 {
@@ -50,7 +88,9 @@ typedef struct infonode_s
     unsigned char length[8];
     unsigned char brief[256];
 
-    
+    unsigned short flag[8];
+
+    unsigned char dataroom[INFONODE_DATAROOM_SIZE];
 
 } infonode_t;
 
@@ -87,7 +127,7 @@ typedef struct dtoainfo_s
 
     unsigned short nlines;
     unsigned short curindex;
-    unsigned char flag[4];
+    volatile unsigned char flag[4];
 
 } dtoainfo_t;
 
