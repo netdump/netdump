@@ -41,7 +41,7 @@ int ctoacomm_init_ctoacomm (void)
 
     TC("Called { %s(void)", __func__);
 
-    void *G_ctoa_shm_mem = nd_called_shmopen_mmap_openup_memory(CTOACOMM_SHM_FILENAME,
+    G_ctoa_shm_mem = nd_called_shmopen_mmap_openup_memory(CTOACOMM_SHM_FILENAME,
                                     CTOACOMM_SHM_BASEADDR, CTOACOMM_SHM_FILESIZE);
 
     if (unlikely((!G_ctoa_shm_mem)))
