@@ -48,29 +48,39 @@ int main(int argc, char ** argv) {
         goto label2;
     }
 
+    if (unlikely((atodcomm_startup()) == ND_ERR))
+    {
+        TE("atodcomm startup failed");
+        goto label3;
+    }
+
     msgcomm_infodump();
 
     fflush(trace_G_log);
 
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
         TE("Fork Capture failed");
-        goto label3;
+        goto label4;
     }
 
     if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
         TE("Fork Analysis failed");
         kill(childpid[GCOREID_CP], SIGTERM);
-        goto label3;
+        goto label4;
     }
 
     if (unlikely(((sigact_register_signal_handle()) == ND_ERR))) {
         TE("Register signal handle failed");
-        goto label3;
+        goto label4;
     }
 
     display_startup_TUI_showcase();
 
     netdump_kill();
+
+label4:
+
+    atodcomm_ending();
 
 label3:
 

@@ -28,6 +28,8 @@
 
 #include "capture.h"
 #include "analysis.h"
+#include "atodcomm.h"
+
 
 /**
  * @brief 
