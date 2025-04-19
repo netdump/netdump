@@ -33,6 +33,12 @@
 
 
 /**
+ * @brief atod shared memory file name
+ */
+#define ATODCOMM_SHM_FILENAME       ".atodcomm.mem"
+
+
+/**
  * @brief
  *  Specify the size of the dataroom
  */
@@ -120,10 +126,10 @@ typedef struct infonode_s
 typedef struct dtoainfo_s
 {
 
-    void * listhead;
-    void * listtail;
-    void * curline;
-    void * idlelist;
+    infonode_t * listhead;
+    infonode_t * listtail;
+    infonode_t * curline;
+    infonode_t * idlelist;
 
     unsigned short nlines;
     unsigned short curindex;
@@ -131,6 +137,28 @@ typedef struct dtoainfo_s
 
 } dtoainfo_t;
 
+
+/**
+ * @brief ctoa shared memory file size
+ */
+#define ATODCOMM_SHM_FILESIZE ((sizeof(infonode_t) + sizeof(dtoainfo_t)) * (INFONODE_NUMBER))
+
+
+/**
+ * @brief
+ *  Inter-process communication resource initialization operation
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int atodcomm_startup(void);
+
+
+/**
+ * @brief
+ *  Inter-process communication resource destruction operation
+ */
+void atodcomm_ending(void);
 
 
 #endif  // __ATODCOMM_H__
