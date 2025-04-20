@@ -100,7 +100,6 @@ typedef struct infonode_s
 
 } infonode_t;
 
-
 /**
  * @brief
  *  Resources shared between the display process and the parsing process.
@@ -116,6 +115,8 @@ typedef struct infonode_s
  *  Indicates the number of rows that can be displayed in window 3
  * @memberof curindex
  *  Indicates the index of the currently specified display node in the linked list (starting from 0)
+ * @memberof curlines
+ *  Indicates the number of elements in the current linked list
  * @memberof flag
  *  flag[0]: Indicates whether to manually intervene in the display
  *  flag[1]: Indicates whether it is a special message such as RST
@@ -133,9 +134,25 @@ typedef struct dtoainfo_s
 
     unsigned short nlines;
     unsigned short curindex;
-    volatile unsigned char flag[4];
+    unsigned short curlines;
+    unsigned short padding;
+    volatile unsigned char flag[8];
 
 } dtoainfo_t;
+
+
+/**
+ * @brief
+ *  Global atod shared memory pointer variable
+ */
+extern void *G_atod_shm_mem;
+
+
+/**
+ * @brief
+ *  DTOA global information interaction pointer
+ */
+extern dtoainfo_t *G_dtoainfo;
 
 
 /**

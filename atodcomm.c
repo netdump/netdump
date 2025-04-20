@@ -89,6 +89,8 @@ int atodcomm_init_atodcomm(void)
 
     G_dtoainfo->nlines = 0;
     G_dtoainfo->curindex = 0;
+    G_dtoainfo->curlines = 0;
+    G_dtoainfo->padding = 0;
 
     memset((void *)G_dtoainfo->flag, 0, sizeof(G_dtoainfo->flag));
 
