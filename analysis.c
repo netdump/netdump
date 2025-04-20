@@ -52,6 +52,16 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
 
     __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp), 0, 3);
 
+    for (;;) 
+    {
+        if (!(G_dtoainfo->nlines))
+        {
+            nd_delay_microsecond(1, 1000);
+            continue;
+        }
+        break;
+    }
+
     if (unlikely((analysis_loop()) == ND_ERR)) {
         TE ("Analysis loop startup failed");
         goto label1;
