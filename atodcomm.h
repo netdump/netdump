@@ -100,6 +100,7 @@ typedef struct infonode_s
 
 } infonode_t;
 
+
 /**
  * @brief
  *  Resources shared between the display process and the parsing process.
@@ -120,9 +121,8 @@ typedef struct infonode_s
  * @memberof flag
  *  flag[0]: Indicates whether to manually intervene in the display
  *  flag[1]: Indicates whether it is a special message such as RST
- *  flag[2]: 1 means all nodes have been filled.
- *           0 means all content has been displayed and can be refilled
- *  flag[3]:
+ *  flag[2]: Display-related flags
+ *  flag[3]: Flags related to parsing
  */
 typedef struct dtoainfo_s
 {
@@ -143,16 +143,44 @@ typedef struct dtoainfo_s
 
 /**
  * @brief
+ *  ATOD_DISPLAYING: Representatives are demonstrating the interface
+ *  ATOD_DISPLAYED: The representative interface display has been completed
+ */
+#define ATOD_DISPLAYING         0x00
+#define ATOD_DISPLAYED          0x01
+
+
+/**
+ * @brief
+ *  DTOA_ANALYSISING: Indicates that data is being parsed
+ *  DTOA_ALALYSISED: Indicates that data parsing has been completed
+ */
+#define DTOA_ANALYSISING        0x00
+#define DTOA_ALALYSISED         0x01
+
+
+/**
+ * @brief
+ *  DTOA_NON_MANUAL: Non-manual (ie automatic), the software automatically downloads
+ *  DTOA_MANUAL_TOP: 
+ */
+#define DTOA_NON_MANUAL         0x00
+#define DTOA_MANUAL_TOP         0x01
+#define DTOA_MANUAL_BOTTOM      0x02
+
+
+/**
+ * @brief
  *  Global atod shared memory pointer variable
  */
-extern void *G_atod_shm_mem;
+extern void * G_atod_shm_mem;
 
 
 /**
  * @brief
  *  DTOA global information interaction pointer
  */
-extern dtoainfo_t *G_dtoainfo;
+extern dtoainfo_t * G_dtoainfo;
 
 
 /**
@@ -177,5 +205,82 @@ int atodcomm_startup(void);
  */
 void atodcomm_ending(void);
 
+
+/**
+ * @brief
+ *  Remove a node from a doubly linked list
+ * @memberof head
+ *  Head of a doubly linked list
+ * @return
+ *  Returns a node if successful
+ *  Returns NULL if failed
+ */
+infonode_t * atodcomm_takeout_infonode_from_list (infonode_t * head);
+
+
+/**
+ * @brief
+ *  Return the node to the linked list
+ * @memberof head
+ *  Head of a doubly linked list
+ * @memberof node
+ *  Nodes to be returned
+ * @return
+ *  If successful, it returns ND_OK.
+ *  If failed, it returns ND_ERR.
+ */
+int atodcomm_putin_infonode_to_list (infonode_t *head, infonode_t *node);
+
+
+/**
+ * @brief
+ *  Take a node from the display list head
+ * @memberof head
+ *  Display link header
+ * @return
+ *  Returns a node if successful
+ *  Returns NULL if failed
+ */
+infonode_t * atodcomm_takeout_infonode_from_display_list_head (infonode_t * head);
+
+
+/**
+ * @brief
+ *  Take a node from the display list tail
+ * @memberof tail
+ *  Display the end of the linked list
+ * @return
+ *  Returns a node if successful
+ *  Returns NULL if failed
+ */
+infonode_t * atodcomm_takeout_infonode_from_display_list_tail (infonode_t * tail);
+
+
+/**
+ * @brief
+ *  Insert the node to the end of the display list
+ * @memberof tail
+ *  Display the end of the linked list
+ * @memberof node
+ *  Nodes to be returned
+ * @return
+ *  If successful, it returns ND_OK.
+ *  If failed, it returns ND_ERR.
+ */
+int atod_putin_infonode_to_display_list_tail (infonode_t * tail, infonode_t * node);
+
+
+/**
+ * @brief
+ *  Insert the node into the head of the display list
+ * @memberof head
+ *  Display link header
+ * @memberof node
+ *  Nodes to be returned
+ * @return
+ *  If successful, it returns ND_OK.
+ *  If failed, it returns ND_ERR.
+ */
+int atod_putin_infonode_to_display_list_head (infonode_t * head, infonode_t * node);
 
 #endif  // __ATODCOMM_H__

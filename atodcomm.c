@@ -33,7 +33,7 @@ dtoainfo_t * G_dtoainfo = NULL;
  * @brief
  *  Initialize the information node list
  */
-int atodcomm_init_infonode_list(void)
+int atodcomm_init_infonode_list (void)
 {
 
     TC("Called { %s (void)", __func__);
@@ -55,6 +55,223 @@ int atodcomm_init_infonode_list(void)
 
         tmp = tmp + 1;
     }
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Remove a node from a doubly linked list
+ * @memberof head
+ *  Head of a doubly linked list
+ * @return
+ *  Returns a node if successful
+ *  Returns NULL if failed
+ */
+infonode_t * atodcomm_takeout_infonode_from_list (infonode_t * head)
+{
+
+    TC("Called { %s (%p)", __func__, head);
+
+    infonode_t * tmp = NULL;
+
+    if (!head) 
+    {
+        TE("The list head is NULL");
+        exit(1);
+    }
+
+    tmp = head;
+    head = tmp->next;
+    head->prev = NULL;
+
+    tmp->next = NULL;
+
+    RVoidPtr(tmp);
+}
+
+
+/**
+ * @brief
+ *  Return the node to the linked list
+ * @memberof head
+ *  Head of a doubly linked list
+ * @memberof node
+ *  Nodes to be returned
+ * @return
+ *  If successful, it returns ND_OK. 
+ *  If failed, it returns ND_ERR.
+ */
+int atodcomm_putin_infonode_to_list (infonode_t * head, infonode_t * node)
+{
+
+    TC("Called { %s (%p, %p)", __func__, head, node);
+
+    infonode_t * tmp = NULL;
+
+    if (!head) 
+    {
+        TE("The list head is NULL");
+        exit(1);
+    }
+
+    if (!node) 
+    {
+        TE("The node is NULL");
+        exit(1);
+    }
+
+    tmp = head;
+    head = node;
+
+    head->prev = NULL;
+    head->next = tmp;
+
+    tmp->prev = head;
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Take a node from the display list head
+ * @memberof head
+ *  Display link header
+ * @return
+ *  Returns a node if successful
+ *  Returns NULL if failed
+ */
+infonode_t * atodcomm_takeout_infonode_from_display_list_head (infonode_t * head)
+{
+
+    TC("Called { %s (%p)", __func__, head);
+
+    infonode_t * tmp = NULL;
+
+    if (!head)
+    {
+        TE("The list head is NULL");
+        exit(1);
+    }
+
+    tmp = head;
+    head = tmp->next;
+    head->prev = NULL;
+
+    tmp->next = NULL;
+
+    RVoidPtr(tmp);
+}
+
+
+/**
+ * @brief
+ *  Take a node from the display list tail
+ * @memberof tail
+ *  Display the end of the linked list
+ * @return
+ *  Returns a node if successful
+ *  Returns NULL if failed
+ */
+infonode_t * atodcomm_takeout_infonode_from_display_list_tail (infonode_t * tail)
+{
+
+    TC("Called { %s (%p)", __func__, tail);
+
+    infonode_t * tmp = NULL;
+
+    if (!tail) 
+    {
+        TE("The list tail is NULL");
+        exit(1);
+    }
+
+    tmp = tail;
+    tail = tmp->prev;
+    tail->next = NULL;
+
+    tmp->prev = NULL;
+
+    RVoidPtr(tmp);
+}
+
+
+/**
+ * @brief
+ *  Insert the node to the end of the display list
+ * @memberof tail
+ *  Display the end of the linked list
+ * @memberof node
+ *  Nodes to be returned
+ * @return
+ *  If successful, it returns ND_OK.
+ *  If failed, it returns ND_ERR.
+ */
+int atod_putin_infonode_to_display_list_tail (infonode_t * tail, infonode_t * node) 
+{
+
+    TC("Called { %s (%p, %p)", __func__, tail, node);
+
+    if (!tail) 
+    {
+        TE("The list tail is NULL");
+        exit(1);
+    }
+
+    if (!node)
+    {
+        TE("The node is NULL");
+        exit(1);
+    }
+
+    tail->next = node;
+    node->prev = tail;
+
+    tail = node;
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Insert the node into the head of the display list
+ * @memberof head
+ *  Display link header
+ * @memberof node
+ *  Nodes to be returned
+ * @return
+ *  If successful, it returns ND_OK.
+ *  If failed, it returns ND_ERR.
+ */
+int atod_putin_infonode_to_display_list_head (infonode_t * head, infonode_t * node) 
+{
+
+    TC("Called { %s (%p, %p)", __func__, head, node);
+
+    infonode_t * tmp = NULL;
+
+    if (!head)
+    {
+        TE("The list head is NULL");
+        exit(1);
+    }
+
+    if (!node)
+    {
+        TE("The node is NULL");
+        exit(1);
+    }
+
+    tmp = head;
+    head = node;
+
+    head->prev = NULL;
+    head->next = tmp;
+
+    tmp->prev = head;
 
     RInt(ND_OK);
 }
