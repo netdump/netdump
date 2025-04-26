@@ -663,6 +663,7 @@ void display_second_tui_exec_logic (void) {
 				TI("ch: %u", ch);
 				break;
 		}
+
 		display_draw_cpinfo_win();
 	}
 
@@ -672,4 +673,16 @@ void display_second_tui_exec_logic (void) {
 	display_enable_cursor();
 
 	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Display content to the interface
+ * @memberof dtoainfo
+ * 	
+ */
+void display_content_to_the_interface(dtoainfo_t * dtoainfo)
+{
+
 }
