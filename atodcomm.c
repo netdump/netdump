@@ -303,11 +303,12 @@ int atodcomm_init_atodcomm(void)
     G_dtoainfo->listtail = NULL;
     G_dtoainfo->curline = NULL;
     G_dtoainfo->idlelist = NULL;
+    G_dtoainfo->finlist = NULL;
 
     G_dtoainfo->nlines = 0;
     G_dtoainfo->curindex = 0;
     G_dtoainfo->curlines = 0;
-    G_dtoainfo->padding = 0;
+    G_dtoainfo->finlines = 0;
 
     memset((void *)G_dtoainfo->flag, 0, sizeof(G_dtoainfo->flag));
 

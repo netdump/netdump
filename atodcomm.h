@@ -112,12 +112,16 @@ typedef struct infonode_s
  *  This pointer always points to the current specified row.
  * @memberof idlelist
  *  This pointer always points to the currently idle node element
+ * @memberof finlist
+ *  Indicates a linked list that has been parsed but not displayed
  * @memberof nlines
  *  Indicates the number of rows that can be displayed in window 3
  * @memberof curindex
  *  Indicates the index of the currently specified display node in the linked list (starting from 0)
  * @memberof curlines
  *  Indicates the number of elements in the current linked list
+ * @memberof finlines
+ *  Indicates the number of nodes that have been parsed but not displayed
  * @memberof flag
  *  flag[0]: Indicates whether to manually intervene in the display
  *  flag[1]: Indicates whether it is a special message such as RST
@@ -131,11 +135,12 @@ typedef struct dtoainfo_s
     infonode_t * listtail;
     infonode_t * curline;
     infonode_t * idlelist;
+    infonode_t * finlist;
 
     unsigned short nlines;
     unsigned short curindex;
     unsigned short curlines;
-    unsigned short padding;
+    unsigned short finlines;
     volatile unsigned char flag[8];
 
 } dtoainfo_t;
