@@ -16,25 +16,29 @@
 
 
 /**
- * @brief Global ctoa shared memory pointer variable
+ * @brief 
+ *  Global ctoa shared memory pointer variable
  */
 void * G_ctoa_shm_mem = NULL;
 
 
 /**
- * @brief Global ctoa shared memory, Capture process write data pointer
+ * @brief 
+ *  Global ctoa shared memory, Capture process write data pointer
  */
 void * G_ctoa_shm_mem_wp = NULL;
 
 
 /**
- * @brief Global ctoa shared memory, Capture process read data pointer
+ * @brief 
+ *  Global ctoa shared memory, Capture process read data pointer
  */
 void * G_ctoa_shm_mem_rp = NULL;
 
 
 /**
- * @brief Allocate ctoa shared memory
+ * @brief 
+ *  Allocate ctoa shared memory
  */
 int ctoacomm_init_ctoacomm (void) 
 {
