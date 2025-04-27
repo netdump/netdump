@@ -86,7 +86,7 @@ typedef struct infonode_s
 
     nd_dll_t listnode;
 
-    unsigned long int g_store_index;
+    unsigned long g_store_index;
 
     unsigned char timestamp[16];
     unsigned char srcaddr[48];
