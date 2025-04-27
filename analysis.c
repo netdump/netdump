@@ -220,7 +220,7 @@ int analysis_loop (void) {
 void analysis_no_manual_mode (void) 
 {
 
-    static unsigned long int index = 0, tmp;
+    static unsigned long index = 0, tmp;
 
     tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
     if (tmp == index || tmp == 0 || index > tmp)
@@ -277,6 +277,53 @@ void analysis_no_manual_mode (void)
 void analysis_manual_mode (void)
 {
 
+    int i = 0;
+    nd_dll_t * node = NULL;
+    infonode_t * infonode = NULL;
+    datastore_t *ds = NULL;
+    if (ATOD_FINISH_DLL_NUMS) {
+        for (i = 0; i < ATOD_FINISH_DLL_NUMS; i++)
+        {
+            node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_TAIL);
+            nd_dll_intset_into_head(&ATOD_IDLE_DLL, node);
+        }
+        ATOD_FINISH_DLL_NUMS = 0;
+        if (!ATOD_FINISH_DLL_TAIL)
+            ATOD_FINISH_DLL_HEAD = NULL;
+    }
+
+    if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_TOP)
+    {
+        infonode = container_of(ATOD_DISPLAY_DLL_HEAD, infonode_t, listnode);
+        if ((infonode->g_store_index - 1) < 0) {
+            TI("It's at the top now.");
+            RVoid();
+        }
+        ds = G_frame_ptr_array[(infonode->g_store_index - 1)];
+        node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_TAIL);
+        infonode = container_of(node, infonode_t, listnode);
+        packet_handler((unsigned char *)infonode, &(ds->pkthdr), ds->data);
+        nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+    }
+    else if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_BOTTOM)
+    {
+        infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
+        unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        if (infonode->g_store_index == (tmp - 1)) {
+            TI("It's at the bottom now.");
+            RVoid();
+        }
+        ds = G_frame_ptr_array[(infonode->g_store_index - 1)];
+        node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
+        infonode = container_of(node, infonode_t, listnode);
+        packet_handler((unsigned char *)infonode, &(ds->pkthdr), ds->data);
+        nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+    }
+    else {
+        TE("a fatal error occurred");
+        exit(1);
+    }
+    
     return ;
 }
 
