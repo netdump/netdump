@@ -115,7 +115,7 @@ typedef struct nd_dll_s
  * @brief
  * 	Get the minimum value
  */
-#define min(x, y) ({ typeof(x) _x = (x); typeof(y) _y = (y); _x < _y ? _x : _y; })
+#define MINIMUM(x, y) ({ typeof(x) _x = (x); typeof(y) _y = (y); _x < _y ? _x : _y; })
 
 
 /**
