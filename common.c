@@ -1323,7 +1323,8 @@ nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head)
     tmp = *head;
 
     *head = tmp->next;
-    (*head)->prev = NULL;
+    if (*head) 
+        (*head)->prev = NULL;
 
     tmp->next = NULL;
     tmp->prev = NULL;
