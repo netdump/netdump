@@ -56,7 +56,7 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
     {
         if (!(G_dtoainfo->nlines))
         {
-            nd_delay_microsecond(1, 1000);
+            nd_delay_microsecond(0, 1000);
             continue;
         }
         break;
@@ -73,6 +73,7 @@ label1:
 
     RInt(ND_OK);
 }
+
 
 /**
  * @brief The Code for debug
@@ -183,6 +184,13 @@ void packet_handler(unsigned char *args, const struct pcap_pkthdr *header, const
 #endif
 
 /**
+ * @brief
+ *  Store captured network frame pointers in order
+ */
+datastore_t * G_frame_ptr_array[1048576] = {NULL};
+
+
+/**
  * @brief 
  *  The main loop of the packet parsing process
  * @return
@@ -193,35 +201,234 @@ int analysis_loop (void) {
 
     TC("Called { %s(void)", __func__);
 
-    static unsigned long long count = 0, tmp;
-
     for (;;) 
     {
-        tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
-        if (tmp == count || tmp == 0 || count > tmp) 
-        {
-            if (count > tmp) 
-            {
-                count = 0;
-                G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
-            }
-            else 
-            {
-                nd_delay_microsecond(1, 1000);
-            }
-            continue;
-        }
-
-        G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
-        
-        datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
-
-        packet_handler(NULL, &(ds->pkthdr), ds->data);
-
-        G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
-
-        count++;
+        if (G_dtoainfo->flag[0])
+            analysis_manual_mode();
+        else
+            analysis_no_manual_mode();
     }
 
     RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  no manual mode analysis network frame
+ */
+void analysis_no_manual_mode (void) 
+{
+
+    static unsigned long int index = 0, tmp;
+
+    tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+    if (tmp == index || tmp == 0 || index > tmp)
+    {
+        if (index > tmp) {
+
+            atodcomm_init_dtoainfo_to_zero();
+            atodcomm_init_infonode_list();
+            index = 0;
+        }
+        else {
+            nd_delay_microsecond(1, 1000);
+        }
+        return ;
+    }
+
+    infonode_t * infonode = analysis_get_infonode();
+    if (infonode)
+    {
+        G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
+
+        datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
+
+        packet_handler((void *)infonode, &(ds->pkthdr), ds->data);
+
+        G_frame_ptr_array[index] = ds;
+
+        infonode->g_store_index = index;
+
+        G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+
+        index++;
+
+        analysis_putin_infonode(infonode);
+
+        ATOD_FINISH_DLL_NUMS++;
+    }
+
+    ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
+
+    if (DTOA_DISPLAY_VAR_FLAG == DTOA_DISPLAYED)
+        analysis_put_node_into_display_dll();
+
+    ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
+
+    return ;
+}
+
+
+/**
+ * @brief
+ *  manul mode analysis network frame
+ */
+void analysis_manual_mode (void)
+{
+
+    return ;
+}
+
+
+/**
+ * @brief
+ *  Parsing network frames
+ * @memberof header
+ *  struct pcap_pkthdr pointer
+ * @memberof packet
+ *  network frame data
+ */
+void analysis_network_frames(const struct pcap_pkthdr *header, const unsigned char *packet)
+{
+
+    TC("Called { %s(%p, %p)", __func__, header, packet);
+
+
+
+    RVoid();
+}
+
+
+/**
+ * @brief
+ *  Get infonode node pointer
+ * @return
+ *  Returns the obtained node pointer if successful.
+ *  Returns NULL if failed
+ */
+infonode_t *analysis_get_infonode (void)
+{
+
+    TC("Called { %s (void)", __func__);
+
+    nd_dll_t * tmp = nd_dll_takeout_from_head(&(G_dtoainfo->idlelist));
+
+    infonode_t * infonode = container_of(tmp, infonode_t, listnode);
+
+    RVoidPtr(infonode);
+}
+
+
+/**
+ * @brief
+ *  Put in infonode to finlist
+ * @memberof infonode
+ *  Waiting for the node element to be put into finlist
+ */
+void analysis_putin_infonode (infonode_t *infonode)
+{
+
+    TC("Called { %s (%p)", __func__, infonode);
+
+    if (!ATOD_FINISH_DLL_HEAD && !ATOD_FINISH_DLL_TAIL)
+    {
+        nd_dll_intset_into_head(&ATOD_FINISH_DLL_HEAD, &(infonode->listnode));
+        ATOD_FINISH_DLL_TAIL = ATOD_FINISH_DLL_HEAD;
+        RVoid();
+    }
+
+    nd_dll_insert_into_tail(&ATOD_FINISH_DLL_TAIL, &(infonode->listnode));
+
+    RVoid();
+}
+
+
+/**
+ * @brief
+ *  Take out the parsed DLL and put it into the display DLL;
+ *  if the display DLL is full,
+ *  take out some elements from the DLL header,
+ *  put them into the free DLL,
+ *  and then take out the parsed DLL and put it into the display DLL;
+ *  if the display DLL is not full,
+ *  take out the parsed DLL and put it into the display DLL
+ *
+ *  Update to show the number of elements in the DLL
+ *  Specifies that the element currently displayed is not the last element of the DLL
+ * @return
+ *  Returns the number of entries added to the display DLL
+ */
+int analysis_put_node_into_display_dll (void)
+{
+
+    TC("Called { %s (void)", __func__);
+
+    int i = 0;
+    nd_dll_t * node = NULL;
+    unsigned short ret = 0, min = 0;
+
+    if (!ATOD_FINISH_DLL_NUMS)
+    {
+        RInt(ret);
+    }
+
+    if (ATOD_DISPLAY_DLL_NUMS == 0)
+    {
+        min = MINIMUM(ATOD_FINISH_DLL_NUMS, ATOD_DISPLAY_MAX_LINES);
+        for (i = 0; i < min; i++) {
+            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
+            if (!ATOD_FINISH_DLL_HEAD)
+            {
+                ATOD_FINISH_DLL_TAIL = NULL;
+            }
+            if (i == 0) {
+                nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+                ATOD_DISPLAY_DLL_TAIL = ATOD_DISPLAY_DLL_HEAD;
+            }
+            else {
+                nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+            }
+        }
+        ATOD_DISPLAY_DLL_NUMS += min;
+    }
+    else if (ATOD_DISPLAY_DLL_NUMS < ATOD_DISPLAY_MAX_LINES)
+    {
+        min = MINIMUM(ATOD_FINISH_DLL_NUMS, (ATOD_DISPLAY_MAX_LINES - ATOD_DISPLAY_DLL_NUMS));
+        
+        for (i = 0; i < min; i++) {
+            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
+            if (!ATOD_FINISH_DLL_HEAD)
+            {
+                ATOD_FINISH_DLL_TAIL = NULL;
+            }
+            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+        }
+        ATOD_DISPLAY_DLL_NUMS += min;
+    }
+    else if (ATOD_DISPLAY_DLL_NUMS == ATOD_DISPLAY_MAX_LINES)
+    {
+        min = MINIMUM(ATOD_PUTIN_DISPLAY_DLL_MAX_NUMS, ATOD_FINISH_DLL_NUMS);
+        for (i = 0; i < min; i++) 
+        {
+            node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
+            nd_dll_intset_into_head(&ATOD_IDLE_DLL, node);
+            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
+            if (!ATOD_FINISH_DLL_HEAD)
+            {
+                ATOD_FINISH_DLL_TAIL = NULL;
+            }
+            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+        }
+    }
+    else{
+        TE("a fatal error occurred");
+        exit(1);
+    }
+
+    ATOD_FINISH_DLL_NUMS -= min;
+    ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
+    ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
+
+    RInt(ret);
 }

@@ -40,238 +40,23 @@ int atodcomm_init_infonode_list (void)
 
     infonode_t * tmp = (infonode_t *)(G_atod_shm_mem + sizeof(dtoainfo_t));
 
+    G_dtoainfo->idlelist = &(tmp->listnode);
+
     int i = 0;
     for (i = 0; i < INFONODE_NUMBER; i++)
     {
         if (i == 0) 
-            tmp->prev = NULL;
-        else 
-            tmp->prev = tmp - 1;
+            tmp->listnode.prev = NULL;
+        else
+            tmp->listnode.prev = (void *)(tmp - 1);
 
         if (i == (INFONODE_NUMBER - 1))
-            tmp->next = NULL;
+            tmp->listnode.next = NULL;
         else
-            tmp->next = tmp + 1;
+            tmp->listnode.next = (void *)(tmp + 1);
 
         tmp = tmp + 1;
     }
-
-    RInt(ND_OK);
-}
-
-
-/**
- * @brief
- *  Remove a node from a doubly linked list
- * @memberof head
- *  Head of a doubly linked list
- * @return
- *  Returns a node if successful
- *  Returns NULL if failed
- */
-infonode_t * atodcomm_takeout_infonode_from_list (infonode_t * head)
-{
-
-    TC("Called { %s (%p)", __func__, head);
-
-    infonode_t * tmp = NULL;
-
-    if (!head) 
-    {
-        TE("The list head is NULL");
-        exit(1);
-    }
-
-    tmp = head;
-    head = tmp->next;
-    head->prev = NULL;
-
-    tmp->next = NULL;
-
-    RVoidPtr(tmp);
-}
-
-
-/**
- * @brief
- *  Return the node to the linked list
- * @memberof head
- *  Head of a doubly linked list
- * @memberof node
- *  Nodes to be returned
- * @return
- *  If successful, it returns ND_OK. 
- *  If failed, it returns ND_ERR.
- */
-int atodcomm_putin_infonode_to_list (infonode_t * head, infonode_t * node)
-{
-
-    TC("Called { %s (%p, %p)", __func__, head, node);
-
-    infonode_t * tmp = NULL;
-
-    if (!head) 
-    {
-        TE("The list head is NULL");
-        exit(1);
-    }
-
-    if (!node) 
-    {
-        TE("The node is NULL");
-        exit(1);
-    }
-
-    tmp = head;
-    head = node;
-
-    head->prev = NULL;
-    head->next = tmp;
-
-    tmp->prev = head;
-
-    RInt(ND_OK);
-}
-
-
-/**
- * @brief
- *  Take a node from the display list head
- * @memberof head
- *  Display link header
- * @return
- *  Returns a node if successful
- *  Returns NULL if failed
- */
-infonode_t * atodcomm_takeout_infonode_from_display_list_head (infonode_t * head)
-{
-
-    TC("Called { %s (%p)", __func__, head);
-
-    infonode_t * tmp = NULL;
-
-    if (!head)
-    {
-        TE("The list head is NULL");
-        exit(1);
-    }
-
-    tmp = head;
-    head = tmp->next;
-    head->prev = NULL;
-
-    tmp->next = NULL;
-
-    RVoidPtr(tmp);
-}
-
-
-/**
- * @brief
- *  Take a node from the display list tail
- * @memberof tail
- *  Display the end of the linked list
- * @return
- *  Returns a node if successful
- *  Returns NULL if failed
- */
-infonode_t * atodcomm_takeout_infonode_from_display_list_tail (infonode_t * tail)
-{
-
-    TC("Called { %s (%p)", __func__, tail);
-
-    infonode_t * tmp = NULL;
-
-    if (!tail) 
-    {
-        TE("The list tail is NULL");
-        exit(1);
-    }
-
-    tmp = tail;
-    tail = tmp->prev;
-    tail->next = NULL;
-
-    tmp->prev = NULL;
-
-    RVoidPtr(tmp);
-}
-
-
-/**
- * @brief
- *  Insert the node to the end of the display list
- * @memberof tail
- *  Display the end of the linked list
- * @memberof node
- *  Nodes to be returned
- * @return
- *  If successful, it returns ND_OK.
- *  If failed, it returns ND_ERR.
- */
-int atod_putin_infonode_to_display_list_tail (infonode_t * tail, infonode_t * node) 
-{
-
-    TC("Called { %s (%p, %p)", __func__, tail, node);
-
-    if (!tail) 
-    {
-        TE("The list tail is NULL");
-        exit(1);
-    }
-
-    if (!node)
-    {
-        TE("The node is NULL");
-        exit(1);
-    }
-
-    tail->next = node;
-    node->prev = tail;
-
-    tail = node;
-
-    RInt(ND_OK);
-}
-
-
-/**
- * @brief
- *  Insert the node into the head of the display list
- * @memberof head
- *  Display link header
- * @memberof node
- *  Nodes to be returned
- * @return
- *  If successful, it returns ND_OK.
- *  If failed, it returns ND_ERR.
- */
-int atod_putin_infonode_to_display_list_head (infonode_t * head, infonode_t * node) 
-{
-
-    TC("Called { %s (%p, %p)", __func__, head, node);
-
-    infonode_t * tmp = NULL;
-
-    if (!head)
-    {
-        TE("The list head is NULL");
-        exit(1);
-    }
-
-    if (!node)
-    {
-        TE("The node is NULL");
-        exit(1);
-    }
-
-    tmp = head;
-    head = node;
-
-    head->prev = NULL;
-    head->next = tmp;
-
-    tmp->prev = head;
 
     RInt(ND_OK);
 }
@@ -298,12 +83,32 @@ int atodcomm_init_atodcomm(void)
     memset(ATODCOMM_SHM_BASEADDR, 0, ATODCOMM_SHM_FILESIZE);
 
     G_dtoainfo = (dtoainfo_t *)G_atod_shm_mem;
-    
+
+    atodcomm_init_dtoainfo_to_zero();
+
+    atodcomm_init_infonode_list();
+
+    TI("ATODCOMM_SHM_BASEADDR: %p; G_atod_shm_mem: %p", ATODCOMM_SHM_BASEADDR, G_atod_shm_mem);
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Initialize G_dtoainfo to zero value
+ */
+void atodcomm_init_dtoainfo_to_zero(void) 
+{
+
+    TC("Called { %s(void)", __func__);
+
     G_dtoainfo->listhead = NULL;
     G_dtoainfo->listtail = NULL;
     G_dtoainfo->curline = NULL;
     G_dtoainfo->idlelist = NULL;
-    G_dtoainfo->finlist = NULL;
+    G_dtoainfo->finlisthead = NULL;
+    G_dtoainfo->finlisttail = NULL;
 
     G_dtoainfo->nlines = 0;
     G_dtoainfo->curindex = 0;
@@ -312,13 +117,7 @@ int atodcomm_init_atodcomm(void)
 
     memset((void *)G_dtoainfo->flag, 0, sizeof(G_dtoainfo->flag));
 
-    atodcomm_init_infonode_list();
-
-    G_dtoainfo->idlelist = (infonode_t *)(G_atod_shm_mem + sizeof(dtoainfo_t));
-
-    TI("ATODCOMM_SHM_BASEADDR: %p; G_atod_shm_mem: %p", ATODCOMM_SHM_BASEADDR, G_atod_shm_mem);
-
-    RInt(ND_OK);
+    RVoid();
 }
 
 

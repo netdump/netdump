@@ -71,4 +71,67 @@ int analysis_main (unsigned int COREID, const char * pname, void * param);
  */
 int analysis_loop (void);
 
+
+/**
+ * @brief
+ *  no manul mode analysis network frame
+ */
+void analysis_no_manual_mode (void);
+
+
+/**
+ * @brief
+ *  manul mode analysis network frame
+ */
+void analysis_manual_mode(void);
+
+
+/**
+ * @brief
+ *  Parsing network frames
+ * @memberof header
+ *  struct pcap_pkthdr pointer
+ * @memberof packet
+ *  network frame data
+ */
+void analysis_network_frames(const struct pcap_pkthdr *header, const unsigned char *packet);
+
+
+/**
+ * @brief
+ *  Get infonode node pointer
+ * @return
+ *  Returns the obtained node pointer if successful.
+ *  Returns NULL if failed
+ */
+infonode_t *analysis_get_infonode(void);
+
+
+/**
+ * @brief
+ *  Put in infonode to finlist
+ * @memberof infonode
+ *  Waiting for the node element to be put into finlist
+ */
+void analysis_putin_infonode (infonode_t *infonode);
+
+
+/**
+ * @brief
+ *  Take out the parsed DLL and put it into the display DLL;
+ *  if the display DLL is full,
+ *  take out some elements from the DLL header,
+ *  put them into the free DLL,
+ *  and then take out the parsed DLL and put it into the display DLL;
+ *  if the display DLL is not full,
+ *  take out the parsed DLL and put it into the display DLL
+ *
+ *  Update to show the number of elements in the DLL
+ *  Specifies that the element currently displayed is not the last element of the DLL
+ * @return
+ *  Returns the number of entries added to the display DLL
+ */
+int analysis_put_node_into_display_dll(void);
+
+
 #endif  // __ANALYSIS_H__

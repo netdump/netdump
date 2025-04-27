@@ -84,8 +84,9 @@
 typedef struct infonode_s 
 {
 
-    void * prev;
-    void * next;
+    nd_dll_t listnode;
+
+    unsigned long int g_store_index;
 
     unsigned char timestamp[16];
     unsigned char srcaddr[48];
@@ -131,11 +132,14 @@ typedef struct infonode_s
 typedef struct dtoainfo_s
 {
 
-    infonode_t * listhead;
-    infonode_t * listtail;
-    infonode_t * curline;
-    infonode_t * idlelist;
-    infonode_t * finlist;
+    nd_dll_t * listhead;
+    nd_dll_t * listtail;
+    nd_dll_t * curline;
+    nd_dll_t * idlelist;
+    nd_dll_t * finlisthead;
+    nd_dll_t * finlisttail;
+
+    unsigned long index;
 
     unsigned short nlines;
     unsigned short curindex;
@@ -145,14 +149,15 @@ typedef struct dtoainfo_s
 
 } dtoainfo_t;
 
-
+     
 /**
  * @brief
  *  ATOD_DISPLAYING: Representatives are demonstrating the interface
  *  ATOD_DISPLAYED: The representative interface display has been completed
  */
-#define ATOD_DISPLAYING         0x00
-#define ATOD_DISPLAYED          0x01
+#define DTOA_DISPLAY_VAR_FLAG       (G_dtoainfo->flag[2])    
+#define DTOA_DISPLAYING             0x00
+#define DTOA_DISPLAYED              0x01
 
 
 /**
@@ -160,18 +165,47 @@ typedef struct dtoainfo_s
  *  DTOA_ANALYSISING: Indicates that data is being parsed
  *  DTOA_ALALYSISED: Indicates that data parsing has been completed
  */
-#define DTOA_ANALYSISING        0x00
-#define DTOA_ALALYSISED         0x01
+#define ATOD_ANALYSIS_VAR_FLAG      (G_dtoainfo->flag[3])
+#define ATOD_ANALYSISING            0x00
+#define ATOD_ALALYSISED             0x01
 
 
 /**
  * @brief
  *  DTOA_NON_MANUAL: Non-manual (ie automatic), the software automatically downloads
- *  DTOA_MANUAL_TOP: 
+ *  DTOA_MANUAL_TOP: Manual mode and display the previous line of the current first line
+ *  DTOA_MAMUAL_BOTTOM: Manual mode and display the next line of the current last line
  */
-#define DTOA_NON_MANUAL         0x00
-#define DTOA_MANUAL_TOP         0x01
-#define DTOA_MANUAL_BOTTOM      0x02
+#define DTOA_ISOR_MANUAL_VAR_FLAG   (G_dtoainfo->flag[0])
+#define DTOA_NON_MANUAL             0x00
+#define DTOA_MANUAL_TOP             0x01
+#define DTOA_MANUAL_BOTTOM          0x02
+
+
+/**
+ * @brief
+ *  ATOD_DISPLAY_DLL_NUMS: current display DLL nums
+ *  ATOD_FINISH_DLL_NUMS: finish DLL nums
+ *  ATOD_DISPLAY_MAX_LINES: Maximum number of rows that can be displayed
+ *  ATOD_CUR_DISPLAY_INDEX: current line index
+ */
+#define ATOD_DISPLAY_DLL_NUMS       (G_dtoainfo->curlines)
+#define ATOD_FINISH_DLL_NUMS        (G_dtoainfo->finlines)
+#define ATOD_DISPLAY_MAX_LINES      (G_dtoainfo->nlines)
+#define ATOD_CUR_DISPLAY_LINE       (G_dtoainfo->curline)
+#define ATOD_CUR_DISPLAY_INDEX      (G_dtoainfo->curindex)
+#define ATOD_FINISH_DLL_HEAD        (G_dtoainfo->finlisthead)
+#define ATOD_FINISH_DLL_TAIL        (G_dtoainfo->finlisttail)
+#define ATOD_DISPLAY_DLL_HEAD       (G_dtoainfo->listhead)
+#define ATOD_DISPLAY_DLL_TAIL       (G_dtoainfo->listtail)
+#define ATOD_IDLE_DLL               (G_dtoainfo->idlelist)
+
+
+/**
+ * @brief
+ *  Defines the maximum value of the nodes that can be placed in the display DLL each time
+ */
+#define ATOD_PUTIN_DISPLAY_DLL_MAX_NUMS     (6)
 
 
 /**
@@ -206,86 +240,22 @@ int atodcomm_startup(void);
 
 /**
  * @brief
+ *  Initialize G_dtoainfo to zero value
+ */
+void atodcomm_init_dtoainfo_to_zero(void);
+
+
+/**
+ * @brief
+ *  Initialize the information node list
+ */
+int atodcomm_init_infonode_list (void);
+
+
+/**
+ * @brief
  *  Inter-process communication resource destruction operation
  */
 void atodcomm_ending(void);
 
-
-/**
- * @brief
- *  Remove a node from a doubly linked list
- * @memberof head
- *  Head of a doubly linked list
- * @return
- *  Returns a node if successful
- *  Returns NULL if failed
- */
-infonode_t * atodcomm_takeout_infonode_from_list (infonode_t * head);
-
-
-/**
- * @brief
- *  Return the node to the linked list
- * @memberof head
- *  Head of a doubly linked list
- * @memberof node
- *  Nodes to be returned
- * @return
- *  If successful, it returns ND_OK.
- *  If failed, it returns ND_ERR.
- */
-int atodcomm_putin_infonode_to_list (infonode_t *head, infonode_t *node);
-
-
-/**
- * @brief
- *  Take a node from the display list head
- * @memberof head
- *  Display link header
- * @return
- *  Returns a node if successful
- *  Returns NULL if failed
- */
-infonode_t * atodcomm_takeout_infonode_from_display_list_head (infonode_t * head);
-
-
-/**
- * @brief
- *  Take a node from the display list tail
- * @memberof tail
- *  Display the end of the linked list
- * @return
- *  Returns a node if successful
- *  Returns NULL if failed
- */
-infonode_t * atodcomm_takeout_infonode_from_display_list_tail (infonode_t * tail);
-
-
-/**
- * @brief
- *  Insert the node to the end of the display list
- * @memberof tail
- *  Display the end of the linked list
- * @memberof node
- *  Nodes to be returned
- * @return
- *  If successful, it returns ND_OK.
- *  If failed, it returns ND_ERR.
- */
-int atod_putin_infonode_to_display_list_tail (infonode_t * tail, infonode_t * node);
-
-
-/**
- * @brief
- *  Insert the node into the head of the display list
- * @memberof head
- *  Display link header
- * @memberof node
- *  Nodes to be returned
- * @return
- *  If successful, it returns ND_OK.
- *  If failed, it returns ND_ERR.
- */
-int atod_putin_infonode_to_display_list_head (infonode_t * head, infonode_t * node);
-
-#endif  // __ATODCOMM_H__
+#endif  // __ATODCOMM_H_
