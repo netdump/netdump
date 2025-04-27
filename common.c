@@ -1293,3 +1293,146 @@ size_t strlcpy(char *dst, const char *src, size_t siz)
     return (s - src - 1); /* count does not include NUL */
     //RULong((s - src - 1));
 }
+
+
+/**
+ * @brief
+ *  Take the node from the head of the doubly linked list
+ * @memberof head
+ *  the head of the doubly linked list
+ * @return
+ *  Returns the retrieved node if successful, otherwise returns NULL
+ */
+nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head)
+{
+
+    TC("Called { %s(%p)", __func__, head);
+
+    nd_dll_t * tmp = NULL;
+
+    if (!head) {
+        TE("Param is null; head: %p;", head);
+        exit(1);
+    }
+
+    if (!(*head)) {
+        TE("Param is null; *head: %p;", *head);
+        RVoidPtr(tmp);
+    }
+
+    tmp = *head;
+
+    *head = tmp->next;
+    (*head)->prev = NULL;
+
+    tmp->next = NULL;
+    tmp->prev = NULL;
+
+    RVoidPtr(tmp);
+}
+
+
+/**
+ * @brief
+ *  Take the node from the tail of the doubly linked list
+ * @memberof tail
+ *  the tail of the doubly linked list
+ * @return
+ *  Returns the retrieved node if successful, otherwise returns NULL
+ */
+nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** tail)
+{
+
+    TC("Called { %s(%p)", __func__, tail);
+
+    nd_dll_t * tmp = NULL;
+
+    if (!tail) {
+        TE("Param is null; tail: %p", tail);
+        exit(1);
+    }
+
+    if (!(*tail)) {
+        TE("Param is numm; *tail: %p", *tail);
+        RVoidPtr(tmp);
+    }
+
+    tmp = *tail;
+
+    *tail = tmp->prev;
+    (*tail)->next = NULL;
+
+    tmp->next = NULL;
+    tmp->prev = NULL;
+
+    RVoidPtr(tmp);
+}
+
+
+/**
+ * @brief
+ *  Insert the head of a doubly linked list
+ * @memberof head
+ *  the head of the doubly linked list
+ * @memberof node
+ *  node to be inserted
+ * @return
+ *  If successful, it returns ND_OK
+ *  if failed, it returns ND_ERR
+ */
+int nd_dll_intset_into_head (nd_dll_t ** head, nd_dll_t * node)
+{
+
+    TC("Called { %s(%p, %p)", __func__, head, node);
+
+    if (!head || !node) {
+        TE("Param is null; head: %p; node: %p", head, node);
+        exit(1);
+    }
+
+    nd_dll_t * tmp = *head;
+
+    if (!(*head))
+        node->next = NULL;
+    else
+        node->next = tmp;
+
+    *head = node;
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  Insert the tail of a doubly linked list
+ * @memberof tail
+ *  the tail of the doubly linked list
+ * @memberof node
+ *  node to be inserted
+ * @return
+ *  If successful, it returns ND_OK
+ *  if failed, it returns ND_ERR
+ */
+int nd_dll_insert_into_tail(nd_dll_t ** tail, nd_dll_t * node)
+{
+    TC("Called { %s(%p, %p)", __func__, tail, node);
+
+    if (!tail || !node) {
+        TE("Param is null; tail: %p; node: %p", tail, node);
+        exit(1);
+    }
+
+    nd_dll_t * tmp = *tail;
+
+    if (!(*tail))
+        node->prev = NULL;
+    else
+        node->prev = tmp;
+
+    node->next = NULL;
+
+    *tail = node;
+
+    RInt(ND_OK);
+}

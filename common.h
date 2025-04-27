@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -90,6 +91,24 @@ enum {
     ND_ERR,
 	CP_FAD,
 };
+
+
+/**
+ * @brief
+ * 	Doubly Linked List
+ */
+typedef struct nd_dll_s
+{
+	void * prev;
+	void * next;
+} nd_dll_t;
+
+
+/**
+ * @brief
+ * 	Calculate the structure address through the member address and offset
+ */
+#define container_of(ptr, type, member)		((type *)((char *)(ptr) - offsetof(type, member)))
 
 
 /**
@@ -589,5 +608,53 @@ void nd_delay_microsecond (unsigned int sec, unsigned long microseconds);
 size_t strlcpy(char *dst, const char *src, size_t siz);
 
 
+/**
+ * @brief
+ *  Take the node from the head of the doubly linked list
+ * @memberof head
+ *  the head of the doubly linked list
+ * @return
+ *  Returns the retrieved node if successful, otherwise returns NULL
+ */
+nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head);
+
+
+/**
+ * @brief
+ *  Take the node from the tail of the doubly linked list
+ * @memberof tail
+ *  the tail of the doubly linked list
+ * @return
+ *  Returns the retrieved node if successful, otherwise returns NULL
+ */
+nd_dll_t *nd_dll_takeout_from_tail(nd_dll_t ** tail);
+
+
+/**
+ * @brief
+ *  Insert the head of a doubly linked list
+ * @memberof head
+ *  the head of the doubly linked list
+ * @memberof node
+ *  node to be inserted
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int nd_dll_intset_into_head(nd_dll_t ** head, nd_dll_t * node);
+
+
+/**
+ * @brief
+ *  Insert the tail of a doubly linked list
+ * @memberof tail
+ *  the tail of the doubly linked list
+ * @memberof node
+ *  node to be inserted
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int nd_dll_insert_into_tail(nd_dll_t ** tail, nd_dll_t * node);
 
 #endif 
