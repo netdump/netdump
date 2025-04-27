@@ -1361,7 +1361,8 @@ nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** tail)
     tmp = *tail;
 
     *tail = tmp->prev;
-    (*tail)->next = NULL;
+    if (*tail)
+        (*tail)->next = NULL;
 
     tmp->next = NULL;
     tmp->prev = NULL;
