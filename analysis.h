@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <poll.h>
+#include <time.h>
+#include <sys/time.h>
 
 #if 1
 #include <net/ethernet.h> // 以太网帧
