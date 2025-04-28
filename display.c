@@ -582,6 +582,7 @@ void display_second_tui_exec_logic (void) {
 
 	display_show_wins_3_4_5();
 	display_draw_cpinfo_win();
+	display_clear_content_line();
 	display_set_wins_noecho_and_cbreak();
 	display_start_or_close_timeout(1000);
 	display_disable_cursor();
@@ -660,10 +661,10 @@ void display_second_tui_exec_logic (void) {
 				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
 				break;
 			default:
-				TI("ch: %u", ch);
 				break;
 		}
-
+		display_content_to_the_interface(ATOD_DISPLAY_DLL_HEAD);
+		DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYED;
 		display_draw_cpinfo_win();
 	}
 
@@ -678,11 +679,64 @@ void display_second_tui_exec_logic (void) {
 
 /**
  * @brief
- * 	Display content to the interface
- * @memberof dtoainfo
- * 	
+ * 	Clear the line showing the content in window 3
  */
-void display_content_to_the_interface(dtoainfo_t * dtoainfo)
+void display_clear_content_line (void)
 {
+	TC("Called { %s (void)", __func__);
 
+	int i = 0;
+
+	for (i = 0; i < display_G_win3_context_lines; i++)
+	{
+		wmove(G_display.wins[3], (i + 3), 1);
+		wclrtoeol(G_display.wins[3]);
+	}
+
+	wrefresh(G_display.wins[3]);
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Display content to the interface
+ * @memberof head
+ * 	display dll head
+ */
+void display_content_to_the_interface(nd_dll_t * head)
+{
+	//TC("Called { %s (%p)", __func__, head);
+
+	if (!ATOD_DISPLAY_DLL_NUMS || !head)
+		return ;
+
+	int i = 0;
+	nd_dll_t * node = head;
+	infonode_t * infonode = NULL;
+
+	while (ATOD_ANALYSIS_VAR_FLAG == ATOD_ANALYSISING);
+
+	DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYING;
+
+	for (i = 0; i < ATOD_DISPLAY_DLL_NUMS; i++)
+	{
+		infonode = container_of(node, infonode_t, listnode);
+		wmove(G_display.wins[3], (i + 3), 1);
+		wclrtoeol(G_display.wins[3]);
+		mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
+		mvwprintw(G_display.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+		mvwprintw(G_display.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+		mvwprintw(G_display.wins[3], (i + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+		mvwprintw(G_display.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
+		mvwprintw(G_display.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
+		node = node->next;
+		if (!node)
+			break;
+	}
+
+	wrefresh(G_display.wins[3]);
+
+	//RVoid();
 }
