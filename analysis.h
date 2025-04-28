@@ -96,7 +96,8 @@ void analysis_manual_mode(void);
  * @memberof packet
  *  network frame data
  */
-void analysis_network_frames(const struct pcap_pkthdr *header, const unsigned char *packet);
+void analysis_network_frames(infonode_t *infonode, 
+        const struct pcap_pkthdr *header, const unsigned char *packet);
 
 
 /**
