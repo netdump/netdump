@@ -1395,7 +1395,7 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
 static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
 {
 
-    TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
+    //TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
     unsigned int tmp = 0;
     int invalid_header = 0;
@@ -1455,7 +1455,7 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     if (invalid_header)
     {
         TI("]\n");
-        RVoid();
+        return ;
     }
 
     G_ctoa_shm_mem_wp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp);
@@ -1473,7 +1473,7 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
     msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
 
-    RVoid();
+    return ;
 }
 
 
