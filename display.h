@@ -218,6 +218,23 @@ void diaplay_dump_size_info(void);
  */
 void display_check_term_size(void);
 
+
+/**
+ * @brief
+ * 	Clear the line showing the content in window 3
+ */
+void display_clear_content_line (void);
+
+
+/**
+ * @brief
+ * 	Display content to the interface
+ * @memberof head
+ * 	display dll head
+ */
+void display_content_to_the_interface(nd_dll_t *head);
+
+
 /**
  * @brief 
  *  Called ncurses initscr initialize environment
@@ -463,6 +480,19 @@ Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
 /** Width of the data length column */
 #define LENGTHOFDATALENGTH      7
 
+/** Window 3 timestamp displays the starting position */
+#define START_X_TIME            2
+/** Window 3 source address shows the starting position */
+#define START_X_SRCADDR         (START_X_TIME + LENGTHOFTIME + 1)
+/** Window 3 destination address shows the starting position */
+#define START_X_DSTADDR         (START_X_SRCADDR + LENGTHOFADDRESS)
+/** Window 3 protocol shows the starting position */
+#define START_X_PROTOCOL        (START_X_DSTADDR + LENGTHOFADDRESS)
+/** Window 3 data length shows the starting position */
+#define START_X_DATALENGTH      (START_X_PROTOCOL + LENGTHOFPROTOCOL)
+/** Window 3 briefly displays the starting position */
+#define START_X_BRIEF           (START_X_DATALENGTH + LENGTHOFDATALENGTH)
+
 
 /** Time bar title */
 #define WINTITLETIME            "Time"
@@ -476,7 +506,6 @@ Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
 #define WINTITLEDATALENGTH      "Length"
 /** Title of the information bar */
 #define WINTITLEINFORMATION     "brief"
-
 
 /**
  * @brief
