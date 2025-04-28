@@ -88,12 +88,12 @@ typedef struct infonode_s
 
     unsigned long g_store_index;
 
-    unsigned char timestamp[16];
-    unsigned char srcaddr[48];
-    unsigned char dstaddr[48];
-    unsigned char protocol[16];
-    unsigned char length[8];
-    unsigned char brief[256];
+    char timestamp[16];
+    char srcaddr[48];
+    char dstaddr[48];
+    char protocol[16];
+    char length[8];
+    char brief[256];
 
     unsigned short flag[8];
 
