@@ -1399,6 +1399,11 @@ int nd_dll_intset_into_head (nd_dll_t ** head, nd_dll_t * node)
     else
         node->next = tmp;
 
+    node->prev = NULL;
+
+    if (tmp)
+        tmp->prev = node;
+
     *head = node;
 
     RInt(ND_OK);
@@ -1433,6 +1438,9 @@ int nd_dll_insert_into_tail(nd_dll_t ** tail, nd_dll_t * node)
         node->prev = tmp;
 
     node->next = NULL;
+
+    if (tmp)
+        tmp->next = node;
 
     *tail = node;
 
