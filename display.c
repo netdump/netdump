@@ -690,7 +690,7 @@ void display_clear_content_line (void)
 	for (i = 0; i < display_G_win3_context_lines; i++)
 	{
 		wmove(G_display.wins[3], (i + 3), 1);
-		wclrtoeol(G_display.wins[3]);
+		wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
 	}
 
 	wrefresh(G_display.wins[3]);
@@ -724,7 +724,7 @@ void display_content_to_the_interface(nd_dll_t * head)
 	{
 		infonode = container_of(node, infonode_t, listnode);
 		wmove(G_display.wins[3], (i + 3), 1);
-		wclrtoeol(G_display.wins[3]);
+		wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
 		mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
