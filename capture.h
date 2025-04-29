@@ -193,19 +193,19 @@
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "tcpdump"
+#define PACKAGE_NAME "netdump"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "tcpdump 4.99.5"
+#define PACKAGE_STRING "netdump 0.0.1"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "tcpdump"
+#define PACKAGE_TARNAME "netdump"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "4.99.5"
+#define PACKAGE_VERSION "0.0.1"
 
 /* The size of `time_t', as computed by sizeof. */
 #define SIZEOF_TIME_T 8
@@ -229,26 +229,26 @@
  * Short options.
  *
  * Note that there we use all letters for short options except for g, k,
- * o, and P, and those are used by other versions of tcpdump, and we should
- * only use them for the same purposes that the other versions of tcpdump
+ * o, and P, and those are used by other versions of netdump, and we should
+ * only use them for the same purposes that the other versions of netdump
  * use them:
  *
- * macOS tcpdump uses -g to force non--v output for IP to be on one
+ * macOS netdump uses -g to force non--v output for IP to be on one
  * line, making it more "g"repable;
  *
- * macOS tcpdump uses -k to specify that packet comments in pcapng files
+ * macOS netdump uses -k to specify that packet comments in pcapng files
  * should be printed;
  *
- * OpenBSD tcpdump uses -o to indicate that OS fingerprinting should be done
+ * OpenBSD netdump uses -o to indicate that OS fingerprinting should be done
  * for hosts sending TCP SYN packets;
  *
- * macOS tcpdump uses -P to indicate that -w should write pcapng rather
+ * macOS netdump uses -P to indicate that -w should write pcapng rather
  * than pcap files.
  *
- * macOS tcpdump also uses -Q to specify expressions that match packet
+ * macOS netdump also uses -Q to specify expressions that match packet
  * metadata, including but not limited to the packet direction.
  * The expression syntax is different from a simple "in|out|inout",
- * and those expressions aren't accepted by macOS tcpdump, but the
+ * and those expressions aren't accepted by macOS netdump, but the
  * equivalents would be "in" = "dir=in", "out" = "dir=out", and
  * "inout" = "dir=in or dir=out", and the parser could conceivably
  * special-case "in", "out", and "inout" as expressions for backwards
