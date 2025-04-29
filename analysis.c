@@ -367,7 +367,7 @@ void analysis_network_frames(infonode_t *infonode,
 
     TC("Called { %s(%p, %p)", __func__, header, packet);
 
-
+    
 
     RVoid();
 }
