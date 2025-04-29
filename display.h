@@ -236,6 +236,24 @@ void display_content_to_the_interface(nd_dll_t *head);
 
 
 /**
+ * @brief
+ * 	Move selection up
+ * @memberof winnumber
+ * 	window number
+ */
+void display_move_up_selected_content(int winnumber);
+
+
+/**
+ * @brief
+ * 	Move selection down
+ * @memberof winnumber
+ * 	window number
+ */
+void display_move_down_selected_content(int winnumber);
+
+
+/**
  * @brief 
  *  Called ncurses initscr initialize environment
  */
@@ -278,6 +296,8 @@ void display_content_to_the_interface(nd_dll_t *head);
         init_pair(4, COLOR_RED, COLOR_BLACK);                                                                                           \
         init_pair(5, COLOR_BLUE, COLOR_BLACK);                                                                                          \
         init_pair(6, COLOR_CYAN, COLOR_BLACK);                                                                                          \
+        init_pair(7, COLOR_GREEN, COLOR_BLACK);                                                                                         \
+        init_pair(8, COLOR_YELLOW, COLOR_BLACK);                                                                                        \
     } while (0);                                                                                                                        \
 
 
@@ -831,6 +851,7 @@ void display_second_tui_exec_logic(void);
         keypad(G_display.wins[3], TRUE);                                                                                                \
         keypad(G_display.wins[4], TRUE);                                                                                                \
         keypad(G_display.wins[5], TRUE);                                                                                                \
+        keypad(stdscr, TRUE);                                                                                                           \
     } while (0);                                                                                                                        \
 
 
