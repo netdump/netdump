@@ -329,6 +329,8 @@ void analysis_manual_mode (void)
         infonode = container_of(node, infonode_t, listnode);
         packet_handler(infonode, &(ds->pkthdr), ds->data);
         nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+        ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
+        ATOD_CUR_DISPLAY_INDEX = 0;
     }
     else if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_BOTTOM)
     {
@@ -343,12 +345,10 @@ void analysis_manual_mode (void)
         infonode = container_of(node, infonode_t, listnode);
         packet_handler(infonode, &(ds->pkthdr), ds->data);
         nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+        ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
+        ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
     }
-    else {
-        TE("a fatal error occurred");
-        exit(1);
-    }
-    
+   
     return ;
 }
 
