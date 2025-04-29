@@ -510,7 +510,7 @@ void display_handle_win_resize(int flag) {
 	display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);
 	display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);
 	display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);
-	G_dtoainfo->nlines = display_G_win3_context_lines;
+	ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;
 
 	RVoid();
 }
@@ -591,7 +591,7 @@ void display_second_tui_exec_logic (void) {
 	msgcomm_clear_G_status();
 	atod_reset_dtoainfo_flag();
 
-#if 0
+	#if 0
 	msgcomm_zero_variable(msgcomm_st_NObytes);
 	msgcomm_zero_variable(msgcomm_st_NOpackages);
 	msgcomm_zero_variable(msgcomm_st_runflag);
@@ -777,7 +777,7 @@ void display_content_to_the_interface(nd_dll_t * head)
  */
 void display_win_3_move_up_selected_content (void)
 {
-	TC("Called { %s(void)", __func__);
+	//TC("Called { %s(void)", __func__);
 
 	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
 	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
@@ -787,20 +787,25 @@ void display_win_3_move_up_selected_content (void)
 	nd_dll_t *node = ATOD_CUR_DISPLAY_LINE;
 	infonode_t *infonode = container_of(node, infonode_t, listnode);
 
+	TI("infonode->g_store_index: %lu", infonode->g_store_index);
+
 	if (infonode->g_store_index == 0) {
 		display_popup_message_notification("It's already at the top");
-		RVoid();
+		//RVoid();
+		return ;
 	}
 
 	if (ATOD_CUR_DISPLAY_INDEX == 0) {
 		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_TOP;
-		RVoid();
+		//RVoid();
+		return ;
 	}
 
 	ATOD_CUR_DISPLAY_LINE = node->prev;
 	ATOD_CUR_DISPLAY_INDEX--;
 
-	RVoid();
+	//RVoid();
+	return ;
 }
 
 
@@ -869,15 +874,38 @@ void display_move_up_selected_content (int winnumber)
  */
 void display_win_3_move_down_selected_content(void)
 {
-	TC("Called { %s(void)", __func__);
+	//TC("Called { %s(void)", __func__);
 
 	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
 	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
 	
 	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
 
+	nd_dll_t *node = ATOD_CUR_DISPLAY_LINE;
+	infonode_t *infonode = container_of(node, infonode_t, listnode);
+	unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
 
-	RVoid();
+	TI("infonode->g_store_index: %lu; tmp: %lu", infonode->g_store_index, tmp);
+
+	if (infonode->g_store_index == (tmp - 1))
+	{
+		display_popup_message_notification("It's already at the bottom");
+		//RVoid();
+		return ;
+	}
+
+	if (node->next == NULL)
+	{
+		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_BOTTOM;
+		//RVoid();
+		return ;
+	}
+
+	ATOD_CUR_DISPLAY_LINE = node->next;
+	ATOD_CUR_DISPLAY_INDEX++;
+
+	//RVoid();
+	return ;
 }
 
 

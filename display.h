@@ -1153,7 +1153,7 @@ void display_second_tui_exec_logic(void);
             display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);                                                               \
             display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);                                                               \
             display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);                                                               \
-            G_dtoainfo->nlines = display_G_win3_context_lines;                                                                          \
+            ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;                                                                          \
             display_handle_TUI_second_page();                                                                                           \
         }                                                                                                                               \
     } while (0);
