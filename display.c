@@ -586,7 +586,7 @@ void display_second_tui_exec_logic (void) {
 	display_set_wins_noecho_and_cbreak();
 	display_start_or_close_timeout(1000);
 	display_disable_cursor();
-	unsigned char ch = 0;
+	unsigned int ch = 0;
 	unsigned char count = 0;
 	msgcomm_clear_G_status();
 
@@ -660,6 +660,14 @@ void display_second_tui_exec_logic (void) {
 				TI("ch: %u", ch);
 				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
 				break;
+			case KEY_UP:
+				TI("ch: %u; KEY_UP: %u", ch, KEY_UP);
+				display_move_up_selected_content(((count % 3) + 3));
+				break;
+			case KEY_DOWN:
+				TI("ch: %u; KEY_DOWN: %u", ch, KEY_DOWN);
+				display_move_down_selected_content(((count % 3) + 3));
+				break;
 			default:
 				break;
 		}
@@ -723,6 +731,12 @@ void display_content_to_the_interface(nd_dll_t * head)
 	for (i = 0; i < ATOD_DISPLAY_DLL_NUMS; i++)
 	{
 		infonode = container_of(node, infonode_t, listnode);
+
+		if (i % 2)
+			wattron(G_display.wins[3], COLOR_PAIR(7));
+		else
+			wattron(G_display.wins[3], COLOR_PAIR(8));
+
 		wmove(G_display.wins[3], (i + 3), 1);
 		wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
 		mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
@@ -731,6 +745,12 @@ void display_content_to_the_interface(nd_dll_t * head)
 		mvwprintw(G_display.wins[3], (i + 3), START_X_PROTOCOL, "%s", infonode->protocol);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
+
+		if (i % 2)
+			wattroff(G_display.wins[3], COLOR_PAIR(7));
+		else
+			wattroff(G_display.wins[3], COLOR_PAIR(8));
+
 		node = node->next;
 		if (!node)
 			break;
@@ -739,4 +759,144 @@ void display_content_to_the_interface(nd_dll_t * head)
 	wrefresh(G_display.wins[3]);
 
 	//RVoid();
+}
+
+
+/**
+ * @brief
+ * 	window 3 move selection up
+ */
+void display_win_3_move_up_selected_content (void)
+{
+	TC("Called { %s(void)", __func__);
+
+
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	window 4 move selection up
+ */
+void display_win_4_move_up_selected_content (void)
+{
+	TC("Called { %s(void)", __func__);
+
+
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	window 5 move selection up
+ */
+void display_win_5_move_up_selected_content(void)
+{
+	TC("Called { %s(void)", __func__);
+
+
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Move selection up
+ * @memberof winnumber
+ * 	window number
+ */
+void display_move_up_selected_content (int winnumber) 
+{
+	TC("Called {%s (%d)", __func__, winnumber);
+
+	switch (winnumber)
+	{
+		case 3:
+			display_win_3_move_up_selected_content();
+			break;
+		case 4:
+			display_win_4_move_up_selected_content();
+			break;
+		case 5:
+			display_win_5_move_up_selected_content();
+			break;
+		default:
+			TE("A fatal error occurred");
+			exit(1);
+			break;
+	}
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	window 3 move selection down
+ */
+void display_win_3_move_down_selected_content(void)
+{
+	TC("Called { %s(void)", __func__);
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	window 4 move selection down
+ */
+void display_win_4_move_down_selected_content(void)
+{
+	TC("Called { %s(void)", __func__);
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	window 5 move selection down
+ */
+void display_win_5_move_down_selected_content(void)
+{
+	TC("Called { %s(void)", __func__);
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Move selection down
+ * @memberof winnumber
+ * 	window number
+ */
+void display_move_down_selected_content (int winnumber)
+{
+	TC("Called {%s (%d)", __func__, winnumber);
+
+	switch (winnumber)
+	{
+		case 3:
+			display_win_3_move_down_selected_content();
+			break;
+		case 4:
+			display_win_4_move_down_selected_content();
+			break;
+		case 5:
+			display_win_5_move_down_selected_content();
+			break;
+		default:
+			TE("A fatal error occurred");
+			exit(1);
+			break;
+	}
+
+	RVoid();
 }
