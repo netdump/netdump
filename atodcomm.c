@@ -86,6 +86,8 @@ int atodcomm_init_atodcomm(void)
 
     atodcomm_init_dtoainfo_to_zero();
 
+    ATOD_DISPLAY_MAX_LINES = 0;
+
     atodcomm_init_infonode_list();
 
     TI("ATODCOMM_SHM_BASEADDR: %p; G_atod_shm_mem: %p", ATODCOMM_SHM_BASEADDR, G_atod_shm_mem);
@@ -110,7 +112,6 @@ void atodcomm_init_dtoainfo_to_zero(void)
     G_dtoainfo->finlisthead = NULL;
     G_dtoainfo->finlisttail = NULL;
 
-    G_dtoainfo->nlines = 0;
     G_dtoainfo->curindex = 0;
     G_dtoainfo->curlines = 0;
     G_dtoainfo->finlines = 0;
