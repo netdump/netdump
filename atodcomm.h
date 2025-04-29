@@ -176,8 +176,21 @@ typedef struct dtoainfo_s
  */
 #define DTOA_ISOR_MANUAL_VAR_FLAG   (G_dtoainfo->flag[0])
 #define DTOA_NON_MANUAL             0x00
-#define DTOA_MANUAL_TOP             0x01
-#define DTOA_MANUAL_BOTTOM          0x02
+#define DTOA_MANUAL                 0x01
+#define DTOA_MANUAL_TOP             0x02
+#define DTOA_MANUAL_BOTTOM          0x03
+
+
+/**
+ * @brief
+ *  reset flag 
+ */
+#define atod_reset_dtoainfo_flag()                                                          \
+    do {                                                                                    \
+        DTOA_DISPLAY_VAR_FLAG = 0x01;                                                       \
+        ATOD_ANALYSIS_VAR_FLAG = 0x01;                                                      \
+        DTOA_ISOR_MANUAL_VAR_FLAG = 0x00;                                                   \
+    } while (0);
 
 
 /**
