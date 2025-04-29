@@ -589,15 +589,16 @@ void display_second_tui_exec_logic (void) {
 	unsigned int ch = 0;
 	unsigned char count = 0;
 	msgcomm_clear_G_status();
+	atod_reset_dtoainfo_flag();
 
-	#if 0
+#if 0
 	msgcomm_zero_variable(msgcomm_st_NObytes);
 	msgcomm_zero_variable(msgcomm_st_NOpackages);
 	msgcomm_zero_variable(msgcomm_st_runflag);
 	msgcomm_zero_variable(msgcomm_st_runflag_c2d);
 	#endif
 
-	while (1)
+		while (1)
 	{
 		flushinp();
 		ch = getch();
@@ -732,13 +733,18 @@ void display_content_to_the_interface(nd_dll_t * head)
 	{
 		infonode = container_of(node, infonode_t, listnode);
 
-		if (i % 2)
-			wattron(G_display.wins[3], COLOR_PAIR(7));
-		else
-			wattron(G_display.wins[3], COLOR_PAIR(8));
+		if (node == ATOD_CUR_DISPLAY_LINE)
+			wattron(G_display.wins[3], COLOR_PAIR(5));
+		else 
+			if (i % 2)
+				wattron(G_display.wins[3], COLOR_PAIR(7));
+			else
+				wattron(G_display.wins[3], COLOR_PAIR(8));
 
 		wmove(G_display.wins[3], (i + 3), 1);
 		wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
+		if (node == ATOD_CUR_DISPLAY_LINE)
+			mvwprintw(G_display.wins[3], (i + 3), 1, "%c", '>');
 		mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
@@ -746,10 +752,13 @@ void display_content_to_the_interface(nd_dll_t * head)
 		mvwprintw(G_display.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
 		mvwprintw(G_display.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
 
-		if (i % 2)
-			wattroff(G_display.wins[3], COLOR_PAIR(7));
-		else
-			wattroff(G_display.wins[3], COLOR_PAIR(8));
+		if (node == ATOD_CUR_DISPLAY_LINE)
+			wattroff(G_display.wins[3], COLOR_PAIR(5));
+		else 
+			if (i % 2)
+				wattroff(G_display.wins[3], COLOR_PAIR(7));
+			else
+				wattroff(G_display.wins[3], COLOR_PAIR(8));
 
 		node = node->next;
 		if (!node)
@@ -770,7 +779,26 @@ void display_win_3_move_up_selected_content (void)
 {
 	TC("Called { %s(void)", __func__);
 
+	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
+	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
+	
+	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+	
+	nd_dll_t *node = ATOD_CUR_DISPLAY_LINE;
+	infonode_t *infonode = container_of(node, infonode_t, listnode);
 
+	if (infonode->g_store_index == 0) {
+		display_popup_message_notification("It's already at the top");
+		RVoid();
+	}
+
+	if (ATOD_CUR_DISPLAY_INDEX == 0) {
+		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_TOP;
+		RVoid();
+	}
+
+	ATOD_CUR_DISPLAY_LINE = node->prev;
+	ATOD_CUR_DISPLAY_INDEX--;
 
 	RVoid();
 }
@@ -843,6 +871,12 @@ void display_win_3_move_down_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
+	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
+	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
+	
+	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+
+
 	RVoid();
 }
 
@@ -897,6 +931,48 @@ void display_move_down_selected_content (int winnumber)
 			exit(1);
 			break;
 	}
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	Pop-up message notification
+ * @memberof msg
+ * 	Notification message content
+ */
+void display_popup_message_notification(const char * msg)
+{
+	TC("Called { %s(%s)", __func__, msg);
+
+	int rows, cols;
+	getmaxyx(stdscr, rows, cols);
+
+	int msg_len = strlen(msg);
+	int win_height = 3;
+	int win_width = msg_len + 4;
+
+	WINDOW *popup = newwin(win_height, win_width, (rows - win_height) / 2, (cols - win_width) / 2);
+	box(popup, 0, 0); 
+
+	mvwprintw(popup, 1, 2, "%s", msg);
+
+	wbkgd(popup, COLOR_PAIR(4));
+
+	wrefresh(popup);
+	usleep(500000);
+
+	wclear(popup);
+	werase(popup);
+	wrefresh(popup);
+	delwin(popup);
+
+	display_draw_brief_information_box();
+	display_draw_more_information_box();
+	display_draw_raw_information_box();
+
+	refresh();
 
 	RVoid();
 }
