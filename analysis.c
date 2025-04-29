@@ -54,7 +54,7 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
 
     for (;;) 
     {
-        if (!(G_dtoainfo->nlines))
+        if (!ATOD_DISPLAY_MAX_LINES)
         {
             nd_delay_microsecond(0, 1000);
             continue;
@@ -306,11 +306,13 @@ void analysis_manual_mode (void)
     nd_dll_t * node = NULL;
     infonode_t * infonode = NULL;
     datastore_t *ds = NULL;
+    unsigned long index = 0;
+
     if (ATOD_FINISH_DLL_NUMS) {
         for (i = 0; i < ATOD_FINISH_DLL_NUMS; i++)
         {
             node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_TAIL);
-            nd_dll_intset_into_head(&ATOD_IDLE_DLL, node);
+            nd_dll_intsert_into_head(&ATOD_IDLE_DLL, node);
         }
         ATOD_FINISH_DLL_NUMS = 0;
         if (!ATOD_FINISH_DLL_TAIL)
@@ -324,13 +326,18 @@ void analysis_manual_mode (void)
             TI("It's at the top now.");
             RVoid();
         }
-        ds = G_frame_ptr_array[(infonode->g_store_index - 1)];
+        index = (infonode->g_store_index - 1);
+        ds = G_frame_ptr_array[index];
         node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_TAIL);
+        node->next = NULL;
+        node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
+        infonode->g_store_index = index;
         packet_handler(infonode, &(ds->pkthdr), ds->data);
-        nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+        nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
         ATOD_CUR_DISPLAY_INDEX = 0;
+        DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
     }
     else if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_BOTTOM)
     {
@@ -340,13 +347,18 @@ void analysis_manual_mode (void)
             TI("It's at the bottom now.");
             RVoid();
         }
-        ds = G_frame_ptr_array[(infonode->g_store_index - 1)];
+        index = (infonode->g_store_index + 1);
+        ds = G_frame_ptr_array[index];
         node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
+        node->next = NULL;
+        node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
+        infonode->g_store_index = index;
         packet_handler(infonode, &(ds->pkthdr), ds->data);
-        nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+        nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
         ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
+        DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
     }
    
     return ;
@@ -406,7 +418,7 @@ void analysis_putin_infonode (infonode_t *infonode)
 
     if (!ATOD_FINISH_DLL_HEAD && !ATOD_FINISH_DLL_TAIL)
     {
-        nd_dll_intset_into_head(&ATOD_FINISH_DLL_HEAD, &(infonode->listnode));
+        nd_dll_intsert_into_head(&ATOD_FINISH_DLL_HEAD, &(infonode->listnode));
         ATOD_FINISH_DLL_TAIL = ATOD_FINISH_DLL_HEAD;
         RVoid();
     }
@@ -456,7 +468,7 @@ int analysis_put_node_into_display_dll (void)
                 ATOD_FINISH_DLL_TAIL = NULL;
             }
             if (i == 0) {
-                nd_dll_intset_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+                nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
                 ATOD_DISPLAY_DLL_TAIL = ATOD_DISPLAY_DLL_HEAD;
             }
             else {
@@ -485,7 +497,7 @@ int analysis_put_node_into_display_dll (void)
         for (i = 0; i < min; i++) 
         {
             node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
-            nd_dll_intset_into_head(&ATOD_IDLE_DLL, node);
+            nd_dll_intsert_into_head(&ATOD_IDLE_DLL, node);
             node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
             if (!ATOD_FINISH_DLL_HEAD)
             {
