@@ -254,6 +254,15 @@ void display_move_down_selected_content(int winnumber);
 
 
 /**
+ * @brief
+ * 	Pop-up message notification
+ * @memberof msg
+ * 	Notification message content
+ */
+void display_popup_message_notification(const char *msg);
+
+
+/**
  * @brief 
  *  Called ncurses initscr initialize environment
  */
