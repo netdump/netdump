@@ -648,7 +648,7 @@ nd_dll_t *nd_dll_takeout_from_tail(nd_dll_t ** tail);
  *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int nd_dll_intset_into_head(nd_dll_t ** head, nd_dll_t * node);
+int nd_dll_intsert_into_head(nd_dll_t ** head, nd_dll_t * node);
 
 
 /**
