@@ -139,8 +139,6 @@ typedef struct dtoainfo_s
     nd_dll_t * finlisthead;
     nd_dll_t * finlisttail;
 
-    unsigned long index;
-
     unsigned short nlines;
     unsigned short curindex;
     unsigned short curlines;
