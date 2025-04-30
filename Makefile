@@ -39,6 +39,7 @@ LDFLAGS += $(LINKLIB)
 
 
 SRCS = $(wildcard *.c)
+SRCS += $(wildcard ./a-f/*.c)
 OBJS = $(SRCS:.c=.o)
 
 LOG_FILES = $(wildcard trace[0-9]*.log)
