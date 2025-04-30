@@ -211,7 +211,9 @@ void packet_handler(infonode_t * infonode, const struct pcap_pkthdr *header, con
  * @brief
  *  Store captured network frame pointers in order
  */
-datastore_t * G_frame_ptr_array[1048576] = {NULL};
+#define ARRAY_LENGTH        1048576
+datastore_t * G_frame_ptr_array[ARRAY_LENGTH] = {NULL};
+static unsigned long Gindex = 0;
 
 
 /**
@@ -243,18 +245,16 @@ int analysis_loop (void) {
  */
 void analysis_no_manual_mode (void) 
 {
-
-    static unsigned long index = 0, tmp;
-
-    tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
-    if (tmp == index || tmp == 0 || index > tmp)
+    unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+    if (tmp == Gindex || tmp == 0 || Gindex > tmp)
     {
-        if (index > tmp) {
-
+        if (Gindex > tmp)
+        {
+            memset(G_frame_ptr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
             atodcomm_init_dtoainfo_to_zero();
             atodcomm_init_infonode_list();
             G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
-            index = 0;
+            Gindex = 0;
         }
         else {
             nd_delay_microsecond(1, 1000);
@@ -271,13 +271,13 @@ void analysis_no_manual_mode (void)
 
         packet_handler(infonode, &(ds->pkthdr), ds->data);
 
-        G_frame_ptr_array[index] = ds;
+        G_frame_ptr_array[Gindex] = ds;
 
-        infonode->g_store_index = index;
+        infonode->g_store_index = Gindex;
 
         G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
-        index++;
+        Gindex++;
 
         analysis_putin_infonode(infonode);
 
@@ -347,8 +347,24 @@ void analysis_manual_mode (void)
             TI("It's at the bottom now.");
             RVoid();
         }
+
         index = (infonode->g_store_index + 1);
+        if (index == Gindex) 
+        {
+            G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
+            ds = (datastore_t *)G_ctoa_shm_mem_rp;
+            G_frame_ptr_array[Gindex] = ds;
+            G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+            Gindex++;
+        }
+        
         ds = G_frame_ptr_array[index];
+        if (ds == NULL) 
+        {
+            TE("A fatal error occurred");
+            exit(1);
+        }
+
         node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
         node->next = NULL;
         node->prev = NULL;
