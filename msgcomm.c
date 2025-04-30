@@ -85,21 +85,6 @@ memcomm_t memcomm = {
 _status_t * G_status_ptr = NULL;
 
 
-#if 0
-/**
- * @brief
- *  Allocate a block of memory for shared parameters between CP and AA processes
- */
-void * G_cp_aa_shared_param = NULL;
-
-
-/**
- * @brief Global cp and aa share address information
- */
-ctoaaddr_t * G_cp_aa_shared_addr_info = NULL;
-#endif
-
-
 /**
  * @brief
  *  Initialize the msgcomm_t structure
@@ -179,22 +164,6 @@ static int msgcomm_new_init_msgcomm(void)
     tmp += MSGCOMM_MEMFLAG_SIZE;
 
     G_status_ptr = (_status_t *)memcomm.memflag;
-
-    #if 0
-    G_cp_aa_shared_param = (void *)(G_status_ptr + 1);
-
-    memset(tmp, 0, MSGCOMM_PKTPTRARR_SIZE);
-    memcomm.pktptrarr = tmp;
-    tmp += MSGCOMM_PKTPTRARR_SIZE;
-
-    G_cp_aa_shared_addr_info = (ctoaaddr_t *)memcomm.pktptrarr;
-    #endif
-
-    #if 0
-    memset(tmp, 0, MSGCOMM_RESERVE_SIZE);
-    memcomm.reserve = tmp;
-    tmp += MSGCOMM_RESERVE_SIZE;
-    #endif
 
     RInt(ND_OK);
 }

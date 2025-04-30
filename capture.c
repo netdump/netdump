@@ -1944,12 +1944,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         exit(1);
     }
 
-    #if 0
-    memset(G_cp_aa_shared_param, 0, sizeof(struct netdissect_options));
-    ndo = (struct netdissect_options *) G_cp_aa_shared_param;
-    *ndo = Gndo;
-    #endif
-
     msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
 
     struct pollfd fds;

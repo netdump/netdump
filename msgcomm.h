@@ -618,33 +618,7 @@ extern _status_t * G_status_ptr;
 		__atomic_store_n(address, 0, __ATOMIC_SEQ_CST);											\
 	} while(0);
 
-
-#if 0
-/**
- * @brief
- *  Allocate a block of memory for shared parameters between CP and AA processes
- */
-extern void * G_cp_aa_shared_param;
-
-
-/**
- * @brief Store the first address and index of the data packet
- */
-typedef struct {
-
-	unsigned long long index;
-	void ** pktaddrarray[(MSGCOMM_PKTPTRARR_SIZE - 1)];
-
-} ctoaaddr_t;
-
-
-/**
- * @brief Global cp and aa share address information
- */
-extern ctoaaddr_t * G_cp_aa_shared_addr_info;
-#endif
-
-
+	
 /**
  * @brief 
  *  The file name used for message communication
