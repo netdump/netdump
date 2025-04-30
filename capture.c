@@ -2009,6 +2009,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     msgcomm_zero_variable(msgcomm_st_NOpackages);
     msgcomm_zero_variable(msgcomm_st_runflag);
     msgcomm_zero_variable(msgcomm_st_runflag_c2d);
+    msgcomm_zero_variable(msgcomm_st_cppc);
 
     RInt(ND_OK);
 }

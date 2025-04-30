@@ -229,10 +229,17 @@ int analysis_loop (void) {
 
     for (;;) 
     {
-        if (G_dtoainfo->flag[0])
-            analysis_manual_mode();
-        else
-            analysis_no_manual_mode();
+        if (msgcomm_st_cppc)
+        {
+            if (G_dtoainfo->flag[0])
+                analysis_manual_mode();
+            else
+                analysis_no_manual_mode();
+        }
+        else 
+        {
+            nd_delay_microsecond(1, 1000);
+        }
     }
 
     RInt(ND_OK);
