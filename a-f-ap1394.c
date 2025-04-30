@@ -1,11 +1,5 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <sys/types.h>
 #include "header.h"
-#include "pcap.h"
 
 /*
  * This is the top level routine of the printer.  'p' points

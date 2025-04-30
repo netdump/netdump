@@ -19,7 +19,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
-
+#include "pcap.h"
 
 typedef unsigned char u_char;
 
