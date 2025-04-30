@@ -302,10 +302,82 @@ typedef enum {
 
 typedef struct netdissect_options netdissect_options;
 
-#define IF_PRINTER_ARGS (netdissect_options *, const struct pcap_pkthdr *, const unsigned char *)
+#define IF_PRINTER_ARGS (void *, const struct pcap_pkthdr *, const unsigned char *)
 
 typedef void (*if_printer) IF_PRINTER_ARGS;
 
+struct printer
+{
+	if_printer f;
+	int type;
+};
+
+/* The DLT printer routines */
+
+extern void ap1394_if_print IF_PRINTER_ARGS;
+extern void arcnet_if_print IF_PRINTER_ARGS;
+extern void arcnet_linux_if_print IF_PRINTER_ARGS;
+extern void atm_if_print IF_PRINTER_ARGS;
+extern void brcm_tag_if_print IF_PRINTER_ARGS;
+extern void brcm_tag_prepend_if_print IF_PRINTER_ARGS;
+extern void bt_if_print IF_PRINTER_ARGS;
+extern void chdlc_if_print IF_PRINTER_ARGS;
+extern void cip_if_print IF_PRINTER_ARGS;
+extern void dsa_if_print IF_PRINTER_ARGS;
+extern void edsa_if_print IF_PRINTER_ARGS;
+extern void enc_if_print IF_PRINTER_ARGS;
+extern void ether_if_print IF_PRINTER_ARGS;
+extern void fddi_if_print IF_PRINTER_ARGS;
+extern void fr_if_print IF_PRINTER_ARGS;
+extern void ieee802_11_if_print IF_PRINTER_ARGS;
+extern void ieee802_11_radio_avs_if_print IF_PRINTER_ARGS;
+extern void ieee802_11_radio_if_print IF_PRINTER_ARGS;
+extern void ieee802_15_4_if_print IF_PRINTER_ARGS;
+extern void ieee802_15_4_tap_if_print IF_PRINTER_ARGS;
+extern void ipfc_if_print IF_PRINTER_ARGS;
+extern void ipnet_if_print IF_PRINTER_ARGS;
+extern void ipoib_if_print IF_PRINTER_ARGS;
+extern void juniper_atm1_if_print IF_PRINTER_ARGS;
+extern void juniper_atm2_if_print IF_PRINTER_ARGS;
+extern void juniper_chdlc_if_print IF_PRINTER_ARGS;
+extern void juniper_es_if_print IF_PRINTER_ARGS;
+extern void juniper_ether_if_print IF_PRINTER_ARGS;
+extern void juniper_frelay_if_print IF_PRINTER_ARGS;
+extern void juniper_ggsn_if_print IF_PRINTER_ARGS;
+extern void juniper_mfr_if_print IF_PRINTER_ARGS;
+extern void juniper_mlfr_if_print IF_PRINTER_ARGS;
+extern void juniper_mlppp_if_print IF_PRINTER_ARGS;
+extern void juniper_monitor_if_print IF_PRINTER_ARGS;
+extern void juniper_ppp_if_print IF_PRINTER_ARGS;
+extern void juniper_pppoe_atm_if_print IF_PRINTER_ARGS;
+extern void juniper_pppoe_if_print IF_PRINTER_ARGS;
+extern void juniper_services_if_print IF_PRINTER_ARGS;
+extern void ltalk_if_print IF_PRINTER_ARGS;
+extern void mfr_if_print IF_PRINTER_ARGS;
+extern void netanalyzer_if_print IF_PRINTER_ARGS;
+extern void netanalyzer_transparent_if_print IF_PRINTER_ARGS;
+extern void nflog_if_print IF_PRINTER_ARGS;
+extern void null_if_print IF_PRINTER_ARGS;
+extern void pflog_if_print IF_PRINTER_ARGS;
+extern void pktap_if_print IF_PRINTER_ARGS;
+extern void ppi_if_print IF_PRINTER_ARGS;
+extern void ppp_bsdos_if_print IF_PRINTER_ARGS;
+extern void ppp_hdlc_if_print IF_PRINTER_ARGS;
+extern void ppp_if_print IF_PRINTER_ARGS;
+extern void pppoe_if_print IF_PRINTER_ARGS;
+extern void prism_if_print IF_PRINTER_ARGS;
+extern void raw_if_print IF_PRINTER_ARGS;
+extern void sl_bsdos_if_print IF_PRINTER_ARGS;
+extern void sl_if_print IF_PRINTER_ARGS;
+extern void sll2_if_print IF_PRINTER_ARGS;
+extern void sll_if_print IF_PRINTER_ARGS;
+extern void sunatm_if_print IF_PRINTER_ARGS;
+extern void symantec_if_print IF_PRINTER_ARGS;
+extern void token_if_print IF_PRINTER_ARGS;
+extern void unsupported_if_print IF_PRINTER_ARGS;
+extern void usb_linux_48_byte_if_print IF_PRINTER_ARGS;
+extern void usb_linux_64_byte_if_print IF_PRINTER_ARGS;
+extern void vsock_if_print IF_PRINTER_ARGS;
 
 /*
  * In case the data in a buffer needs to be processed by being decrypted,
