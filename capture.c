@@ -1467,8 +1467,9 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
             invalid_header = 1;
             TI("[Invalid header:");
         }
-        else
+        else {
             TI(",");
+        }
         TI(" len==0");
     }
     else if (h->len < h->caplen)
@@ -1478,8 +1479,9 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
             invalid_header = 1;
             TI("[Invalid header:");
         }
-        else
+        else {
             TI(",");
+        }
         TI(" len(%u) < caplen(%u)", h->len, h->caplen);
     }
     if (h->caplen > MAXIMUM_SNAPLEN)
@@ -1489,8 +1491,9 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
             invalid_header = 1;
             TI("[Invalid header:");
         }
-        else
+        else {
             TI(",");
+        }
         TI(" caplen(%u) > %u", h->caplen, MAXIMUM_SNAPLEN);
     }
     if (h->len > MAXIMUM_SNAPLEN)
@@ -1500,8 +1503,9 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
             invalid_header = 1;
             TI("[Invalid header:");
         }
-        else
+        else {
             TI(",");
+        }
         TI(" len(%u) > %u", h->len, MAXIMUM_SNAPLEN);
     }
     if (invalid_header)
@@ -1516,14 +1520,14 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     ds->pkthdr = *h;
     
-    memcpy(ds->data, sp, h->len);
+    memcpy(ds->data, sp, h->caplen);
     
-    G_ctoa_shm_mem_wp += (sizeof(struct pcap_pkthdr) + h->len);
+    G_ctoa_shm_mem_wp += (sizeof(struct pcap_pkthdr) + h->caplen);
 
     __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
 
     msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
-    msgcomm_increase_data_value(msgcomm_st_NObytes, h->len);
+    msgcomm_increase_data_value(msgcomm_st_NObytes, h->caplen);
 
     return ;
 }
