@@ -40,6 +40,7 @@
 #include "sigact.h"
 #include "msgcomm.h"
 #include "ctoacomm.h"
+#include "ndo.h"
 
 
 /**
@@ -302,9 +303,6 @@ typedef enum {
 
 typedef struct netdissect_options netdissect_options;
 
-#define IF_PRINTER_ARGS (void *, const struct pcap_pkthdr *, const unsigned char *)
-
-typedef void (*if_printer) IF_PRINTER_ARGS;
 
 struct printer
 {
