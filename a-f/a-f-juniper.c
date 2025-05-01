@@ -3,7 +3,7 @@
 
 
 #ifdef DLT_JUNIPER_ES
-void juniper_es_if_print(void * infondoe, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_es_if_print(void *ndo, void *infondoe, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -12,8 +12,7 @@ void juniper_es_if_print(void * infondoe, const struct pcap_pkthdr *h, const u_c
 
 
 #ifdef DLT_JUNIPER_CHDLC
-void
-juniper_chdlc_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_chdlc_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -30,7 +29,7 @@ juniper_chdlc_if_print(void * infonode, const struct pcap_pkthdr *h, const u_cha
  */
 
 #ifdef DLT_JUNIPER_ATM1
-void juniper_atm1_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_atm1_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -46,7 +45,7 @@ void juniper_atm1_if_print(void * infonode, const struct pcap_pkthdr *h, const u
  */
 
 #ifdef DLT_JUNIPER_ATM2
-void juniper_atm2_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_atm2_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -55,7 +54,7 @@ void juniper_atm2_if_print(void * infonode, const struct pcap_pkthdr *h, const u
 
 
 #ifdef DLT_JUNIPER_ETHER
-void juniper_ether_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_ether_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -64,7 +63,7 @@ void juniper_ether_if_print(void * infonode, const struct pcap_pkthdr *h, const 
 
 
 #ifdef DLT_JUNIPER_FRELAY
-void juniper_frelay_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_frelay_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -73,7 +72,7 @@ void juniper_frelay_if_print(void * infonode, const struct pcap_pkthdr *h, const
 
 
 #ifdef DLT_JUNIPER_GGSN
-void juniper_ggsn_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_ggsn_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -82,7 +81,7 @@ void juniper_ggsn_if_print(void * infonode, const struct pcap_pkthdr *h, const u
 
 
 #ifdef DLT_JUNIPER_MFR
-void juniper_mfr_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_mfr_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -91,7 +90,7 @@ void juniper_mfr_if_print(void * infonode, const struct pcap_pkthdr *h, const u_
 
 
 #ifdef DLT_JUNIPER_MLFR
-void juniper_mlfr_if_print(void * infondoe, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_mlfr_if_print(void *ndo, void *infondoe, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -100,7 +99,7 @@ void juniper_mlfr_if_print(void * infondoe, const struct pcap_pkthdr *h, const u
 
 
 #ifdef DLT_JUNIPER_MLPPP
-void juniper_mlppp_if_print(void * infondoe, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_mlppp_if_print(void *ndo, void *infondoe, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -109,7 +108,7 @@ void juniper_mlppp_if_print(void * infondoe, const struct pcap_pkthdr *h, const 
 
 
 #ifdef DLT_JUNIPER_MONITOR
-void juniper_monitor_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_monitor_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -118,7 +117,7 @@ void juniper_monitor_if_print(void * infonode, const struct pcap_pkthdr *h, cons
 
 
 #ifdef DLT_JUNIPER_PPP
-void juniper_ppp_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_ppp_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -127,7 +126,7 @@ void juniper_ppp_if_print(void * infonode, const struct pcap_pkthdr *h, const u_
 
 
 #ifdef DLT_JUNIPER_PPPOE_ATM
-void juniper_pppoe_atm_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_pppoe_atm_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -136,7 +135,7 @@ void juniper_pppoe_atm_if_print(void * infonode, const struct pcap_pkthdr *h, co
 
 
 #ifdef DLT_JUNIPER_PPPOE
-void juniper_pppoe_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_pppoe_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -145,7 +144,7 @@ void juniper_pppoe_if_print(void * infonode, const struct pcap_pkthdr *h, const 
 
 
 #ifdef DLT_JUNIPER_SERVICES
-void juniper_services_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void juniper_services_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;

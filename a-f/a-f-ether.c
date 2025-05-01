@@ -7,7 +7,7 @@
  * of the packet off the wire, and 'h->caplen' is the number
  * of bytes actually captured.
  */
-void ether_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ether_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
     TI("Called { %s (%p, %p, %p)", __func__, infonode, h, p);
 

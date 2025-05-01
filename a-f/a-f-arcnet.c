@@ -7,7 +7,7 @@
  * 'h->len' is the length of the packet off the wire, and 'h->caplen'
  * is the number of bytes actually captured.
  */
-void arcnet_if_print(void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void arcnet_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -24,7 +24,7 @@ void arcnet_if_print(void *infonode, const struct pcap_pkthdr *h, const u_char *
  * reassembled packets rather than raw frames, and headers have an
  * extra "offset" field between the src/dest and packet type.
  */
-void arcnet_linux_if_print(void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void arcnet_linux_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
