@@ -22,6 +22,9 @@
 #include <sys/time.h>
 #include <setjmp.h>
 
+
+typedef struct ndo_s ndo_t;
+
 #define IF_PRINTER_ARGS (ndo_t *, void *, const struct pcap_pkthdr *, const unsigned char *)
 
 typedef void(*if_printer) IF_PRINTER_ARGS;
