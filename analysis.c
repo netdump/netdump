@@ -401,12 +401,31 @@ void analysis_manual_mode (void)
  * @memberof packet
  *  network frame data
  */
-void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const unsigned char *p)
+void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const unsigned char *sp)
 {
 
-    TC("Called { %s(%p, %p)", __func__, h, p);
+    TC("Called { %s(%p, %p)", __func__, h, sp);
 
-    ((ndo_t *)(msgcomm_G_ndo))->ndo_if_printer(infonode, h, p);
+    ndo_t *ndo = ((ndo_t *)(msgcomm_G_ndo));
+
+    ndo->ndo_snapend = sp + h->caplen;
+    ndo->ndo_packetp = sp;
+    ndo->ndo_protocol = "";
+    ndo->ndo_ll_hdr_len = 0;
+
+    switch (setjmp(ndo->ndo_early_end))
+    {
+        case 0:
+            (ndo->ndo_if_printer)(ndo, h, sp);
+            break;
+        case ND_TRUNCATED:
+            //nd_print_trunc(ndo);
+            ndo->ndo_ll_hdr_len = 0;
+            TE("Packet truncated");
+            break;
+    }
+
+    ndo->ndo_if_printer(infonode, h, sp);
 
     RVoid();
 }
