@@ -13,6 +13,7 @@
 
 #include "atodcomm.h"
 #include "trace.h"
+#include "infonode.h"
 
 
 /**
