@@ -213,8 +213,7 @@ typedef struct {
 	void * cpinfo;
 	void ** argv;
 	void * memflag;
-	//void * pktptrarr;
-	//void * reserve;
+
 } memcomm_t;
 
 
@@ -273,11 +272,6 @@ extern memcomm_t memcomm;
  */
 #define msgcomm_G_memflag				(memcomm.memflag)
 
-/**
- * @brief
- * 	reserve
- */
-//#define msgcomm_G_reserve				(memcomm.reserve)
 
 /**
  * @brief
@@ -285,11 +279,6 @@ extern memcomm_t memcomm;
  */
 #define msgcomm_G_argv					(memcomm.argv)
 
-/**
- * @brief
- * 	Pointer array to store the addresses of captured data packets
- */
-//#define msgcomm_G_cpktptrarr			(memcomm.pktptrarr)
 
 /**
  * @brief
@@ -333,23 +322,12 @@ extern memcomm_t memcomm;
  */
 #define MSGCOMM_MEMFLAG_SIZE 					(1 << 8)	// 256
 
-/**
- * @brief
- * 	memcomm_t.reserve size
- */
-//#define MSGCOMM_RESERVE_SIZE 					(1 << 15) 	// 32K
 
 /**
  * @brief
  * 	memcomm_t.argv size
  */
 #define MSGCOMM_ARGV_SIZE 						(1 << 11) 	// 2048
-
-/**
- * @brief
- * 	memcomm_t.pktptrarr size
- */
-//#define MSGCOMM_PKTPTRARR_SIZE 					(1 << 24) 	// 16M
 
 
 /**
@@ -618,7 +596,7 @@ extern _status_t * G_status_ptr;
 		__atomic_store_n(address, 0, __ATOMIC_SEQ_CST);											\
 	} while(0);
 
-	
+
 /**
  * @brief 
  *  The file name used for message communication
