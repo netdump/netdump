@@ -174,7 +174,7 @@ static const struct option longopts[] = {
  * @brief
  *  Initialize a structure of type netdissect_options
  */
-struct netdissect_options Gndo = {
+ndo_t Gndo = {
 
     .ndo_bflag = 0,
     .ndo_eflag = 1,
@@ -1206,7 +1206,7 @@ static const char * capture_tstamp_precision_to_string(int precision)
  * @return
  *  Returns a pcap_t pointer on success, NULL on failure
  */
-static pcap_t * capture_open_interface(const char *device, netdissect_options *ndo, char *ebuf)
+static pcap_t * capture_open_interface(const char *device, ndo_t *ndo, char *ebuf)
 {
     TC("Called { %s(%p, %p, %p)", __func__, device, ndo, ebuf);
 
@@ -1698,7 +1698,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     pcap_if_t *devlist;
     bpf_u_int32 netmask = 0;
 
-    netdissect_options *ndo = &Gndo;
+    ndo_t *ndo = &Gndo;
 
     memset(ebuf, 0, sizeof(ebuf));
 
@@ -1943,6 +1943,9 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         TE("capture reply to display failed");
         exit(1);
     }
+
+    ndo->ndo_if_printer = get_if_printer(dlt);
+    *((ndo_t *)(msgcomm_G_ndo)) = Gndo;
 
     msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
 
