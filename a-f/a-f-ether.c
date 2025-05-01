@@ -9,8 +9,11 @@
  */
 void ether_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
+    TI("Called { %s (%p, %p, %p)", __func__, infonode, h, p);
 
-    return ;
+    TI("Enter");
+
+    RVoid();
 }
 
 
