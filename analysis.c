@@ -276,7 +276,8 @@ void analysis_no_manual_mode (void)
 
         datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
 
-        packet_handler(infonode, &(ds->pkthdr), ds->data);
+        //packet_handler(infonode, &(ds->pkthdr), ds->data);
+        analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
         G_frame_ptr_array[Gindex] = ds;
 
@@ -340,7 +341,8 @@ void analysis_manual_mode (void)
         node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
         infonode->g_store_index = index;
-        packet_handler(infonode, &(ds->pkthdr), ds->data);
+        //packet_handler(infonode, &(ds->pkthdr), ds->data);
+        analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
         nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
         ATOD_CUR_DISPLAY_INDEX = 0;
@@ -377,7 +379,8 @@ void analysis_manual_mode (void)
         node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
         infonode->g_store_index = index;
-        packet_handler(infonode, &(ds->pkthdr), ds->data);
+        //packet_handler(infonode, &(ds->pkthdr), ds->data);
+        analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
         nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
         ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
@@ -391,18 +394,19 @@ void analysis_manual_mode (void)
 /**
  * @brief
  *  Parsing network frames
+ * @memberof infonode
+ *  
  * @memberof header
  *  struct pcap_pkthdr pointer
  * @memberof packet
  *  network frame data
  */
-void analysis_network_frames(infonode_t *infonode, 
-        const struct pcap_pkthdr *header, const unsigned char *packet)
+void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const unsigned char *p)
 {
 
-    TC("Called { %s(%p, %p)", __func__, header, packet);
+    TC("Called { %s(%p, %p)", __func__, h, p);
 
-    
+    ((ndo_t *)(msgcomm_G_ndo))->ndo_if_printer(infonode, h, p);
 
     RVoid();
 }
