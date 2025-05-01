@@ -408,6 +408,10 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
 
     ndo_t *ndo = ((ndo_t *)(msgcomm_G_ndo));
 
+    infonode_t * ifn = (infonode_t *)infonode;
+
+    analysis_ts_print(ndo, &(h->ts), ifn->timestamp);
+
     ndo->ndo_snapend = sp + h->caplen;
     ndo->ndo_packetp = sp;
     ndo->ndo_protocol = "";
