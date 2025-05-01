@@ -72,9 +72,8 @@ memcomm_t memcomm = {
     .cmdbuf = NULL,
     .cpinfo = NULL,
     .memflag = NULL,
-    //.reserve = NULL,
     .argv = NULL,
-    //.pktptrarr = NULL
+    .ndo = NULL
 };
 
 
@@ -164,6 +163,8 @@ static int msgcomm_new_init_msgcomm(void)
     tmp += MSGCOMM_MEMFLAG_SIZE;
 
     G_status_ptr = (_status_t *)memcomm.memflag;
+
+    msgcomm_G_ndo = tmp;
 
     RInt(ND_OK);
 }
