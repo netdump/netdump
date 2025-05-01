@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include "pcap.h"
 #include "trace.h"
+#include "ndo.h"
+#include "infonode.h"
 
 typedef unsigned char u_char;
 
