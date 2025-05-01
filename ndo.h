@@ -125,4 +125,6 @@ typedef struct ndo_s
 #endif
 } ndo_t;
 
+extern void analysis_ts_print(ndo_t *, const struct timeval *, char *);
+
 #endif  // __NDO_H__
