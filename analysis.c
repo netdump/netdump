@@ -416,7 +416,7 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
     switch (setjmp(ndo->ndo_early_end))
     {
         case 0:
-            (ndo->ndo_if_printer)(ndo, h, sp);
+            (ndo->ndo_if_printer)(ndo, infonode, h, sp);
             break;
         case ND_TRUNCATED:
             //nd_print_trunc(ndo);
@@ -424,8 +424,6 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
             TE("Packet truncated");
             break;
     }
-
-    ndo->ndo_if_printer(infonode, h, sp);
 
     RVoid();
 }

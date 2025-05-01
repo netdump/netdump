@@ -46,6 +46,8 @@
 #include "ctoacomm.h"
 #include "msgcomm.h"
 #include "atodcomm.h"
+#include "infonode.h"
+#include "ndo.h"
 
 
 /**
