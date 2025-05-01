@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include "pcap.h"
+#include "trace.h"
 
 typedef unsigned char u_char;
 
