@@ -28,6 +28,7 @@
 #include "trace.h"
 #include "msgcomm.h"
 #include "atodcomm.h"
+#include "infonode.h"
 
 
 /**
