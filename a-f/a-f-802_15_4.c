@@ -4,7 +4,7 @@
 /*
  * Main function to print packets.
  */
-void ieee802_15_4_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ieee802_15_4_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -13,7 +13,7 @@ void ieee802_15_4_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *
 
 /* For DLT_IEEE802_15_4_TAP */
 /* https://github.com/jkcko/ieee802.15.4-tap */
-void ieee802_15_4_tap_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ieee802_15_4_tap_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;

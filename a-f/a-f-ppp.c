@@ -19,7 +19,7 @@ void ppp_bsdos_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h _
  *
  * This handles, for example, DLT_PPP_SERIAL in NetBSD.
  */
-void ppp_hdlc_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ppp_hdlc_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
 
@@ -28,7 +28,7 @@ void ppp_hdlc_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, c
 
 
 /* PPP I/F printer */
-void ppp_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ppp_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
 

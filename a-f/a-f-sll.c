@@ -7,7 +7,7 @@
  * 'h->len' is the length of the packet off the wire, and 'h->caplen'
  * is the number of bytes actually captured.
  */
-void sll_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void sll_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -20,7 +20,7 @@ void sll_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const 
  * 'h->len' is the length of the packet off the wire, and 'h->caplen'
  * is the number of bytes actually captured.
  */
-void sll2_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void sll2_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;

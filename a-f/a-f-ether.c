@@ -7,7 +7,7 @@
  * of the packet off the wire, and 'h->caplen' is the number
  * of bytes actually captured.
  */
-void ether_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ether_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
     TI("Called { %s (%p, %p, %p)", __func__, infonode, h, p);
 
@@ -26,7 +26,7 @@ void ether_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, cons
  * This is for DLT_NETANALYZER, which has a 4-byte pseudo-header
  * before the Ethernet header.
  */
-void netanalyzer_if_print(void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void netanalyzer_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -42,7 +42,7 @@ void netanalyzer_if_print(void * infonode, const struct pcap_pkthdr *h, const u_
  * pseudo-header, a 7-byte Ethernet preamble, and a 1-byte Ethernet SOF
  * before the Ethernet header.
  */
-void netanalyzer_transparent_if_print(void * infonode,
+void netanalyzer_transparent_if_print(ndo_t *ndo, void *infonode,
                                       const struct pcap_pkthdr *h,
                                       const u_char *p)
 {

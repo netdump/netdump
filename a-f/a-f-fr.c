@@ -3,7 +3,7 @@
 
 
 /* Frame Relay */
-void fr_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void fr_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
     
     return ;
@@ -11,7 +11,7 @@ void fr_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u
 
 
 /* Multi Link Frame Relay (FRF.16) */
-void mfr_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void mfr_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;

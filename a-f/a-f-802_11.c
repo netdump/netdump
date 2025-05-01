@@ -7,7 +7,7 @@
  * 'h->len' is the length of the packet off the wire, and 'h->caplen'
  * is the number of bytes actually captured.
  */
-void ieee802_11_if_print(void * ndo, void * infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ieee802_11_if_print(ndo_t * ndo, void * infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -18,7 +18,7 @@ void ieee802_11_if_print(void * ndo, void * infonode, const struct pcap_pkthdr *
  * For DLT_IEEE802_11_RADIO; like DLT_IEEE802_11, but with an extra
  * header, containing information such as radio information.
  */
-void ieee802_11_radio_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ieee802_11_radio_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return ;
@@ -30,7 +30,7 @@ void ieee802_11_radio_if_print(void *ndo, void *infonode, const struct pcap_pkth
     * extra header, containing information such as radio information,
     * which we currently ignore.
     */
-void ieee802_11_radio_avs_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void ieee802_11_radio_avs_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
     return;
@@ -50,7 +50,7 @@ void ieee802_11_radio_avs_if_print(void *ndo, void *infonode, const struct pcap_
  * the AVS header, and the first 4 bytes of the header are used to
  * indicate whether it's a Prism header or an AVS header).
  */
-void prism_if_print(void *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
+void prism_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, const u_char *p)
 {
 
 
