@@ -25,6 +25,7 @@
 #include "infonode.h"
 
 typedef unsigned char u_char;
+typedef unsigned int u_int;
 
 /*
  * Check whether this is GCC major.minor or a later release, or some
