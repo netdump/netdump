@@ -10,16 +10,21 @@
  */
 #define INFONODE_DATAROOM_SIZE (73728UL) // 72K
 
-
 /**
  * @brief
  *  This structure is a storage interface for all the information displayed.
  *  This structure is a linked list node.
  *  It has forward and backward members to build a linked list.
- * @memberof prev
- *  Point to the previous element
- * @memberof next
- *  Point to the next element
+ * @memberof listnode
+ *  doubly linked list node
+ * @memberof typel2
+ *  second layer head type
+ * @memberof typel3
+ *  three-layer head type
+ * @memberof typel4
+ *  four-layer head type
+ * @memberof typel5
+ *  five-layer head type
  * @memberof timestamp
  *  Storing timestamp strings
  * @memberof srcaddr
@@ -32,11 +37,6 @@
  *  Stores the length of a string
  * @memberof brief
  *  Stores brief information string
- * @memberof flag
- *  The protocol type of the corresponding layer of storage
- *  flag[2]
- *  flag[3]
- *  flag[4]
  * @memberof dataroom
  *  Space for storing detailed analysis of the protocol
  */
@@ -44,6 +44,11 @@ typedef struct infonode_s
 {
 
     nd_dll_t listnode;
+
+    unsigned short typel2;
+    unsigned short typel3;
+    unsigned short typel4;
+    unsigned short typel5;
 
     unsigned long g_store_index;
 
@@ -54,10 +59,16 @@ typedef struct infonode_s
     char length[8];
     char brief[256];
 
-    unsigned short flag[8];
-
     unsigned char dataroom[INFONODE_DATAROOM_SIZE];
 
 } infonode_t;
+
+
+
+/**
+ * @brief
+ * 
+ */
+#define TYPE_L2_ETHER           (0x01)
 
 #endif  // __INFONODE_H__
