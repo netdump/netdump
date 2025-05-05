@@ -1,6 +1,59 @@
 
 #include "header.h"
 
+
+/*
+ * Common code for printing Ethernet frames.
+ *
+ * It can handle Ethernet headers with extra tag information inserted
+ * after the destination and source addresses, as is inserted by some
+ * switch chips, and extra encapsulation header information before
+ * printing Ethernet header information (such as a LANE ID for ATM LANE).
+ */
+static u_int
+ether_common_print(ndo_t *ndo, void * infonode, const u_char *p, 
+    u_int length, u_int caplen,
+    void (*print_switch_tag)(ndo_t *ndo, const u_char *),
+    u_int switch_tag_len,
+    void (*print_encap_header)(ndo_t *ndo, const u_char *),
+    const u_char *encap_header_arg)
+{
+
+    TC("Called { %s(%p, %p, %p, %u, %u, %p, %u, %p, %p)", __func__,
+       ndo, infonode, p, length, caplen, print_switch_tag, switch_tag_len,
+       print_encap_header, encap_header_arg);
+
+    
+
+    RUInt(ND_OK);
+}
+
+
+/*
+ * Print an Ethernet frame.
+ * This might be encapsulated within another frame; we might be passed
+ * a pointer to a function that can print header information for that
+ * frame's protocol, and an argument to pass to that function.
+ *
+ * FIXME: caplen can and should be derived from ndo->ndo_snapend and p.
+ */
+u_int ether_print(ndo_t *ndo, void *infonode,
+                  const u_char *p, u_int length, u_int caplen,
+                  void (*print_encap_header)(ndo_t *ndo, const u_char *),
+                  const u_char *encap_header_arg)
+{
+
+    TI("Called { %s(%p, %p, %p, %u, %u, %p, %p)", __func__, ndo, 
+        infonode, p, length, caplen, print_encap_header, encap_header_arg);
+
+    ndo->ndo_protocol = "ether";
+    u_int ret = ether_common_print(ndo, infonode, p, length, caplen, NULL, 0,
+                              print_encap_header, encap_header_arg);
+
+    RUInt(ret);
+}
+
+
 /*
  * This is the top level routine of the printer.  'p' points
  * to the ether header of the packet, 'h->len' is the length
@@ -11,7 +64,11 @@ void ether_if_print(ndo_t *ndo, void *infonode, const struct pcap_pkthdr *h, con
 {
     TI("Called { %s (%p, %p, %p)", __func__, infonode, h, p);
 
-    TI("Enter");
+    infonode_t * ifn = (infonode_t *)infonode;
+    ifn->typel2 = TYPE_L2_ETHER;
+
+    ndo->ndo_protocol = "ether";
+    ndo->ndo_ll_hdr_len += ether_print(ndo, infonode, p, h->len, h->caplen, NULL, NULL);
 
     RVoid();
 }
