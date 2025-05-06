@@ -393,9 +393,57 @@ void analysis_manual_mode (void)
 
 /**
  * @brief
+ *  fill in basic information
+ * @memberof infonode
+ *  nodes to be filled
+ * @memberof h
+ *  struct pcap_pkthdr pointer
+ */
+void analysis_fill_basic_info(void *infonode, const struct pcap_pkthdr *h)
+{
+    TC("Called { %s(%p, %p)", __func__, infonode, h);
+
+    if (!infonode || !h) 
+    {
+        TE("param is error, infonode: %p, h: %p", infonode, h);
+        abort();
+    }
+
+    infonode_t *ifn = (infonode_t *)infonode;
+    basic_info_t *bi = &(ifn->basic_info);
+
+    bi->frame_number = ifn->g_store_index + 1;
+    bi->frame_length = h->len;
+    bi->capture_length = h->caplen;
+
+#define BASIC_INFO_INVALIDTIMESTAMP "1970-01-01 00:00:00.000000"
+
+    if (h->ts.tv_sec < 0)
+        goto error;
+
+    struct tm *tm = tm = localtime(&(h->ts.tv_sec));
+    if (!tm)
+        goto error;
+
+    if (strftime(bi->arrival_time, BASIC_INFO_ARRIVAL_TIME_LENGTH, "%Y-%m-%d %H:%M:%S", tm) == 0)
+        goto error;
+
+    sprintf((bi->arrival_time + strlen(bi->arrival_time)), ".%06u", (unsigned)(h->ts.tv_usec));
+
+    RVoid();
+
+error:
+    memcpy(bi->arrival_time, BASIC_INFO_INVALIDTIMESTAMP, strlen(BASIC_INFO_INVALIDTIMESTAMP));
+
+    RVoid();
+}
+
+
+/**
+ * @brief
  *  Parsing network frames
  * @memberof infonode
- *  
+ *  nodes to be filled
  * @memberof header
  *  struct pcap_pkthdr pointer
  * @memberof packet
@@ -409,6 +457,8 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
     ndo_t *ndo = ((ndo_t *)(msgcomm_G_ndo));
 
     infonode_t * ifn = (infonode_t *)infonode;
+
+    analysis_fill_basic_info(infonode, h);
 
     analysis_ts_print(ndo, &(h->ts), ifn->timestamp);
 
