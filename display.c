@@ -89,6 +89,16 @@ display_t G_display = {
 
 
 /**
+ * @brief
+ * 	display the previous head, tail, and current value of the linked list
+ */
+static volatile nd_dll_t *display_previous_head = NULL;
+static volatile nd_dll_t *display_previous_tail = NULL;
+static volatile nd_dll_t *display_previous_current = NULL;
+static volatile unsigned short display_previous_cur_index = 0xDFFF;
+
+
+/**
  * @brief 
  * 	Format the title bar title
  * @param win: 
@@ -591,6 +601,11 @@ void display_second_tui_exec_logic (void) {
 	msgcomm_clear_G_status();
 	atod_reset_dtoainfo_flag();
 
+	display_previous_head = NULL;
+	display_previous_tail = NULL;
+	display_previous_current = NULL;
+	display_previous_cur_index = 0xDFFF;
+
 	#if 0
 	msgcomm_zero_variable(msgcomm_st_NObytes);
 	msgcomm_zero_variable(msgcomm_st_NOpackages);
@@ -672,7 +687,18 @@ void display_second_tui_exec_logic (void) {
 			default:
 				break;
 		}
-		display_content_to_the_interface(ATOD_DISPLAY_DLL_HEAD);
+		if (
+			display_previous_head != ATOD_DISPLAY_DLL_HEAD ||
+			display_previous_tail != ATOD_DISPLAY_DLL_TAIL ||
+			display_previous_current != ATOD_CUR_DISPLAY_LINE
+		)
+		{
+			display_content_to_the_interface(ATOD_DISPLAY_DLL_HEAD);
+			display_previous_head = ATOD_DISPLAY_DLL_HEAD;
+			display_previous_tail = ATOD_DISPLAY_DLL_TAIL;
+			display_previous_current = ATOD_CUR_DISPLAY_LINE;
+			display_previous_cur_index = ATOD_CUR_DISPLAY_INDEX;
+		}
 		DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYED;
 		display_draw_cpinfo_win();
 	}
@@ -729,45 +755,107 @@ void display_content_to_the_interface(nd_dll_t * head)
 
 	DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYING;
 
-	for (i = 0; i < ATOD_DISPLAY_DLL_NUMS; i++)
+	/* window 3 display */
+	if (
+		display_previous_head != ATOD_DISPLAY_DLL_HEAD || 
+		display_previous_tail != ATOD_DISPLAY_DLL_TAIL
+	)
 	{
-		infonode = container_of(node, infonode_t, listnode);
+		for (i = 0; i < ATOD_DISPLAY_DLL_NUMS; i++)
+		{
+			infonode = container_of(node, infonode_t, listnode);
 
-		if (node == ATOD_CUR_DISPLAY_LINE)
-			wattron(G_display.wins[3], COLOR_PAIR(5));
-		else 
-			if (i % 2)
+			if (node == ATOD_CUR_DISPLAY_LINE)
+				wattron(G_display.wins[3], COLOR_PAIR(5));
+			else 
+				if (i % 2)
+					wattron(G_display.wins[3], COLOR_PAIR(7));
+				else
+					wattron(G_display.wins[3], COLOR_PAIR(8));
+
+			wmove(G_display.wins[3], (i + 3), 1);
+			wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
+			if (node == ATOD_CUR_DISPLAY_LINE)
+				mvwprintw(G_display.wins[3], (i + 3), 1, "%c", '>');
+			mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
+			mvwprintw(G_display.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+			mvwprintw(G_display.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+			mvwprintw(G_display.wins[3], (i + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+			mvwprintw(G_display.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
+			mvwprintw(G_display.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
+
+			if (node == ATOD_CUR_DISPLAY_LINE)
+				wattroff(G_display.wins[3], COLOR_PAIR(5));
+			else 
+				if (i % 2)
+					wattroff(G_display.wins[3], COLOR_PAIR(7));
+				else
+					wattroff(G_display.wins[3], COLOR_PAIR(8));
+
+			node = node->next;
+			if (!node)
+				break;
+		}
+	}
+	else 
+	{
+		if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
+		{
+
+			infonode = container_of(display_previous_current, infonode_t, listnode);
+			if (display_previous_cur_index % 2)
 				wattron(G_display.wins[3], COLOR_PAIR(7));
 			else
 				wattron(G_display.wins[3], COLOR_PAIR(8));
 
-		wmove(G_display.wins[3], (i + 3), 1);
-		wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
-		if (node == ATOD_CUR_DISPLAY_LINE)
-			mvwprintw(G_display.wins[3], (i + 3), 1, "%c", '>');
-		mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
-		mvwprintw(G_display.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
-		mvwprintw(G_display.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
-		mvwprintw(G_display.wins[3], (i + 3), START_X_PROTOCOL, "%s", infonode->protocol);
-		mvwprintw(G_display.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
-		mvwprintw(G_display.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
+			wmove(G_display.wins[3], (display_previous_cur_index + 3), 1);
+			wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
+			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_TIME, "%s", infonode->timestamp);
+			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_DATALENGTH, "%s", infonode->length);
+			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_BRIEF, "%s", infonode->brief);
 
-		if (node == ATOD_CUR_DISPLAY_LINE)
-			wattroff(G_display.wins[3], COLOR_PAIR(5));
-		else 
-			if (i % 2)
+			if (display_previous_cur_index % 2)
 				wattroff(G_display.wins[3], COLOR_PAIR(7));
 			else
 				wattroff(G_display.wins[3], COLOR_PAIR(8));
 
-		node = node->next;
-		if (!node)
-			break;
+			
+			infonode = container_of(ATOD_CUR_DISPLAY_LINE, infonode_t, listnode);
+			wattron(G_display.wins[3], COLOR_PAIR(5));
+
+			wmove(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), 1);
+			wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), 1, "%c", '>');
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_TIME, "%s", infonode->timestamp);
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_DATALENGTH, "%s", infonode->length);
+			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_BRIEF, "%s", infonode->brief);
+
+			wattroff(G_display.wins[3], COLOR_PAIR(5));
+		}
 	}
 
+	if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
+	{
+		/* window 4 display */
+
+		node = ATOD_CUR_DISPLAY_LINE;
+		infonode = container_of(node, infonode_t, listnode);
+		basic_info_t *bi = &(infonode->basic_info);
+
+		/* window 5 display */
+
+	}
+	
 	wrefresh(G_display.wins[3]);
 
 	//RVoid();
+	return ;
 }
 
 
