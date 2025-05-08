@@ -316,6 +316,44 @@ void analysis_manual_mode (void)
     datastore_t *ds = NULL;
     unsigned long index = 0;
 
+    if (ATOD_DISPLAY_MAX_LINES > ATOD_DISPLAY_DLL_NUMS)
+    {
+        infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
+        unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        if (infonode->g_store_index < (tmp - 1))
+        {
+            infonode = analysis_get_infonode();
+            if (infonode)
+            {
+                G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
+
+                datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
+
+                // packet_handler(infonode, &(ds->pkthdr), ds->data);
+                analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
+
+                G_frame_ptr_array[Gindex] = ds;
+
+                infonode->g_store_index = Gindex;
+
+                G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+
+                Gindex++;
+
+                analysis_putin_infonode(infonode);
+
+                ATOD_FINISH_DLL_NUMS++;
+            }
+
+            ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
+
+            if (DTOA_DISPLAY_VAR_FLAG == DTOA_DISPLAYED)
+                analysis_put_node_into_display_dll();
+
+            ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
+        }
+    }
+
     if (ATOD_FINISH_DLL_NUMS) {
         for (i = 0; i < ATOD_FINISH_DLL_NUMS; i++)
         {
@@ -336,6 +374,7 @@ void analysis_manual_mode (void)
         }
         index = (infonode->g_store_index - 1);
         ds = G_frame_ptr_array[index];
+        ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
         node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_TAIL);
         node->next = NULL;
         node->prev = NULL;
@@ -344,6 +383,7 @@ void analysis_manual_mode (void)
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
         nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+        ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
         ATOD_CUR_DISPLAY_INDEX = 0;
         DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
@@ -373,7 +413,7 @@ void analysis_manual_mode (void)
             TE("A fatal error occurred");
             exit(1);
         }
-
+        ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
         node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
         node->next = NULL;
         node->prev = NULL;
@@ -382,6 +422,7 @@ void analysis_manual_mode (void)
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
         nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+        ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
         ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
         DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;

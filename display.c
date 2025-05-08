@@ -885,6 +885,7 @@ void display_win_3_move_up_selected_content (void)
 
 	if (ATOD_CUR_DISPLAY_INDEX == 0) {
 		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_TOP;
+		nd_delay_microsecond(0, 1000);
 		//RVoid();
 		return ;
 	}
@@ -985,6 +986,7 @@ void display_win_3_move_down_selected_content(void)
 	if (node->next == NULL)
 	{
 		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_BOTTOM;
+		nd_delay_microsecond(0, 1000);
 		//RVoid();
 		return ;
 	}
