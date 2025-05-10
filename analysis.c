@@ -276,12 +276,12 @@ void analysis_no_manual_mode (void)
 
         datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
 
-        //packet_handler(infonode, &(ds->pkthdr), ds->data);
-        analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
-
         G_frame_ptr_array[Gindex] = ds;
 
         infonode->g_store_index = Gindex;
+
+        //packet_handler(infonode, &(ds->pkthdr), ds->data);
+        analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
         G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
@@ -329,12 +329,12 @@ void analysis_manual_mode (void)
 
                 datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
 
-                // packet_handler(infonode, &(ds->pkthdr), ds->data);
-                analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
-
                 G_frame_ptr_array[Gindex] = ds;
 
                 infonode->g_store_index = Gindex;
+
+                // packet_handler(infonode, &(ds->pkthdr), ds->data);
+                analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
                 G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
