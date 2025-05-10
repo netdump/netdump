@@ -73,6 +73,14 @@ extern volatile unsigned short display_G_win3_context_lines;
 extern volatile unsigned short display_G_win4_context_lines;
 extern volatile unsigned short display_G_win5_context_lines;
 
+/**
+ * @brief
+ * 	The number of cols that can be displayed in window 3/4/5
+ */
+extern volatile unsigned short display_G_win3_context_cols;
+extern volatile unsigned short display_G_win4_context_cols;
+extern volatile unsigned short display_G_win5_context_cols;
+
 
 /**
  * @brief
@@ -522,6 +530,47 @@ Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
 #define START_X_DATALENGTH      (START_X_PROTOCOL + LENGTHOFPROTOCOL)
 /** Window 3 briefly displays the starting position */
 #define START_X_BRIEF           (START_X_DATALENGTH + LENGTHOFDATALENGTH)
+
+/**
+ * @brief
+ *  Basic information display format
+ */
+#define BASIC_INFO_CONTENT                  "basic information"
+#define BASIC_INFO_FORMAT                   "%s"
+#define BASIC_INFO_SUB_SEQNUM               "frame number: %lu"
+#define BASIC_INFO_SUB_ARRIVE_TIME          "arrive time: %s"
+#define BASIC_INFO_SUB_FRAME_LENGTH         "frame length: %lu"
+#define BASIC_INFO_SUB_CAPTURE_LENGTH       "capture length: %lu"
+
+
+/**
+ * @brief
+ *  displays the content in the specified format in the specified window row and column,
+ *  with clear function
+ */
+#define DISPLAY_WIN_DISPLAY_CONTENT(win, rows, cols, rows_width, format, content)                                   \
+    do {                                                                                                            \
+        wmove(win, rows, 1);                                                                                        \
+		wprintw(win, "%*s", rows_width, "");                                                                        \
+        mvwprintw(win, rows, cols, format, content);                                                                \
+        rows++;                                                                                                     \
+    } while (0);
+
+
+/**
+ * @brief
+ *  displays the content in the specified format in the specified window row and column,
+ *  display the specified character in the first column,
+ *  with clear function
+ */
+#define DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(win, rows, cols, rows_width, character, format, content)   \
+    do {                                                                                                            \
+        wmove(win, rows, 1);                                                                                        \
+        wprintw(win, "%*s", rows_width, "");                                                                        \
+        mvwprintw(win, rows, 1, "%c", character);                                                                   \
+        mvwprintw(win, rows, cols, format, content);                                                                \
+        rows++;                                                                                                     \
+    } while (0);                                                                                                    \
 
 
 /** Time bar title */
@@ -1154,7 +1203,10 @@ void display_second_tui_exec_logic(void);
             display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);                                                               \
             display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);                                                               \
             display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);                                                               \
-            ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;                                                                          \
+            display_G_win3_context_cols = ((DISPLAY_WINS_3_NCOLS) - 2);                                                                 \
+            display_G_win4_context_cols = ((DISPLAY_WINS_4_NCOLS) - 2);                                                                 \
+            display_G_win5_context_cols = ((DISPLAY_WINS_5_NCOLS) - 2);                                                                 \
+            ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;                                                                      \
             display_handle_TUI_second_page();                                                                                           \
         }                                                                                                                               \
     } while (0);

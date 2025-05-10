@@ -59,6 +59,16 @@ volatile unsigned short display_G_win3_context_lines = 0;
 volatile unsigned short display_G_win4_context_lines = 0;
 volatile unsigned short display_G_win5_context_lines = 0;
 
+
+/**
+ * @brief
+ * 	The number of cols that can be displayed in window 3/4/5
+ */
+volatile unsigned short display_G_win3_context_cols = 0;
+volatile unsigned short display_G_win4_context_cols = 0;
+volatile unsigned short display_G_win5_context_cols = 0;
+
+
 /**
  * @brief
  * 	Define a global variable to store the resources required by TUI
@@ -520,6 +530,9 @@ void display_handle_win_resize(int flag) {
 	display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);
 	display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);
 	display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);
+	display_G_win3_context_cols = ((DISPLAY_WINS_3_NCOLS) - 2);
+	display_G_win4_context_cols = ((DISPLAY_WINS_4_NCOLS) - 2);
+	display_G_win5_context_cols = ((DISPLAY_WINS_5_NCOLS) - 2);
 	ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;
 
 	RVoid();
@@ -843,16 +856,30 @@ void display_content_to_the_interface(nd_dll_t * head)
 	if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
 	{
 		/* window 4 display */
-
+		unsigned char rows_num = 1;
 		node = ATOD_CUR_DISPLAY_LINE;
 		infonode = container_of(node, infonode_t, listnode);
 		basic_info_t *bi = &(infonode->basic_info);
+		wattron(G_display.wins[4], COLOR_PAIR(6));
+		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '-', BASIC_INFO_FORMAT, BASIC_INFO_CONTENT);
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_SEQNUM, bi->frame_number);
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_ARRIVE_TIME, bi->arrival_time);
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_FRAME_LENGTH, bi->frame_length);
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_CAPTURE_LENGTH, bi->capture_length);
+		wattroff(G_display.wins[4], COLOR_PAIR(6));
 
 		/* window 5 display */
 
 	}
 	
 	wrefresh(G_display.wins[3]);
+	wrefresh(G_display.wins[4]);
+	wrefresh(G_display.wins[5]);
 
 	//RVoid();
 	return ;
