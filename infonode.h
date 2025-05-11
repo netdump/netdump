@@ -8,7 +8,7 @@
  * @brief
  *  Specify the size of the dataroom
  */
-#define INFONODE_DATAROOM_SIZE (66536UL) // 64K
+#define INFONODE_DATAROOM_SIZE (16384UL) // 16K
 
 
 /**
