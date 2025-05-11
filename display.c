@@ -101,6 +101,7 @@ display_t G_display = {
 /**
  * @brief
  * 	display the previous head, tail, and current value of the linked list
+ * 	the following variables are related to window 3
  */
 static volatile nd_dll_t *display_previous_head = NULL;
 static volatile nd_dll_t *display_previous_tail = NULL;
@@ -626,7 +627,7 @@ void display_second_tui_exec_logic (void) {
 	msgcomm_zero_variable(msgcomm_st_runflag_c2d);
 	#endif
 
-		while (1)
+	while (1)
 	{
 		flushinp();
 		ch = getch();
