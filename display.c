@@ -744,6 +744,22 @@ void display_clear_content_line (void)
 
 	wrefresh(G_display.wins[3]);
 
+	for (i = 0; i < display_G_win4_context_lines; i++)
+	{
+		wmove(G_display.wins[4], (i + 1), 1);
+		wprintw(G_display.wins[4], "%*s", display_G_win4_context_cols, "");
+	}
+
+	wrefresh(G_display.wins[4]);
+
+	for (i = 0; i < display_G_win5_context_lines; i++)
+	{
+		wmove(G_display.wins[5], (i + 1), 1);
+		wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
+	}
+
+	wrefresh(G_display.wins[5]);
+
 	RVoid();
 }
 
