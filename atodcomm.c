@@ -32,7 +32,7 @@ dtoainfo_t * G_dtoainfo = NULL;
 
 /**
  * @brief
- *  Initialize the information node list
+ *  initialize the information node list
  */
 int atodcomm_init_infonode_list (void)
 {
@@ -55,6 +55,72 @@ int atodcomm_init_infonode_list (void)
             tmp->listnode.next = NULL;
         else
             tmp->listnode.next = (void *)(tmp + 1);
+
+        tmp = tmp + 1;
+    }
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  initialize the l1_title_t node list
+ */
+int atodcomm_init_l1_title_list (void)
+{
+    TC("Called { %s (void)", __func__);
+
+    l1_title_t * tmp = (l1_title_t *)(G_atod_shm_mem + DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE);
+
+    G_dtoainfo->l1idle = &(tmp->l1node);
+
+    int i = 0, nums = (l1_MAX_NUMS) * (INFONODE_NUMBER);
+
+    for (i = 0; i < nums; i++) 
+    {
+        if (i == 0) 
+            tmp->l1node.prev = NULL;
+        else
+            tmp->l1node.prev = (void *)(tmp - 1);
+
+        if (i == (nums - 1))
+            tmp->l1node.next = NULL;
+        else
+            tmp->l1node.next = (void *)(tmp + 1);
+
+        tmp = tmp + 1;
+    }
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
+ *  initialize the l2_title_t node list
+ */
+int atodcomm_init_l2_title_list (void)
+{
+    TC("Called { %s (void)", __func__);
+
+    l2_title_t * tmp = (l2_title_t *)(G_atod_shm_mem + DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_L1_TITLE_T_USE_SIZE);
+
+    G_dtoainfo->l1idle = &(tmp->l2node);
+
+    int i = 0, nums = (l1_MAX_NUMS) * (INFONODE_NUMBER);
+
+    for (i = 0; i < nums; i++)
+    {
+        if (i == 0)
+            tmp->l2node.prev = NULL;
+        else
+            tmp->l2node.prev = (void *)(tmp - 1);
+
+        if (i == (nums - 1))
+            tmp->l2node.next = NULL;
+        else
+            tmp->l2node.next = (void *)(tmp + 1);
 
         tmp = tmp + 1;
     }
@@ -90,6 +156,8 @@ int atodcomm_init_atodcomm(void)
     ATOD_DISPLAY_MAX_LINES = 0;
 
     atodcomm_init_infonode_list();
+    atodcomm_init_l1_title_list();
+    atodcomm_init_l2_title_list();
 
     TI("ATODCOMM_SHM_BASEADDR: %p; G_atod_shm_mem: %p", ATODCOMM_SHM_BASEADDR, G_atod_shm_mem);
 

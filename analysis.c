@@ -258,8 +258,13 @@ void analysis_no_manual_mode (void)
         if (Gindex > tmp)
         {
             memset(G_frame_ptr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
+            unsigned short tmp_nlines = ATOD_DISPLAY_MAX_LINES;
+            memset(ATODCOMM_SHM_BASEADDR, 0, ATODCOMM_SHM_FILESIZE);
+            ATOD_DISPLAY_MAX_LINES = tmp_nlines;
             atodcomm_init_dtoainfo_to_zero();
             atodcomm_init_infonode_list();
+            atodcomm_init_l1_title_list();
+            atodcomm_init_l2_title_list();
             G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
             Gindex = 0;
         }
