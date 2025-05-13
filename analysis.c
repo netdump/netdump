@@ -263,8 +263,6 @@ void analysis_no_manual_mode (void)
             ATOD_DISPLAY_MAX_LINES = tmp_nlines;
             atodcomm_init_dtoainfo_to_zero();
             atodcomm_init_infonode_list();
-            atodcomm_init_l1_title_list();
-            atodcomm_init_l2_title_list();
             G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
             Gindex = 0;
         }
@@ -277,6 +275,9 @@ void analysis_no_manual_mode (void)
     infonode_t * infonode = analysis_get_infonode();
     if (infonode)
     {
+
+        // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
+
         G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
         datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
@@ -330,6 +331,7 @@ void analysis_manual_mode (void)
             infonode = analysis_get_infonode();
             if (infonode)
             {
+                // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
                 G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
                 datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
@@ -363,6 +365,7 @@ void analysis_manual_mode (void)
         for (i = 0; i < ATOD_FINISH_DLL_NUMS; i++)
         {
             node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_TAIL);
+            // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
             nd_dll_intsert_into_head(&ATOD_IDLE_DLL, node);
         }
         ATOD_FINISH_DLL_NUMS = 0;
@@ -381,6 +384,7 @@ void analysis_manual_mode (void)
         ds = G_frame_ptr_array[index];
         ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
         node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_TAIL);
+        // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
         node->next = NULL;
         node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
@@ -420,6 +424,7 @@ void analysis_manual_mode (void)
         }
         ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
         node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
+        // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
         node->next = NULL;
         node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
@@ -641,6 +646,7 @@ int analysis_put_node_into_display_dll (void)
         for (i = 0; i < min; i++) 
         {
             node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
+            // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
             nd_dll_intsert_into_head(&ATOD_IDLE_DLL, node);
             node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
             if (!ATOD_FINISH_DLL_HEAD)

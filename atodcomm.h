@@ -183,15 +183,12 @@ extern dtoainfo_t * G_dtoainfo;
 
 #define DTOAIFO_T_USE_SIZE                                  (sizeof(dtoainfo_t))
 #define ALL_INFONODE_T_USE_SIZE                             ((sizeof(infonode_t)) * (INFONODE_NUMBER))
-#define ALL_L1_TITLE_T_USE_SIZE                             ((sizeof(l1_title_t)) * (l1_MAX_NUMS) * (INFONODE_NUMBER))
-#define ALL_L2_TITLE_T_USE_SIZE                             ((sizeof(l2_title_t)) * (l1_MAX_NUMS) * (INFONODE_NUMBER) * (l2_MAX_NUMS))
-
 
 /**
  * @brief ctoa shared memory file size
  */
 #define ATODCOMM_SHM_FILESIZE (                                                                                         \
-        DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_L1_TITLE_T_USE_SIZE + ALL_L2_TITLE_T_USE_SIZE                \
+        DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE                                                                    \
     )
 
 /**
@@ -216,20 +213,6 @@ void atodcomm_init_dtoainfo_to_zero(void);
  *  Initialize the information node list
  */
 int atodcomm_init_infonode_list (void);
-
-
-/**
- * @brief
- *  initialize the l1_title_t node list
- */
-int atodcomm_init_l1_title_list (void);
-
-
-/**
- * @brief
- *  initialize the l2_title_t node list
- */
-int atodcomm_init_l2_title_list (void);
 
 
 /**
