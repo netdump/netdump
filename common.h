@@ -623,7 +623,18 @@ size_t strlcpy(char *dst, const char *src, size_t siz);
  * @return
  *  Returns the retrieved node if successful, otherwise returns NULL
  */
-nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head);
+nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head, nd_dll_t ** tail);
+
+
+/**
+ * @brief
+ *  Take the node from the head of the doubly linked list
+ * @memberof head
+ *  the head of the doubly linked list
+ * @return
+ *  Returns the retrieved node if successful, otherwise returns NULL
+ */
+nd_dll_t *nd_dll_takeout_from_head_s(nd_dll_t **head);
 
 
 /**
@@ -634,7 +645,7 @@ nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head);
  * @return
  *  Returns the retrieved node if successful, otherwise returns NULL
  */
-nd_dll_t *nd_dll_takeout_from_tail(nd_dll_t ** tail);
+nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** head, nd_dll_t ** tail);
 
 
 /**
@@ -648,7 +659,21 @@ nd_dll_t *nd_dll_takeout_from_tail(nd_dll_t ** tail);
  *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int nd_dll_intsert_into_head(nd_dll_t ** head, nd_dll_t * node);
+int nd_dll_intsert_into_head(nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * node);
+
+
+/**
+ * @brief
+ *  Insert the head of a doubly linked list
+ * @memberof head
+ *  the head of the doubly linked list
+ * @memberof node
+ *  node to be inserted
+ * @return
+ *  If successful, it returns ND_OK
+ *  if failed, it returns ND_ERR
+ */
+int nd_dll_intsert_into_head_s(nd_dll_t **head, nd_dll_t *node);
 
 
 /**
@@ -662,6 +687,24 @@ int nd_dll_intsert_into_head(nd_dll_t ** head, nd_dll_t * node);
  *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int nd_dll_insert_into_tail(nd_dll_t ** tail, nd_dll_t * node);
+int nd_dll_insert_into_tail(nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * node);
+
+
+/**
+ * @brief
+ *  insert the head of a doubly linked list (multiple)
+ * @param head
+ *  the head of the doubly linked list
+ * @param tail
+ *  the tail of the doubly linked list
+ * @param nodehead
+ *  list head to be inserted
+ * @param nodetail
+ *  list tail to be inserted
+ * @return
+ *  If successful, it returns ND_OK
+ *  if failed, it returns ND_ERR
+ */
+int nd_dll_insert_into_head_multiple(nd_dll_t ** head, nd_dll_t * nodehead, nd_dll_t * nodetail);
 
 #endif 

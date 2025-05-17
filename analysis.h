@@ -138,4 +138,21 @@ void analysis_putin_infonode (infonode_t *infonode);
 int analysis_put_node_into_display_dll(void);
 
 
+/**
+ * @brief
+ *  recover l1l2node
+ * @param idlehead
+ *  l1l2node idle list head
+ * @param head
+ *  head pointer to be recycled
+ * @param tail
+ *  tail pointer to be recycled
+ * @param l1head
+ *  l1head pointer to be recycled
+ * @param l1tail
+ *  l1tail pointer to be recycled
+ */
+void analysis_recover_l1l2node(
+    nd_dll_t **idlehead, nd_dll_t **head, nd_dll_t **tail, nd_dll_t **l1head, nd_dll_t **l1tail);
+
 #endif  // __ANALYSIS_H__

@@ -238,7 +238,7 @@ int analysis_loop (void) {
         }
         else 
         {
-            nd_delay_microsecond(1, 1000);
+            nd_delay_microsecond(0, 1000);
         }
     }
 
@@ -263,11 +263,12 @@ void analysis_no_manual_mode (void)
             ATOD_DISPLAY_MAX_LINES = tmp_nlines;
             atodcomm_init_dtoainfo_to_zero();
             atodcomm_init_infonode_list();
+            atodcomm_init_l1l2node_list();
             G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
             Gindex = 0;
         }
         else {
-            nd_delay_microsecond(1, 1000);
+            nd_delay_microsecond(1, 1000000);
         }
         return ;
     }
@@ -275,8 +276,10 @@ void analysis_no_manual_mode (void)
     infonode_t * infonode = analysis_get_infonode();
     if (infonode)
     {
-
-        // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
+        analysis_recover_l1l2node(
+            &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail), 
+            &(infonode->l1head), &(infonode->l1tail)
+        );
 
         G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
@@ -331,7 +334,10 @@ void analysis_manual_mode (void)
             infonode = analysis_get_infonode();
             if (infonode)
             {
-                // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
+                analysis_recover_l1l2node(
+                    &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+                    &(infonode->l1head), &(infonode->l1tail)
+                );
                 G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
                 datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
@@ -364,13 +370,20 @@ void analysis_manual_mode (void)
     if (ATOD_FINISH_DLL_NUMS) {
         for (i = 0; i < ATOD_FINISH_DLL_NUMS; i++)
         {
-            node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_TAIL);
-            // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
-            nd_dll_intsert_into_head(&ATOD_IDLE_DLL, node);
+            node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
+
+            infonode = container_of(node, infonode_t, listnode);
+            analysis_recover_l1l2node(
+                &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+                &(infonode->l1head), &(infonode->l1tail)
+            );
+
+            nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
         }
         ATOD_FINISH_DLL_NUMS = 0;
-        if (!ATOD_FINISH_DLL_TAIL)
+        if (!ATOD_FINISH_DLL_TAIL) {
             ATOD_FINISH_DLL_HEAD = NULL;
+        }
     }
 
     if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_TOP)
@@ -380,18 +393,30 @@ void analysis_manual_mode (void)
             TI("It's at the top now.");
             RVoid();
         }
+
         index = (infonode->g_store_index - 1);
         ds = G_frame_ptr_array[index];
+
         ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
-        node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_TAIL);
-        // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
+
+        node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
+
+        infonode = container_of(node, infonode_t, listnode);
+        analysis_recover_l1l2node(
+            &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+            &(infonode->l1head), &(infonode->l1tail)
+        );
+
         node->next = NULL;
         node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
         infonode->g_store_index = index;
+
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
-        nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+
+        nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+
         ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
         ATOD_CUR_DISPLAY_INDEX = 0;
@@ -422,16 +447,26 @@ void analysis_manual_mode (void)
             TE("A fatal error occurred");
             exit(1);
         }
+
         ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
-        node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
-        // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
+        node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
+
+        infonode = container_of(node, infonode_t, listnode);
+        analysis_recover_l1l2node(
+            &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+            &(infonode->l1head), &(infonode->l1tail)
+        );
+
         node->next = NULL;
         node->prev = NULL;
         infonode = container_of(node, infonode_t, listnode);
         infonode->g_store_index = index;
+
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
-        nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+
+        nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+
         ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
         ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
@@ -546,7 +581,7 @@ infonode_t *analysis_get_infonode (void)
 
     TC("Called { %s (void)", __func__);
 
-    nd_dll_t * tmp = nd_dll_takeout_from_head(&(G_dtoainfo->idlelist));
+    nd_dll_t * tmp = nd_dll_takeout_from_head_s(&(G_dtoainfo->idlelist));
 
     infonode_t * infonode = container_of(tmp, infonode_t, listnode);
 
@@ -567,12 +602,12 @@ void analysis_putin_infonode (infonode_t *infonode)
 
     if (!ATOD_FINISH_DLL_HEAD && !ATOD_FINISH_DLL_TAIL)
     {
-        nd_dll_intsert_into_head(&ATOD_FINISH_DLL_HEAD, &(infonode->listnode));
+        nd_dll_intsert_into_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL, &(infonode->listnode));
         ATOD_FINISH_DLL_TAIL = ATOD_FINISH_DLL_HEAD;
         RVoid();
     }
 
-    nd_dll_insert_into_tail(&ATOD_FINISH_DLL_TAIL, &(infonode->listnode));
+    nd_dll_insert_into_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL, &(infonode->listnode));
 
     RVoid();
 }
@@ -611,17 +646,16 @@ int analysis_put_node_into_display_dll (void)
     {
         min = MINIMUM(ATOD_FINISH_DLL_NUMS, ATOD_DISPLAY_MAX_LINES);
         for (i = 0; i < min; i++) {
-            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
-            if (!ATOD_FINISH_DLL_HEAD)
-            {
+            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
+            if (!ATOD_FINISH_DLL_HEAD) {
                 ATOD_FINISH_DLL_TAIL = NULL;
             }
             if (i == 0) {
-                nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, node);
+                nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
                 ATOD_DISPLAY_DLL_TAIL = ATOD_DISPLAY_DLL_HEAD;
             }
             else {
-                nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+                nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
             }
         }
         ATOD_DISPLAY_DLL_NUMS += min;
@@ -631,12 +665,11 @@ int analysis_put_node_into_display_dll (void)
         min = MINIMUM(ATOD_FINISH_DLL_NUMS, (ATOD_DISPLAY_MAX_LINES - ATOD_DISPLAY_DLL_NUMS));
         
         for (i = 0; i < min; i++) {
-            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
-            if (!ATOD_FINISH_DLL_HEAD)
-            {
+            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
+            if (!ATOD_FINISH_DLL_HEAD) {
                 ATOD_FINISH_DLL_TAIL = NULL;
             }
-            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
         }
         ATOD_DISPLAY_DLL_NUMS += min;
     }
@@ -645,15 +678,20 @@ int analysis_put_node_into_display_dll (void)
         min = MINIMUM(ATOD_PUTIN_DISPLAY_DLL_MAX_NUMS, ATOD_FINISH_DLL_NUMS);
         for (i = 0; i < min; i++) 
         {
-            node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD);
-            // need add check l1/l2 title logic, if hava need putin l1 list / l2 list
-            nd_dll_intsert_into_head(&ATOD_IDLE_DLL, node);
-            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD);
-            if (!ATOD_FINISH_DLL_HEAD)
-            {
+            node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
+
+            infonode_t * infonode = container_of(node, infonode_t, listnode);
+            analysis_recover_l1l2node(
+                &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+                &(infonode->l1head), &(infonode->l1tail)
+            );
+
+            nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
+            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
+            if (!ATOD_FINISH_DLL_HEAD) {
                 ATOD_FINISH_DLL_TAIL = NULL;
             }
-            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_TAIL, node);
+            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
         }
     }
     else{
@@ -666,4 +704,53 @@ int analysis_put_node_into_display_dll (void)
     ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
 
     RInt(ret);
+}
+
+
+/**
+ * @brief
+ *  recover l1l2node
+ * @param idlehead
+ *  l1l2node idle list head
+ * @param head
+ *  head pointer to be recycled
+ * @param tail
+ *  tail pointer to be recycled
+ * @param l1head
+ *  l1head pointer to be recycled
+ * @param l1tail
+ *  l1tail pointer to be recycled
+ */
+void analysis_recover_l1l2node(
+    nd_dll_t ** idlehead, nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t ** l1head, nd_dll_t ** l1tail)
+{
+
+    TC("Called { %s(%p, %p, %p, %p, %p)", __func__, idlehead, head, tail, l1head, l1tail);
+
+    if (!idlehead || !(*idlehead) || !head || !tail || !l1head || !l1tail) {
+        TE("there is a case where the parameter is NULL"
+            "(idlehead: %p, *idlehead: %p, head: %p, tail: %p, l1head: %p, l1tail: %p)", 
+            idlehead, *idlehead, head, tail, l1head, l1tail);
+        exit(1);
+    }
+
+    if ((!(*head) && *tail) || (*head && !(*tail)) || 
+        (!(*l1head) && *l1tail) || (*l1head && !(*l1tail)))
+    {
+        TE("fatal logic error; *head: %p; *tail: %p; l1head: %p; l1tail: %p", 
+            *head, *tail, *l1head, *l1tail);
+        exit(1);
+    }
+
+    if (!(*head) && !(*tail) && !(*l1head) && !(*l1tail)) {
+        TI("don't need recover l1l2node");
+        RVoid();
+    }
+
+    nd_dll_insert_into_head_multiple(idlehead, *head, *tail);
+
+    *head = NULL; *tail = NULL;
+    *l1head = NULL; *l1tail = NULL;
+
+    RVoid();
 }

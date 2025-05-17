@@ -7,17 +7,16 @@
 
 /**
  * @brief
- *  l1 / l2 max nums
+ *  struct l1l2_node_s nums
  */
-#define l1_MAX_NUMS                         (8U)
-#define l2_MAX_NUMS                         (32U)
+#define l1l2_NODE_NUMS                         (80U)
 
 
 /**
  * @brief
  *  Specify the size of the dataroom
  */
-#define INFONODE_DATAROOM_SIZE (16384UL) // 16K
+#define INFONODE_DATAROOM_SIZE                  (8192U) // 8K
 
 
 /**
@@ -37,18 +36,22 @@ typedef struct basic_info_s
 
 /**
  * @brief
- *  
+ *  level 1 and level 2 tittle node
  */
 typedef struct l1l2_node_s l1l2_node_t;
 struct l1l2_node_s 
 {
     nd_dll_t node;
     nd_dll_t l1node;
+
     l1l2_node_t * superior;
+
     int level;
     int isexpand;
+    
     int byte_start;
     int byte_end;
+
     char content[128];
 };
 
@@ -88,14 +91,18 @@ typedef struct infonode_s
 
     nd_dll_t listnode;
 
+    nd_dll_t * l1l2head;
+    nd_dll_t * l1l2tail;
+
+    nd_dll_t * l1head;
+    nd_dll_t * l1tail;
+
     unsigned short typel2;
     unsigned short typel3;
     unsigned short typel4;
     unsigned short typel5;
 
     unsigned long g_store_index;
-
-    
 
     char timestamp[16];
     char srcaddr[48];

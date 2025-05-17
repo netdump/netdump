@@ -42,7 +42,7 @@
  * @brief
  *  Specify the number of nodes
  */
-#define INFONODE_NUMBER             (64UL)
+#define INFONODE_NUMBER             (64U)
 
 
 /**
@@ -82,8 +82,7 @@ typedef struct dtoainfo_s
     nd_dll_t * finlisthead;
     nd_dll_t * finlisttail;
 
-    nd_dll_t * l1idle;
-    nd_dll_t * l2idle;
+    nd_dll_t * l1l2idle;
 
     unsigned short nlines;
     unsigned short curindex;
@@ -156,6 +155,7 @@ typedef struct dtoainfo_s
 #define ATOD_DISPLAY_DLL_HEAD       (G_dtoainfo->listhead)
 #define ATOD_DISPLAY_DLL_TAIL       (G_dtoainfo->listtail)
 #define ATOD_IDLE_DLL               (G_dtoainfo->idlelist)
+#define ATOD_L1L2IDLE_DLL           (G_dtoainfo->l1l2idle)
 
 
 /**
@@ -179,17 +179,20 @@ extern void * G_atod_shm_mem;
 extern dtoainfo_t * G_dtoainfo;
 
 
-
-
+/**
+ * @brief
+ *  define the size of the memory space used
+ */
 #define DTOAIFO_T_USE_SIZE                                  (sizeof(dtoainfo_t))
 #define ALL_INFONODE_T_USE_SIZE                             ((sizeof(infonode_t)) * (INFONODE_NUMBER))
+#define ALL_L1L2NODE_T_USE_SIZE                             ((sizeof(l1l2_node_t)) * (INFONODE_NUMBER) * (l1l2_NODE_NUMS))
+
 
 /**
  * @brief ctoa shared memory file size
  */
-#define ATODCOMM_SHM_FILESIZE (                                                                                         \
-        DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE                                                                    \
-    )
+#define ATODCOMM_SHM_FILESIZE                               (DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_L1L2NODE_T_USE_SIZE)
+
 
 /**
  * @brief
@@ -213,6 +216,13 @@ void atodcomm_init_dtoainfo_to_zero(void);
  *  Initialize the information node list
  */
 int atodcomm_init_infonode_list (void);
+
+
+/**
+ * @brief
+ *  initialize the l1l2node list
+ */
+int atodcomm_init_l1l2node_list (void);
 
 
 /**
