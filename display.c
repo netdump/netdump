@@ -873,22 +873,66 @@ void display_content_to_the_interface(nd_dll_t * head)
 	if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
 	{
 		/* window 4 display */
-		unsigned char rows_num = 1;
-		node = ATOD_CUR_DISPLAY_LINE;
-		infonode = container_of(node, infonode_t, listnode);
-		basic_info_t *bi = &(infonode->basic_info);
-		wattron(G_display.wins[4], COLOR_PAIR(6));
-		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '-', BASIC_INFO_FORMAT, BASIC_INFO_CONTENT);
-		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_SEQNUM, bi->frame_number);
-		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_ARRIVE_TIME, bi->arrival_time);
-		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_FRAME_LENGTH, bi->frame_length);
-		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, BASIC_INFO_SUB_CAPTURE_LENGTH, bi->capture_length);
-		wattroff(G_display.wins[4], COLOR_PAIR(6));
+		int i = 0;
+		infonode = container_of(ATOD_CUR_DISPLAY_LINE, infonode_t, listnode);
+
+		l1l2_node_t * l1l2h = container_of(infonode->l1l2head, l1l2_node_t, l1l2node);
+		
+		ATOD_DISPLAY_L1L2_HEAD = l1l2h;
+		ATOD_DISPLAY_L1L2_CUR = l1l2h;
+		ATOD_DISPLAY_L1L2_CURLINE = 1;
+
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		l1l2_node_t * tmp = ATOD_DISPLAY_L1L2_HEAD;
+
+		for (i = 0; i < display_G_win4_context_lines; i++)
+		{
+			if (!tmp) break;
+
+			ATOD_DISPLAY_L1L2_TAIL = tmp;
+
+			if (tmp->level == 1) {
+				if (tmp->isexpand == 1) {
+					DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+						G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '-', "%s", tmp->content);
+					tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
+					if (!tmp) {
+						TE("fatal logic error;");
+						exit(1);
+					}
+					continue;
+				}
+				else if (tmp->isexpand == 0) {
+					DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+						G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '+', "%s", tmp->content);
+					tmp = container_of((tmp->l1node.next), l1l2_node_t, l1node);
+					if (!tmp) {
+						TI("win4 output complete");
+						break;
+					}
+					continue;						
+				}
+				else {
+					TE("fatal logic error; tmp: %p; tmp->level: %d; tmp->isexpand: %d", tmp, tmp->level, tmp->isexpand);
+					exit(1);
+				}
+			}
+
+			if (tmp->level == 2) {
+				if (tmp->byte_start || tmp->byte_end) {
+					TE("fatal logic error; tmp: %p; tmp->content: %s; tmp->byte_start: %d, tmp->byte_end: %d", 
+						tmp, tmp->content, tmp->byte_start, tmp->byte_end);
+					exit(1);
+				}
+				DISPLAY_WIN_DISPLAY_CONTENT(
+					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", tmp->content);
+				tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
+				if (!tmp) {
+					TI("win4 output complete");
+					break;
+				}
+			}
+		}
 
 		/* window 5 display */
 

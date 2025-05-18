@@ -51,6 +51,24 @@
 
 
 /**
+ * @brief
+ *  Basic information display format
+ */
+#define BASIC_INFO_TOTAL_NUMS                       (5U)
+#define BASIC_INFO_L1_TITLE                         (0U)
+#define BASIC_INFO_L2_FRAME_NUMBER                  (1U)
+#define BASIC_INFO_L2_ARRIVE_TIME                   (2U)
+#define BASIC_INFO_L2_FRAME_LENGTH                  (3U)
+#define BASIC_INFO_L2_CAPTURE_LENGTH                (4U)
+#define BASIC_INFO_CONTENT                          "basic information"
+#define BASIC_INFO_FORMAT                           "%s"
+#define BASIC_INFO_SUB_SEQNUM                       "frame number: %lu"
+#define BASIC_INFO_SUB_ARRIVE_TIME                  "arrive time: %s"
+#define BASIC_INFO_SUB_FRAME_LENGTH                 "frame length: %u"
+#define BASIC_INFO_SUB_CAPTURE_LENGTH               "capture length: %u"
+
+
+/**
  * @brief 
  *  The main function of the packet parsing process
  * @param COREID

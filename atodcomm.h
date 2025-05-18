@@ -23,6 +23,7 @@
 #include <fcntl.h>
 
 #include "common.h"
+#include "infonode.h"
 
 
 /**
@@ -83,6 +84,11 @@ typedef struct dtoainfo_s
     nd_dll_t * finlisttail;
 
     nd_dll_t * l1l2idle;
+
+    l1l2_node_t * l1l2head;
+    l1l2_node_t * l1l2tail;
+    l1l2_node_t * l1l2cur;
+    unsigned short l1l2curline;
 
     unsigned short nlines;
     unsigned short curindex;
@@ -156,6 +162,10 @@ typedef struct dtoainfo_s
 #define ATOD_DISPLAY_DLL_TAIL       (G_dtoainfo->listtail)
 #define ATOD_IDLE_DLL               (G_dtoainfo->idlelist)
 #define ATOD_L1L2IDLE_DLL           (G_dtoainfo->l1l2idle)
+#define ATOD_DISPLAY_L1L2_HEAD      (G_dtoainfo->l1l2head)
+#define ATOD_DISPLAY_L1L2_TAIL      (G_dtoainfo->l1l2tail)
+#define ATOD_DISPLAY_L1L2_CUR       (G_dtoainfo->l1l2cur)
+#define ATOD_DISPLAY_L1L2_CURLINE   (G_dtoainfo->l1l2curline)
 
 
 /**

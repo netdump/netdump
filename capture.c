@@ -1952,6 +1952,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     *((ndo_t *)(msgcomm_G_ndo)) = Gndo;
 
     msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
+    TI("import: msgcomm_st_cppc: %d", *msgcomm_st_cppc);
 
     struct pollfd fds;
     int fd, ret;

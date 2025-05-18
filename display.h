@@ -531,17 +531,6 @@ Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
 /** Window 3 briefly displays the starting position */
 #define START_X_BRIEF           (START_X_DATALENGTH + LENGTHOFDATALENGTH)
 
-/**
- * @brief
- *  Basic information display format
- */
-#define BASIC_INFO_CONTENT                  "basic information"
-#define BASIC_INFO_FORMAT                   "%s"
-#define BASIC_INFO_SUB_SEQNUM               "frame number: %lu"
-#define BASIC_INFO_SUB_ARRIVE_TIME          "arrive time: %s"
-#define BASIC_INFO_SUB_FRAME_LENGTH         "frame length: %lu"
-#define BASIC_INFO_SUB_CAPTURE_LENGTH       "capture length: %lu"
-
 
 /**
  * @brief

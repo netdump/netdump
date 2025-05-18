@@ -74,20 +74,20 @@ int atodcomm_init_l1l2node_list (void)
 
     l1l2_node_t * tmp = (l1l2_node_t *)(G_atod_shm_mem + DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE);
 
-    G_dtoainfo->l1l2idle = &(tmp->node);
+    G_dtoainfo->l1l2idle = &(tmp->l1l2node);
 
     int i = 0, nums = (INFONODE_NUMBER) * (l1l2_NODE_NUMS);
     for (i = 0; i < nums; i++)
     {
         if (i == 0) 
-            tmp->node.prev = NULL;
+            tmp->l1l2node.prev = NULL;
         else
-            tmp->node.prev = (void *)(tmp - 1);
+            tmp->l1l2node.prev = (void *)(tmp - 1);
 
         if (i == (nums - 1))
-            tmp->node.next = NULL;
+            tmp->l1l2node.next = NULL;
         else
-            tmp->node.next = (void *)(tmp + 1);
+            tmp->l1l2node.next = (void *)(tmp + 1);
 
         tmp = tmp + 1;
     }

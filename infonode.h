@@ -9,7 +9,13 @@
  * @brief
  *  struct l1l2_node_s nums
  */
-#define l1l2_NODE_NUMS                         (80U)
+#define l1l2_NODE_NUMS                          (80U)
+
+
+/**
+ * @brief l1l2node content length
+ */
+#define L1L2NODE_CONTENT_LENGTH                 (128U)
 
 
 /**
@@ -21,27 +27,12 @@
 
 /**
  * @brief
- *  The first entry in window 4 shows the basic information of the data frame
- */
-typedef struct basic_info_s 
-{
-    #define BASIC_INFO_ARRIVAL_TIME_LENGTH      64
-    char arrival_time[BASIC_INFO_ARRIVAL_TIME_LENGTH];
-    unsigned long int frame_number;
-    unsigned int frame_length;
-    unsigned int capture_length;
-
-} basic_info_t;
-
-
-/**
- * @brief
  *  level 1 and level 2 tittle node
  */
 typedef struct l1l2_node_s l1l2_node_t;
 struct l1l2_node_s 
 {
-    nd_dll_t node;
+    nd_dll_t l1l2node;
     nd_dll_t l1node;
 
     l1l2_node_t * superior;
@@ -52,7 +43,7 @@ struct l1l2_node_s
     int byte_start;
     int byte_end;
 
-    char content[128];
+    char content[L1L2NODE_CONTENT_LENGTH];
 };
 
 
@@ -110,8 +101,6 @@ typedef struct infonode_s
     char protocol[16];
     char length[8];
     char brief[256];
-
-    basic_info_t basic_info;
 
     unsigned char dataroom[INFONODE_DATAROOM_SIZE];
 

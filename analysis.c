@@ -227,9 +227,12 @@ int analysis_loop (void) {
 
     TC("Called { %s(void)", __func__);
 
+    unsigned int flag = 0;
+
     for (;;) 
     {
-        if (msgcomm_st_cppc)
+        msgcomm_receive_status_value(msgcomm_st_cppc, flag);
+        if (1)
         {
             if (G_dtoainfo->flag[0])
                 analysis_manual_mode();
@@ -238,7 +241,7 @@ int analysis_loop (void) {
         }
         else 
         {
-            nd_delay_microsecond(0, 1000);
+            nd_delay_microsecond(0, 2000);
         }
     }
 
@@ -268,7 +271,7 @@ void analysis_no_manual_mode (void)
             Gindex = 0;
         }
         else {
-            nd_delay_microsecond(1, 1000000);
+            nd_delay_microsecond(0, 2000);
         }
         return ;
     }
@@ -421,6 +424,7 @@ void analysis_manual_mode (void)
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
         ATOD_CUR_DISPLAY_INDEX = 0;
         DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+        return ;
     }
     else if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_BOTTOM)
     {
@@ -471,8 +475,10 @@ void analysis_manual_mode (void)
         ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
         ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
         DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+        return ;
     }
-   
+
+    nd_delay_microsecond(0, 2000);
     return ;
 }
 
@@ -495,31 +501,79 @@ void analysis_fill_basic_info(void *infonode, const struct pcap_pkthdr *h)
         abort();
     }
 
+    int i = 0;
+    nd_dll_t * node = NULL;
+    l1l2_node_t * su = NULL, * l1l2 = NULL;
+
     infonode_t *ifn = (infonode_t *)infonode;
-    basic_info_t *bi = &(ifn->basic_info);
 
-    bi->frame_number = ifn->g_store_index + 1;
-    bi->frame_length = h->len;
-    bi->capture_length = h->caplen;
+    for (i = 0; i < BASIC_INFO_TOTAL_NUMS; i++)
+    {
+        node = nd_dll_takeout_from_head_s(&ATOD_L1L2IDLE_DLL);
+        if (!node) {
+            TE("fatal logic error; node: %p; ATOD_L1L2IDLE_DLL: %p", node, ATOD_L1L2IDLE_DLL);
+            exit(1);
+        }
 
-#define BASIC_INFO_INVALIDTIMESTAMP "1970-01-01 00:00:00.000000"
+        l1l2 = container_of(node, l1l2_node_t, l1l2node);
 
-    if (h->ts.tv_sec < 0)
-        goto error;
+        switch (i)
+        {
+            case BASIC_INFO_L1_TITLE:
+                su = l1l2;
+                l1l2->superior = NULL;
+                l1l2->level = 1;
+                l1l2->isexpand = 1;
+                memset(l1l2->content, 0, L1L2NODE_CONTENT_LENGTH);
+                sprintf(l1l2->content, BASIC_INFO_FORMAT, BASIC_INFO_CONTENT);
+                nd_dll_insert_into_tail(&(ifn->l1head), &(ifn->l1tail), &(l1l2->l1node));
+                break;
+            case BASIC_INFO_L2_FRAME_NUMBER:
+                l1l2->superior = su;
+                l1l2->level = 2;
+                l1l2->isexpand = 0;
+                memset(l1l2->content, 0, L1L2NODE_CONTENT_LENGTH);
+                sprintf(l1l2->content, BASIC_INFO_SUB_SEQNUM, (ifn->g_store_index + 1));
+                break;
+            case BASIC_INFO_L2_ARRIVE_TIME:
+                l1l2->superior = su;
+                l1l2->level = 2;
+                l1l2->isexpand = 0;
+                memset(l1l2->content, 0, L1L2NODE_CONTENT_LENGTH);
+                #define BASIC_INFO_INVALIDTIMESTAMP "1970-01-01 00:00:00.000000"
+                struct tm *tm = tm = localtime(&(h->ts.tv_sec));
+                if (!tm) {
+                    TE("the capture frame time is wrong");
+                    sprintf(l1l2->content, BASIC_INFO_SUB_ARRIVE_TIME, BASIC_INFO_INVALIDTIMESTAMP);
+                    break;
+                }
+                if (strftime(l1l2->content, L1L2NODE_CONTENT_LENGTH, "%Y-%m-%d %H:%M:%S", tm) == 0) {
+                    TE("time conversion error");
+                    sprintf(l1l2->content, BASIC_INFO_SUB_ARRIVE_TIME, BASIC_INFO_INVALIDTIMESTAMP);
+                    break;
+                }
+                sprintf((l1l2->content + strlen(l1l2->content)), ".%06u", (unsigned)(h->ts.tv_usec));
+                break;
+            case BASIC_INFO_L2_FRAME_LENGTH:
+                l1l2->superior = su;
+                l1l2->level = 2;
+                l1l2->isexpand = 0;
+                memset(l1l2->content, 0, L1L2NODE_CONTENT_LENGTH);
+                sprintf(l1l2->content, BASIC_INFO_SUB_FRAME_LENGTH, h->len);
+                break;
+            case BASIC_INFO_L2_CAPTURE_LENGTH:
+                l1l2->superior = su;
+                l1l2->level = 2;
+                l1l2->isexpand = 0;
+                memset(l1l2->content, 0, L1L2NODE_CONTENT_LENGTH);
+                sprintf(l1l2->content, BASIC_INFO_SUB_CAPTURE_LENGTH, h->caplen);
+                break;
+        }
 
-    struct tm *tm = tm = localtime(&(h->ts.tv_sec));
-    if (!tm)
-        goto error;
-
-    if (strftime(bi->arrival_time, BASIC_INFO_ARRIVAL_TIME_LENGTH, "%Y-%m-%d %H:%M:%S", tm) == 0)
-        goto error;
-
-    sprintf((bi->arrival_time + strlen(bi->arrival_time)), ".%06u", (unsigned)(h->ts.tv_usec));
-
-    RVoid();
-
-error:
-    memcpy(bi->arrival_time, BASIC_INFO_INVALIDTIMESTAMP, strlen(BASIC_INFO_INVALIDTIMESTAMP));
+        l1l2->byte_end = 0;
+        l1l2->byte_start = 0;
+        nd_dll_insert_into_tail(&(ifn->l1l2head), &(ifn->l1l2tail), &(l1l2->l1l2node));
+    }
 
     RVoid();
 }

@@ -1155,7 +1155,7 @@ void *nd_called_shmopen_mmap_openup_memory (const char *name, void *baseaddr, un
     TI("align_address(%p) : %p", (void *)baseaddr, (void *)(align_address((uintptr_t)baseaddr)));
 
     void *p = mmap((void *)(align_address((uintptr_t)baseaddr)), memsize,
-                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED /*| MAP_POPULATE | MAP_HUGETLB */, fd, 0);
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED /* | MAP_POPULATE | MAP_HUGETLB */, fd, 0);
 
     if (unlikely((p == MAP_FAILED)))
     {
@@ -1306,7 +1306,7 @@ size_t strlcpy(char *dst, const char *src, size_t siz)
 nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head, nd_dll_t ** tail)
 {
 
-    TC("Called { %s(%p, %p)", __func__, head, tail);
+    //TC("Called { %s(%p, %p)", __func__, head, tail);
 
     nd_dll_t * tmp = NULL;
 
@@ -1322,7 +1322,8 @@ nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head, nd_dll_t ** tail)
 
     if (!(*head) && !(*tail)) {
         TE("Param is null; *head: %p; *tail: %p", *head, *tail);
-        RVoidPtr(tmp);
+        //RVoidPtr(tmp);
+        return tmp;
     }
 
     tmp = *head;
@@ -1336,7 +1337,8 @@ nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head, nd_dll_t ** tail)
     tmp->next = NULL;
     tmp->prev = NULL;
 
-    RVoidPtr(tmp);
+    //RVoidPtr(tmp);
+    return tmp;
 }
 
 
@@ -1351,7 +1353,7 @@ nd_dll_t * nd_dll_takeout_from_head(nd_dll_t ** head, nd_dll_t ** tail)
 nd_dll_t *nd_dll_takeout_from_head_s(nd_dll_t ** head)
 {
 
-    TC("Called { %s(%p)", __func__, head);
+    //TC("Called { %s(%p)", __func__, head);
 
     nd_dll_t *tmp = NULL;
 
@@ -1362,7 +1364,8 @@ nd_dll_t *nd_dll_takeout_from_head_s(nd_dll_t ** head)
 
     if (!(*head)) {
         TE("Param is null; *head: %p", *head);
-        RVoidPtr(tmp);
+        //RVoidPtr(tmp);
+        return tmp;
     }
 
     tmp = *head;
@@ -1374,7 +1377,8 @@ nd_dll_t *nd_dll_takeout_from_head_s(nd_dll_t ** head)
     tmp->next = NULL;
     tmp->prev = NULL;
 
-    RVoidPtr(tmp);
+    //RVoidPtr(tmp);
+    return tmp;
 }
 
 
@@ -1389,7 +1393,7 @@ nd_dll_t *nd_dll_takeout_from_head_s(nd_dll_t ** head)
 nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** head, nd_dll_t ** tail)
 {
 
-    TC("Called { %s(%p, %p)", __func__, head, tail);
+    //TC("Called { %s(%p, %p)", __func__, head, tail);
 
     nd_dll_t * tmp = NULL;
 
@@ -1405,7 +1409,8 @@ nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** head, nd_dll_t ** tail)
 
     if (!(*tail) && !(*head)) {
         TE("Param is numm; *tail: %p", *tail);
-        RVoidPtr(tmp);
+        //RVoidPtr(tmp);
+        return tmp;
     }
 
     tmp = *tail;
@@ -1419,7 +1424,8 @@ nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** head, nd_dll_t ** tail)
     tmp->next = NULL;
     tmp->prev = NULL;
 
-    RVoidPtr(tmp);
+    //RVoidPtr(tmp);
+    return tmp;
 }
 
 
@@ -1437,7 +1443,7 @@ nd_dll_t * nd_dll_takeout_from_tail(nd_dll_t ** head, nd_dll_t ** tail)
 int nd_dll_intsert_into_head (nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * node)
 {
 
-    TC("Called { %s(%p, %p, %p)", __func__, head, tail, node);
+    //TC("Called { %s(%p, %p, %p)", __func__, head, tail, node);
 
     if (!head || !tail || !node) {
         TE("Param is null; head: %p; node: %p", head, node);
@@ -1466,7 +1472,8 @@ int nd_dll_intsert_into_head (nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * nod
 
     *head = node;
 
-    RInt(ND_OK);
+    //RInt(ND_OK);
+    return ND_OK;
 }
 
 
@@ -1484,7 +1491,7 @@ int nd_dll_intsert_into_head (nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * nod
 int nd_dll_intsert_into_head_s(nd_dll_t ** head, nd_dll_t * node)
 {
 
-    TC("Called { %s(%p, %p)", __func__, head, node);
+    //TC("Called { %s(%p, %p)", __func__, head, node);
 
     if (!head || !node)
     {
@@ -1506,7 +1513,8 @@ int nd_dll_intsert_into_head_s(nd_dll_t ** head, nd_dll_t * node)
 
     *head = node;
 
-    RInt(ND_OK);
+    //RInt(ND_OK);
+    return ND_OK;
 }
 
 
@@ -1526,7 +1534,7 @@ int nd_dll_intsert_into_head_s(nd_dll_t ** head, nd_dll_t * node)
 int nd_dll_insert_into_head_multiple (nd_dll_t ** head, nd_dll_t * nodehead, nd_dll_t * nodetail)
 {
 
-    TC("Called { %s(%p, %p, %p)", __func__, head, nodehead, nodetail);
+    //TC("Called { %s(%p, %p, %p)", __func__, head, nodehead, nodetail);
 
     if (!head || !nodehead || !nodetail) 
     {
@@ -1549,7 +1557,8 @@ int nd_dll_insert_into_head_multiple (nd_dll_t ** head, nd_dll_t * nodehead, nd_
 
     *head = nodehead;
 
-    RInt(ND_OK);
+    //RInt(ND_OK);
+    return ND_OK;
 }
 
 
@@ -1566,7 +1575,7 @@ int nd_dll_insert_into_head_multiple (nd_dll_t ** head, nd_dll_t * nodehead, nd_
  */
 int nd_dll_insert_into_tail(nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * node)
 {
-    TC("Called { %s(%p, %p, %p)", __func__, head, tail, node);
+    //TC("Called { %s(%p, %p, %p)", __func__, head, tail, node);
 
     if (!head || !tail || !node) {
         TE("Param is null; head: %p, tail: %p; node: %p", head, tail, node);
@@ -1595,5 +1604,6 @@ int nd_dll_insert_into_tail(nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * node)
 
     *tail = node;
 
-    RInt(ND_OK);
+    //RInt(ND_OK);
+    return ND_OK;
 }

@@ -441,25 +441,24 @@ extern memcomm_t memcomm;
  */
 typedef struct {
 
-	volatile unsigned short _runflag_;
-	volatile unsigned short _runflag_c2d;
+	unsigned int _runflag_;
+	unsigned int _runflag_c2d;
 
-	volatile unsigned char _top;
-	volatile unsigned char _bottom;
-	volatile unsigned char _win3_curline;
-	volatile unsigned char _win4_curline;
+	unsigned int _top;
+	unsigned int _bottom;
+	unsigned int _win3_curline;
+	unsigned int _win4_curline;
 
-	volatile unsigned char _win5_curline;
+	unsigned int _win5_curline;
 
-	volatile unsigned char _cppc;
-	volatile unsigned char _padding[6];
+	volatile unsigned int _cppc;
 
 	volatile unsigned long _G_CPnumber;
 	volatile unsigned long _G_CSnumber;
 	volatile unsigned long _C_CSnumber;
 	volatile unsigned long _NOpackages;
 	volatile unsigned long _NObytes;
-	volatile unsigned char _reserve[200];
+	volatile unsigned char _reserve[56];
 
 } _status_t;
 
@@ -584,8 +583,8 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_transfer_status_change(address, value)											\
 	do {																						\
-		__atomic_store_n((address), value, __ATOMIC_RELEASE);									\
-		/*__atomic_thread_fence(__ATOMIC_RELEASE);*/											\
+		__atomic_store_n((address), value, __ATOMIC_SEQ_CST);									\
+		__atomic_thread_fence(__ATOMIC_SEQ_CST);												\
 	} while (0);
 
 
@@ -599,8 +598,8 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_receive_status_value(address, variable)											\
 	do {																						\
-		/*__atomic_thread_fence(__ATOMIC_ACQUIRE);*/											\
-		variable = __atomic_load_n(address, __ATOMIC_ACQUIRE);									\
+		__atomic_thread_fence(__ATOMIC_SEQ_CST);												\
+		variable = __atomic_load_n(address, __ATOMIC_SEQ_CST);									\
 	} while (0);
 
 
@@ -627,6 +626,7 @@ extern _status_t * G_status_ptr;
 #define msgcomm_zero_variable(address)															\
 	do {																						\
 		__atomic_store_n(address, 0, __ATOMIC_SEQ_CST);											\
+		__atomic_thread_fence(__ATOMIC_SEQ_CST);												\
 	} while(0);
 
 
