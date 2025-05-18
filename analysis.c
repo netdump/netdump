@@ -232,7 +232,7 @@ int analysis_loop (void) {
     for (;;) 
     {
         msgcomm_receive_status_value(msgcomm_st_cppc, flag);
-        if (1)
+        if (flag)
         {
             if (G_dtoainfo->flag[0])
                 analysis_manual_mode();

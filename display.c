@@ -612,7 +612,7 @@ void display_second_tui_exec_logic (void) {
 	display_disable_cursor();
 	unsigned int ch = 0;
 	unsigned char count = 0;
-	msgcomm_clear_G_status();
+	//msgcomm_clear_G_status();
 	atod_reset_dtoainfo_flag();
 
 	display_previous_head = NULL;
@@ -620,7 +620,7 @@ void display_second_tui_exec_logic (void) {
 	display_previous_current = NULL;
 	display_previous_cur_index = 0xDFFF;
 
-	#if 0
+	#if 1
 	msgcomm_zero_variable(msgcomm_st_NObytes);
 	msgcomm_zero_variable(msgcomm_st_NOpackages);
 	msgcomm_zero_variable(msgcomm_st_runflag);
