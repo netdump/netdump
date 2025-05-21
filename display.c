@@ -596,6 +596,8 @@ void display_check_term_size(void)
 }
 
 
+static int g_display_second_cur_win = 0;
+
 /**
  * @brief
  * 	The execution logic of the second TUI interface
@@ -619,6 +621,7 @@ void display_second_tui_exec_logic (void) {
 	display_previous_tail = NULL;
 	display_previous_current = NULL;
 	display_previous_cur_index = 0xDFFF;
+	g_display_second_cur_win = 3;
 
 	#if 1
 	msgcomm_zero_variable(msgcomm_st_NObytes);
@@ -665,17 +668,20 @@ void display_second_tui_exec_logic (void) {
 		switch (ch)
 		{
 			case 9:
-				TI("ch: %u", ch);
+				TI("ch: %u; count: %d", ch, count);
 				switch (((count % 3) + 3))
 				{
 					case 3:
 						display_select_3_windows();
+						g_display_second_cur_win = 3;
 						break;
 					case 4:
 						display_select_4_windows();
+						g_display_second_cur_win = 4;
 						break;
 					case 5:
 						display_select_5_windows();
+						g_display_second_cur_win = 5;
 						break;
 					default:
 						break;
@@ -691,12 +697,20 @@ void display_second_tui_exec_logic (void) {
 				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
 				break;
 			case KEY_UP:
-				TI("ch: %u; KEY_UP: %u", ch, KEY_UP);
-				display_move_up_selected_content(((count % 3) + 3));
+				TI("ch: %u; KEY_UP: %u; g_display_second_cur_win: %d", ch, KEY_UP, g_display_second_cur_win);
+				display_move_up_selected_content(g_display_second_cur_win);
 				break;
 			case KEY_DOWN:
-				TI("ch: %u; KEY_DOWN: %u", ch, KEY_DOWN);
-				display_move_down_selected_content(((count % 3) + 3));
+				TI("ch: %u; KEY_DOWN: %u; g_display_second_cur_win: %d", ch, KEY_DOWN, g_display_second_cur_win);
+				display_move_down_selected_content(g_display_second_cur_win);
+				break;
+			case KEY_ENTER:
+				;__attribute__((fallthrough));
+			case '\n':;
+				;__attribute__((fallthrough));
+			case '\r':
+				TI("ch: %u; KEY_ENTER: %u; g_display_second_cur_win: %d", ch, KEY_ENTER, g_display_second_cur_win);
+				display_exec_enter_behavior(g_display_second_cur_win);
 				break;
 			default:
 				break;
@@ -891,6 +905,11 @@ void display_content_to_the_interface(nd_dll_t * head)
 
 			ATOD_DISPLAY_L1L2_TAIL = tmp;
 
+			if (rows_num == ATOD_DISPLAY_L1L2_CURLINE)
+				wattron(G_display.wins[4], COLOR_PAIR(5));
+			else
+				wattroff(G_display.wins[4], COLOR_PAIR(5));
+
 			if (tmp->level == 1) {
 				if (tmp->isexpand == 1) {
 					DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
@@ -905,11 +924,14 @@ void display_content_to_the_interface(nd_dll_t * head)
 				else if (tmp->isexpand == 0) {
 					DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
 						G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '+', "%s", tmp->content);
-					tmp = container_of((tmp->l1node.next), l1l2_node_t, l1node);
-					if (!tmp) {
+
+					if (tmp->l1node.next == NULL)
+					{
 						TI("win4 output complete");
 						break;
 					}
+
+					tmp = container_of((tmp->l1node.next), l1l2_node_t, l1node);
 					continue;						
 				}
 				else {
@@ -926,12 +948,16 @@ void display_content_to_the_interface(nd_dll_t * head)
 				}
 				DISPLAY_WIN_DISPLAY_CONTENT(
 					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", tmp->content);
-				tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
-				if (!tmp) {
+
+				if (tmp->l1l2node.next == NULL)
+				{
 					TI("win4 output complete");
 					break;
 				}
+
+				tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
 			}
+
 		}
 
 		/* window 5 display */
@@ -957,6 +983,9 @@ void display_win_3_move_up_selected_content (void)
 
 	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
 	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
+
+	if (!ATOD_CUR_DISPLAY_LINE)
+		return ;
 	
 	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
 	
@@ -988,13 +1017,201 @@ void display_win_3_move_up_selected_content (void)
 
 /**
  * @brief
+ * 	redraw the window 4 interface
+ * @param newhead 
+ * @param cur
+ * @param line
+ */
+void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, int line)
+{
+	TC("Called { %s(%p)", __func__, newhead);
+
+	if (!newhead)
+	{
+		TE("param error; newhead: %p", newhead);
+		RVoid();
+	}
+
+	int i = 0;
+	l1l2_node_t * su = NULL;
+
+	for (i = 0; i < display_G_win4_context_lines; i++)
+	{
+		wmove(G_display.wins[4], (i + 1), 1);
+		wprintw(G_display.wins[4], "%*s", display_G_win4_context_cols, "");
+	}
+
+	wrefresh(G_display.wins[4]);
+
+	if (newhead->level == 2)
+	{
+		su = newhead->superior;
+		if (su->isexpand == 0)
+			newhead = su;
+	}
+
+	ATOD_DISPLAY_L1L2_HEAD = newhead;
+	ATOD_DISPLAY_L1L2_CUR = cur;
+	ATOD_DISPLAY_L1L2_CURLINE = line;
+
+	unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+	l1l2_node_t *tmp = ATOD_DISPLAY_L1L2_HEAD;
+
+	for (i = 0; i < display_G_win4_context_lines; i++)
+	{
+		if (!tmp)
+			break;
+
+		ATOD_DISPLAY_L1L2_TAIL = tmp;
+
+		if (rows_num == ATOD_DISPLAY_L1L2_CURLINE)
+			wattron(G_display.wins[4], COLOR_PAIR(5));
+		else
+			wattroff(G_display.wins[4], COLOR_PAIR(5));
+
+		if (tmp->level == 1)
+		{
+			if (tmp->isexpand == 1)
+			{
+				DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '-', "%s", tmp->content);
+				tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
+				if (!tmp)
+				{
+					TE("fatal logic error;");
+					exit(1);
+				}
+				continue;
+			}
+			else if (tmp->isexpand == 0)
+			{
+				DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '+', "%s", tmp->content);
+				
+				if (tmp->l1node.next == NULL) 
+				{
+					TI("win4 output complete");
+					break;
+				}
+					
+				tmp = container_of((tmp->l1node.next), l1l2_node_t, l1node);
+				continue;
+			}
+			else
+			{
+				TE("fatal logic error; tmp: %p; tmp->level: %d; tmp->isexpand: %d", tmp, tmp->level, tmp->isexpand);
+				exit(1);
+			}
+		}
+
+		if (tmp->level == 2)
+		{
+			DISPLAY_WIN_DISPLAY_CONTENT(
+				G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", tmp->content);
+
+			if (tmp->l1l2node.next == NULL)
+			{
+				TI("win4 output complete");
+				break;
+			} 
+			
+			tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
+		}	
+	}
+
+	wrefresh(G_display.wins[4]);
+
+	RVoid();
+}
+
+
+/**
+ * @brief
  * 	window 4 move selection up
  */
 void display_win_4_move_up_selected_content (void)
 {
 	TC("Called { %s(void)", __func__);
 
+	if (!ATOD_DISPLAY_L1L2_CUR)
+		RVoid();
 
+	if ((ATOD_DISPLAY_L1L2_CURLINE < 1) || (ATOD_DISPLAY_L1L2_CURLINE > display_G_win4_context_lines))
+	{
+		TE("fatal logic error; ATOD_DISPLAY_L1L2_CURLINE: %hu", ATOD_DISPLAY_L1L2_CURLINE);
+		exit(1);
+	}
+
+	l1l2_node_t * prev = NULL, * su = NULL;
+
+	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.prev == NULL && ATOD_DISPLAY_L1L2_CURLINE == 1)
+	{
+		display_popup_message_notification("It's already at the top");
+		RVoid();
+	}
+
+	prev = container_of((ATOD_DISPLAY_L1L2_CUR->l1l2node.prev), l1l2_node_t, l1l2node);
+
+	if ((prev) && ATOD_DISPLAY_L1L2_CURLINE == 1)
+	{
+		display_win_4_redraw_interface(prev, prev, ATOD_DISPLAY_L1L2_CURLINE);
+		RVoid();
+	}
+
+	if (ATOD_DISPLAY_L1L2_CUR->level == 1)
+	{
+		char c = ATOD_DISPLAY_L1L2_CUR->isexpand ? '-' : '+';
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+	}
+	else if (ATOD_DISPLAY_L1L2_CUR->level == 2)
+	{
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+	}
+	else
+	{
+		TE("fatal logic error; ATOD_DISPLAY_L1L2_CUR: %p; ATOD_DISPLAY_L1L2_CUR->level: %d", 
+				ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
+		exit(1);
+	}
+
+	if (prev->level == 2) 
+	{
+		su = prev->superior;
+		if (su->isexpand == 0)
+			prev = su;
+	}
+
+	wattron(G_display.wins[4], COLOR_PAIR(5));
+
+	if (prev->level == 1) 
+	{
+		char c = prev->isexpand ? '-' : '+';
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE - 1;
+		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", prev->content);
+	}
+	else if (prev->level == 2)
+	{
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE - 1;
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", prev->content);
+	}
+	else 
+	{
+		TE("fatal logic error; prev: %p; prev->level: %d", prev, prev->level);
+		exit(1);
+	}
+
+	wattroff(G_display.wins[4], COLOR_PAIR(5));
+
+	ATOD_DISPLAY_L1L2_CURLINE--;
+	ATOD_DISPLAY_L1L2_CUR = prev;
+
+	wrefresh(G_display.wins[4]);
 
 	RVoid();
 }
@@ -1055,6 +1272,9 @@ void display_win_3_move_down_selected_content(void)
 
 	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
 	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
+
+	if (!ATOD_CUR_DISPLAY_LINE)
+		return ;
 	
 	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
 
@@ -1095,6 +1315,107 @@ void display_win_4_move_down_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
+	if (!ATOD_DISPLAY_L1L2_CUR)
+		RVoid();
+
+	if ((ATOD_DISPLAY_L1L2_CURLINE < 1) || (ATOD_DISPLAY_L1L2_CURLINE > display_G_win4_context_lines))
+	{
+		TE("fatal logic error; ATOD_DISPLAY_L1L2_CURLINE: %hu", ATOD_DISPLAY_L1L2_CURLINE);
+		exit(1);
+	}
+
+	l1l2_node_t *next = NULL, *nextsu = NULL, *newhead = NULL, *tmp = NULL;
+
+	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.next == NULL)
+	{
+		display_popup_message_notification("It's already at the bottom");
+		RVoid();
+	}
+
+	next = container_of((ATOD_DISPLAY_L1L2_CUR->l1l2node.next), l1l2_node_t, l1l2node);
+
+	if (ATOD_DISPLAY_L1L2_CUR->level == 1 && ATOD_DISPLAY_L1L2_CUR->l1node.next != NULL)
+		nextsu = container_of((ATOD_DISPLAY_L1L2_CUR->l1node.next), l1l2_node_t, l1node);
+
+	if ((next) && ATOD_DISPLAY_L1L2_CUR == ATOD_DISPLAY_L1L2_TAIL &&
+		ATOD_DISPLAY_L1L2_CUR->level == 1 && ATOD_DISPLAY_L1L2_CUR->isexpand == 0 &&
+		!nextsu)
+	{
+		display_popup_message_notification("It's already at the bottom");
+		RVoid();
+	}
+
+	if ((next) && (ATOD_DISPLAY_L1L2_CURLINE == display_G_win4_context_lines))
+	{
+		tmp = container_of((ATOD_DISPLAY_L1L2_HEAD->l1l2node.next), l1l2_node_t, l1l2node);
+
+		if (tmp->level == 2) 
+		{
+			if (!(tmp->superior->isexpand))
+				newhead = container_of((tmp->superior->l1node.next), l1l2_node_t, l1node);
+			else
+				newhead = tmp;
+		}
+		if (tmp->level == 1)
+			newhead = tmp;
+
+		display_win_4_redraw_interface(newhead, next, ATOD_DISPLAY_L1L2_CURLINE);
+	}
+
+	if (ATOD_DISPLAY_L1L2_CUR->level == 1)
+	{
+		char c = ATOD_DISPLAY_L1L2_CUR->isexpand ? '-' : '+';
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+	}
+	else if (ATOD_DISPLAY_L1L2_CUR->level == 2)
+	{
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+	}
+	else
+	{
+		TE("fatal logic error; ATOD_DISPLAY_L1L2_CUR: %p; ATOD_DISPLAY_L1L2_CUR->level: %d",
+		   ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
+		exit(1);
+	}
+
+	if (next->level == 2)
+	{
+		if (next->superior->isexpand == 0)
+			next = container_of((next->superior->l1node.next), l1l2_node_t, l1node);
+	}
+
+	wattron(G_display.wins[4], COLOR_PAIR(5));
+
+	if (next->level == 1) 
+	{
+		char c = next->isexpand ? '-' : '+';
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE + 1;
+		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", next->content);
+	}
+	else if (next->level == 2) 
+	{
+		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE + 1;
+		DISPLAY_WIN_DISPLAY_CONTENT(
+			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", next->content);
+	}
+	else
+	{
+		TE("fatal logic error; next: %p; next->level: %d", next, next->level);
+		exit(1);
+	}
+
+	wattroff(G_display.wins[4], COLOR_PAIR(5));
+
+	ATOD_DISPLAY_L1L2_CURLINE++;
+	ATOD_DISPLAY_L1L2_CUR = next;
+
+	wrefresh(G_display.wins[4]);
+
 	RVoid();
 }
 
@@ -1114,7 +1435,7 @@ void display_win_5_move_down_selected_content(void)
 /**
  * @brief
  * 	Move selection down
- * @memberof winnumber
+ * @param winnumber
  * 	window number
  */
 void display_move_down_selected_content (int winnumber)
@@ -1137,6 +1458,42 @@ void display_move_down_selected_content (int winnumber)
 			exit(1);
 			break;
 	}
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * 	execute the enter key behavior
+ * @param winnumber
+ * 	window number
+ */
+void display_exec_enter_behavior(int winnumber)
+{
+	TC("Called {%s (%d)", __func__, winnumber);
+
+	if (winnumber != 4)
+		RVoid();
+
+	if (!ATOD_DISPLAY_L1L2_CUR)
+		RVoid();
+
+	if (ATOD_DISPLAY_L1L2_CUR->level != 1)
+		RVoid();
+
+	if (ATOD_DISPLAY_L1L2_CUR->isexpand == 0)
+		ATOD_DISPLAY_L1L2_CUR->isexpand = 1;
+	else if (ATOD_DISPLAY_L1L2_CUR->isexpand == 1)
+		ATOD_DISPLAY_L1L2_CUR->isexpand = 0;
+	else
+	{
+		TE("a fatal error occurred; ATOD_DISPLAY_L1L2_CUR: %p; ATOD_DISPLAY_L1L2_CUR->level: %d",
+		   ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
+		exit(1);
+	}
+
+	display_win_4_redraw_interface(ATOD_DISPLAY_L1L2_HEAD, ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CURLINE);
 
 	RVoid();
 }

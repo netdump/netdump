@@ -264,6 +264,15 @@ void display_move_down_selected_content(int winnumber);
 
 /**
  * @brief
+ * 	execute the enter key behavior
+ * @param winnumber
+ * 	window number
+ */
+void display_exec_enter_behavior(int winnumber);
+
+
+/**
+ * @brief
  * 	Pop-up message notification
  * @memberof msg
  * 	Notification message content
