@@ -374,6 +374,84 @@ void ring_dump(const ring_t *r);
  */
 static inline int __attribute__((always_inline))
 __ring_mp_do_enqueue(ring_t *r, void *const *obj_table,
+					 unsigned n, enum ring_queue_behavior behavior)
+{
+	uint32_t prod_head, prod_next;
+	uint32_t cons_tail, free_entries;
+	const unsigned max = n;
+	int success;
+	unsigned i;
+	uint32_t mask = r->prod.mask;
+	int ret;
+
+	/* move prod.head atomically */
+	do
+	{
+		n = max;
+
+		// 原子读取 head 和 tail
+		prod_head = __atomic_load_n(&r->prod.head, __ATOMIC_ACQUIRE);
+		cons_tail = __atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE);
+
+		free_entries = (mask + cons_tail - prod_head);
+
+		if (unlikely(n > free_entries))
+		{
+			if (behavior == RING_QUEUE_FIXED)
+			{
+				return -ENOBUFS;
+			}
+			else
+			{
+				if (unlikely(free_entries == 0))
+				{
+					return 0;
+				}
+				n = free_entries;
+			}
+		}
+
+		prod_next = prod_head + n;
+
+		// 原子 CAS 更新 prod.head
+		success = __atomic_compare_exchange_n(&r->prod.head,
+											  &prod_head,
+											  prod_next,
+											  /*false*/0,
+											  __ATOMIC_RELEASE,
+											  __ATOMIC_RELAXED);
+
+	} while (unlikely(!success));
+
+	/* write entries in ring */
+	ENQUEUE_PTRS();
+	__atomic_thread_fence(__ATOMIC_RELEASE);
+
+	/* 超过 watermark 警告处理 */
+	if (unlikely(((mask + 1) - free_entries + n) > r->prod.watermark))
+	{
+		ret = (behavior == RING_QUEUE_FIXED) ? -EDQUOT : (int)(n | RING_QUOT_EXCEED);
+	}
+	else
+	{
+		ret = (behavior == RING_QUEUE_FIXED) ? 0 : n;
+	}
+
+	/* 等待之前入队者完成 tail 更新 */
+	while (unlikely(__atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE) != prod_head))
+	{
+		ue_pause();
+	}
+
+	// 原子写入 prod.tail
+	__atomic_store_n(&r->prod.tail, prod_next, __ATOMIC_RELEASE);
+
+	return ret;
+}
+
+#if 0
+static inline int __attribute__((always_inline))
+__ring_mp_do_enqueue(ring_t *r, void *const *obj_table,
 			 unsigned n, enum ring_queue_behavior behavior)
 {
 	uint32_t prod_head, prod_next;
@@ -440,7 +518,7 @@ __ring_mp_do_enqueue(ring_t *r, void *const *obj_table,
 	r->prod.tail = prod_next;
 	return ret;
 }
-
+#endif
 /**
  * @internal Enqueue several objects on a ring (NOT multi-producers safe).
  *
@@ -463,6 +541,66 @@ __ring_mp_do_enqueue(ring_t *r, void *const *obj_table,
  *   if behavior = RING_QUEUE_VARIABLE
  *   - n: Actual number of objects enqueued.
  */
+static inline int __attribute__((always_inline))
+__ring_sp_do_enqueue(ring_t *r, void *const *obj_table,
+					 unsigned n, enum ring_queue_behavior behavior)
+{
+	uint32_t prod_head, cons_tail;
+	uint32_t prod_next, free_entries;
+	unsigned i;
+	uint32_t mask = r->prod.mask;
+	int ret;
+
+	// 原子读取 head 和 tail
+	prod_head = __atomic_load_n(&r->prod.head, __ATOMIC_RELAXED);
+	cons_tail = __atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE);
+
+	free_entries = (mask + cons_tail - prod_head);
+
+	if (unlikely(n > free_entries))
+	{
+		if (behavior == RING_QUEUE_FIXED)
+		{
+			return -ENOBUFS;
+		}
+		else
+		{
+			if (unlikely(free_entries == 0))
+			{
+				return 0;
+			}
+			n = free_entries;
+		}
+	}
+
+	prod_next = prod_head + n;
+
+	// 原子写 prod.head
+	__atomic_store_n(&r->prod.head, prod_next, __ATOMIC_RELAXED);
+
+	/* write entries in ring */
+	ENQUEUE_PTRS();
+
+	// 写数据后加 full barrier
+	__atomic_thread_fence(__ATOMIC_RELEASE);
+
+	// 如果超过 watermark
+	if (unlikely(((mask + 1) - free_entries + n) > r->prod.watermark))
+	{
+		ret = (behavior == RING_QUEUE_FIXED) ? -EDQUOT : (int)(n | RING_QUOT_EXCEED);
+	}
+	else
+	{
+		ret = (behavior == RING_QUEUE_FIXED) ? 0 : n;
+	}
+
+	// 原子写 prod.tail 表示数据写入完成
+	__atomic_store_n(&r->prod.tail, prod_next, __ATOMIC_RELEASE);
+
+	return ret;
+}
+
+#if 0
 static inline int __attribute__((always_inline))
 __ring_sp_do_enqueue(ring_t *r, void * const *obj_table,
 			 unsigned n, enum ring_queue_behavior behavior)
@@ -515,7 +653,7 @@ __ring_sp_do_enqueue(ring_t *r, void * const *obj_table,
 	r->prod.tail = prod_next;
 	return ret;
 }
-
+#endif
 /**
  * @internal Dequeue several objects from a ring (multi-consumers safe). When
  * the request objects are more than the available objects, only dequeue the
@@ -542,7 +680,75 @@ __ring_sp_do_enqueue(ring_t *r, void * const *obj_table,
  *   if behavior = RING_QUEUE_VARIABLE
  *   - n: Actual number of objects dequeued.
  */
+static inline int __attribute__((always_inline))
+__ring_mc_do_dequeue(ring_t *r, void **obj_table,
+					 unsigned n, enum ring_queue_behavior behavior)
+{
+	uint32_t cons_head, prod_tail;
+	uint32_t cons_next, entries;
+	const unsigned max = n;
+	int success;
+	unsigned i;
+	uint32_t mask = r->prod.mask;
 
+	/* move cons.head atomically */
+	do
+	{
+		n = max;
+
+		cons_head = __atomic_load_n(&r->cons.head, __ATOMIC_RELAXED);
+		prod_tail = __atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE);
+
+		entries = (prod_tail - cons_head) & mask;
+
+		if (n > entries)
+		{
+			if (behavior == RING_QUEUE_FIXED)
+			{
+				return -ENOENT;
+			}
+			else
+			{
+				if (unlikely(entries == 0))
+				{
+					return 0;
+				}
+				n = entries;
+			}
+		}
+
+		cons_next = cons_head + n;
+
+		success = __atomic_compare_exchange_n(
+			&r->cons.head,	  // ptr
+			&cons_head,		  // expected
+			cons_next,		  // desired
+			0,				  // weak
+			__ATOMIC_RELAXED, // success memorder
+			__ATOMIC_RELAXED  // failure memorder
+		);
+
+	} while (unlikely(!success));
+
+	/* copy in table */
+	DEQUEUE_PTRS();
+
+	// 确保 dequeue 数据在写 tail 之前全部完成
+	__atomic_thread_fence(__ATOMIC_RELEASE);
+
+	/*
+	 * 如果有多个消费者，我们必须按顺序提交 tail，
+	 * 否则后来的消费者会“越界”读未提交数据
+	 */
+	while (unlikely(__atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE) != cons_head))
+		ue_pause();
+
+	__atomic_store_n(&r->cons.tail, cons_next, __ATOMIC_RELEASE);
+
+	return behavior == RING_QUEUE_FIXED ? 0 : n;
+}
+
+#if 0
 static inline int __attribute__((always_inline))
 __ring_mc_do_dequeue(ring_t *r, void **obj_table,
 		 unsigned n, enum ring_queue_behavior behavior)
@@ -602,7 +808,7 @@ __ring_mc_do_dequeue(ring_t *r, void **obj_table,
 
 	return behavior == RING_QUEUE_FIXED ? 0 : n;
 }
-
+#endif
 /**
  * @internal Dequeue several objects from a ring (NOT multi-consumers safe).
  * When the request objects are more than the available objects, only dequeue
@@ -626,6 +832,54 @@ __ring_mc_do_dequeue(ring_t *r, void **obj_table,
  *   if behavior = RING_QUEUE_VARIABLE
  *   - n: Actual number of objects dequeued.
  */
+static inline int __attribute__((always_inline))
+__ring_sc_do_dequeue(ring_t *r, void **obj_table,
+					 unsigned n, enum ring_queue_behavior behavior)
+{
+	uint32_t cons_head, prod_tail;
+	uint32_t cons_next, entries;
+	unsigned i;
+	uint32_t mask = r->prod.mask;
+
+	// 使用 Acquire 保证读取到 producer 最新可见的 tail
+	cons_head = __atomic_load_n(&r->cons.head, __ATOMIC_RELAXED);
+	prod_tail = __atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE);
+
+	entries = (prod_tail - cons_head) & mask;
+
+	if (n > entries)
+	{
+		if (behavior == RING_QUEUE_FIXED)
+		{
+			return -ENOENT;
+		}
+		else
+		{
+			if (unlikely(entries == 0))
+			{
+				return 0;
+			}
+			n = entries;
+		}
+	}
+
+	cons_next = cons_head + n;
+
+	// 单消费者，无需 CAS，直接写入
+	__atomic_store_n(&r->cons.head, cons_next, __ATOMIC_RELAXED);
+
+	/* copy in table */
+	DEQUEUE_PTRS();
+
+	// 确保 dequeue 操作对其他进程/CPU 可见
+	__atomic_thread_fence(__ATOMIC_RELEASE);
+
+	__atomic_store_n(&r->cons.tail, cons_next, __ATOMIC_RELEASE);
+
+	return behavior == RING_QUEUE_FIXED ? 0 : n;
+}
+
+#if 0
 static inline int __attribute__((always_inline))
 __ring_sc_do_dequeue(ring_t *r, void **obj_table,
 		 unsigned n, enum ring_queue_behavior behavior)
@@ -666,7 +920,7 @@ __ring_sc_do_dequeue(ring_t *r, void **obj_table,
 	r->cons.tail = cons_next;
 	return behavior == RING_QUEUE_FIXED ? 0 : n;
 }
-
+#endif
 /**
  * Enqueue several objects on the ring (multi-producers safe).
  *
@@ -956,12 +1210,22 @@ ring_dequeue(ring_t *r, void **obj_p)
 static inline int
 ring_full(const ring_t *r)
 {
+	uint32_t prod_tail = __atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE);
+	uint32_t cons_tail = __atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE);
+
+	return (((cons_tail - prod_tail - 1) & r->prod.mask) == 0);
+}
+#if 0
+static inline int
+ring_full(const ring_t *r)
+{
     int ret; 
 	uint32_t prod_tail = r->prod.tail;
 	uint32_t cons_tail = r->cons.tail;
 	ret = (((cons_tail - prod_tail - 1) & r->prod.mask) == 0);
     return ret;
 }
+#endif
 
 /**
  * Test if a ring is empty.
@@ -975,10 +1239,19 @@ ring_full(const ring_t *r)
 static inline int
 ring_empty(const ring_t *r)
 {
+	uint32_t prod_tail = __atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE);
+	uint32_t cons_tail = __atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE);
+	return prod_tail == cons_tail;
+}
+#if 0
+static inline int
+ring_empty(const ring_t *r)
+{
 	uint32_t prod_tail = r->prod.tail;
 	uint32_t cons_tail = r->cons.tail;
 	return !!(cons_tail == prod_tail);
 }
+#endif
 
 /**
  * Return the number of entries in a ring.
@@ -991,11 +1264,19 @@ ring_empty(const ring_t *r)
 static inline unsigned
 ring_count(const ring_t *r)
 {
+	uint32_t prod_tail = __atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE);
+	uint32_t cons_tail = __atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE);
+	return ((prod_tail - cons_tail) & r->prod.mask);
+}
+#if 0
+static inline unsigned
+ring_count(const ring_t *r)
+{
 	uint32_t prod_tail = r->prod.tail;
 	uint32_t cons_tail = r->cons.tail;
 	return ((prod_tail - cons_tail) & r->prod.mask);
 }
-
+#endif
 /**
  * Return the number of free entries in a ring.
  *
@@ -1007,10 +1288,19 @@ ring_count(const ring_t *r)
 static inline unsigned
 ring_free_count(const ring_t *r)
 {
+	uint32_t prod_tail = __atomic_load_n(&r->prod.tail, __ATOMIC_ACQUIRE);
+	uint32_t cons_tail = __atomic_load_n(&r->cons.tail, __ATOMIC_ACQUIRE);
+	return ((cons_tail - prod_tail - 1) & r->prod.mask);
+}
+#if 0
+static inline unsigned
+ring_free_count(const ring_t *r)
+{
 	uint32_t prod_tail = r->prod.tail;
 	uint32_t cons_tail = r->cons.tail;
 	return ((cons_tail - prod_tail - 1) & r->prod.mask);
 }
+#endif
 
 /**
  * @brief Dump the status of all rings on the console
