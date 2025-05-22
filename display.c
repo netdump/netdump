@@ -748,31 +748,11 @@ void display_clear_content_line (void)
 {
 	TC("Called { %s (void)", __func__);
 
-	int i = 0;
+	DISPLAY_WIN_3_CONTENT_CLEAR();
 
-	for (i = 0; i < display_G_win3_context_lines; i++)
-	{
-		wmove(G_display.wins[3], (i + 3), 1);
-		wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
-	}
+	DISPLAY_WIN_4_CONTENT_CLEAR();
 
-	wrefresh(G_display.wins[3]);
-
-	for (i = 0; i < display_G_win4_context_lines; i++)
-	{
-		wmove(G_display.wins[4], (i + 1), 1);
-		wprintw(G_display.wins[4], "%*s", display_G_win4_context_cols, "");
-	}
-
-	wrefresh(G_display.wins[4]);
-
-	for (i = 0; i < display_G_win5_context_lines; i++)
-	{
-		wmove(G_display.wins[5], (i + 1), 1);
-		wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
-	}
-
-	wrefresh(G_display.wins[5]);
+	DISPLAY_WIN_5_CONTENT_CLEAR();
 
 	RVoid();
 }
@@ -887,6 +867,9 @@ void display_content_to_the_interface(nd_dll_t * head)
 	if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
 	{
 		/* window 4 display */
+
+		DISPLAY_WIN_4_CONTENT_CLEAR();
+
 		int i = 0;
 		infonode = container_of(ATOD_CUR_DISPLAY_LINE, infonode_t, listnode);
 
@@ -1035,13 +1018,7 @@ void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, in
 	int i = 0;
 	l1l2_node_t * su = NULL;
 
-	for (i = 0; i < display_G_win4_context_lines; i++)
-	{
-		wmove(G_display.wins[4], (i + 1), 1);
-		wprintw(G_display.wins[4], "%*s", display_G_win4_context_cols, "");
-	}
-
-	wrefresh(G_display.wins[4]);
+	DISPLAY_WIN_4_CONTENT_CLEAR();
 
 	if (newhead->level == 2)
 	{

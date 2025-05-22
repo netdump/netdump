@@ -571,6 +571,45 @@ Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
     } while (0);                                                                                                    \
 
 
+
+/**
+ * @brief
+ *  window content clear
+ */
+#define DISPLAY_WIN_3_CONTENT_CLEAR()                                                                               \
+    do {                                                                                                            \
+        int i = 0;                                                                                                  \
+        for (i = 0; i < display_G_win3_context_lines; i++)                                                          \
+	    {                                                                                                           \
+		    wmove(G_display.wins[3], (i + 3), 1);                                                                   \
+		    wprintw(G_display.wins[3], "%*s", (COLS - 2), "");                                                      \
+	    }                                                                                                           \
+	    wrefresh(G_display.wins[3]);                                                                                \
+    } while(0);
+
+#define DISPLAY_WIN_4_CONTENT_CLEAR()                                                                               \
+    do {                                                                                                            \
+        int i = 0;                                                                                                  \
+        for (i = 0; i < display_G_win4_context_lines; i++)                                                          \
+        {                                                                                                           \
+            wmove(G_display.wins[4], (i + 1), 1);                                                                   \
+            wprintw(G_display.wins[4], "%*s", display_G_win4_context_cols, "");                                     \
+        }                                                                                                           \
+        wrefresh(G_display.wins[4]);                                                                                \
+    } while(0);                                                                                                     \
+
+#define DISPLAY_WIN_5_CONTENT_CLEAR()                                                                               \
+    do {                                                                                                            \
+        int i = 0;                                                                                                  \
+        for (i = 0; i < display_G_win5_context_lines; i++)                                                          \
+	    {                                                                                                           \
+		    wmove(G_display.wins[5], (i + 1), 1);                                                                   \
+		    wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");                                     \
+	    }                                                                                                           \
+	    wrefresh(G_display.wins[5]);                                                                                \
+    } while(0);                                                                                                     \
+
+
 /** Time bar title */
 #define WINTITLETIME            "Time"
 /** Source address bar title */
