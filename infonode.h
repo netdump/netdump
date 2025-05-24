@@ -102,6 +102,7 @@ typedef struct infonode_s
     char length[8];
     char brief[256];
 
+    unsigned int datalen;
     unsigned char dataroom[INFONODE_DATAROOM_SIZE];
 
 } infonode_t;

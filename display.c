@@ -944,6 +944,7 @@ void display_content_to_the_interface(nd_dll_t * head)
 		}
 
 		/* window 5 display */
+		DISPLAY_WIN_5_CONTENT_CLEAR();
 
 	}
 	

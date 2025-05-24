@@ -90,6 +90,12 @@ typedef struct dtoainfo_s
     l1l2_node_t * l1l2cur;
     unsigned short l1l2curline;
 
+    unsigned short w5_curline;
+    unsigned short w5_pre_select_startbyte;
+    unsigned short w5_pre_select_tailbyte;
+    unsigned int w5_startbyte;
+    unsigned int w5_tailbyte;
+
     unsigned short nlines;
     unsigned short curindex;
     unsigned short curlines;
@@ -166,6 +172,11 @@ typedef struct dtoainfo_s
 #define ATOD_DISPLAY_L1L2_TAIL      (G_dtoainfo->l1l2tail)
 #define ATOD_DISPLAY_L1L2_CUR       (G_dtoainfo->l1l2cur)
 #define ATOD_DISPLAY_L1L2_CURLINE   (G_dtoainfo->l1l2curline)
+#define ATOD_DISPLAY_W5_CURLINE     (G_dtoainfo->w5_curline)
+#define ATOD_DISPLAY_W5_PSSB        (G_dtoainfo->w5_pre_select_startbyte)
+#define ATOD_DISPLAY_W5_PSTB        (G_dtoainfo->w5_pre_select_tailbyte)
+#define ATOD_DISPLAY_W5_STARTBYTE   (G_dtoainfo->w5_startbyte)
+#define ATOD_DISPLAY_W5_TAILBYTE    (G_dtoainfo->w5_tailbyte)
 
 
 /**
