@@ -11,6 +11,7 @@
  * 
  */
 
+#include <time.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1226,25 +1227,35 @@ void * nd_called_mmap_lookup_memory (
 
 
 /**
- * @brief 
+ * @brief
  *  Use the select function to achieve millisecond delay
  * @param sec
  *  Delay in second
- * @param microseconds
- *  Delay in microseconds
+ * @param nanoseconds
+ *  Delay in nanoseconds
  */
-void nd_delay_microsecond (unsigned int sec, unsigned long microseconds) {
-
+void nd_delay_microsecond(unsigned int sec, unsigned long nanoseconds)
+{
     //TC("Called { %s(%u, %lu)", __func__, sec, microseconds);
 
+    #if 0
     struct timeval timeout = {sec, microseconds};
     
     if (unlikely(((select(0, NULL, NULL, NULL, &timeout)) == -1))) {
         TE("%s", strerror(errno));
     }
+    #endif
+
+    struct timespec req = {
+        .tv_sec = sec,
+        .tv_nsec = nanoseconds
+    };
+
+    nanosleep(&req, NULL);
 
     //RVoid();
 }
+
 
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters

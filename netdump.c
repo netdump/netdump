@@ -140,17 +140,17 @@ void netdump_kill(void) {
 
     if (childpid[GCOREID_CP]) {
         kill(childpid[GCOREID_CP], SIGTERM);
-        nd_delay_microsecond(0, 10000);
+        nd_delay_microsecond(0, 10000000);
     }
 
     if (childpid[GCOREID_AA]) {
         kill(childpid[GCOREID_AA], SIGTERM);
-        nd_delay_microsecond(0, 10000);
+        nd_delay_microsecond(0, 10000000);
     }
 
     if ((childpid[GCOREID_CP] == 0) && (childpid[GCOREID_AA] == 0)) {
         kill(getpid(), SIGTERM);
-        nd_delay_microsecond(0, 10000);
+        nd_delay_microsecond(0, 10000000);
     }
 
     RVoid();

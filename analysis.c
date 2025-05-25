@@ -56,7 +56,7 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
     {
         if (!ATOD_DISPLAY_MAX_LINES)
         {
-            nd_delay_microsecond(0, 1000);
+            nd_delay_microsecond(0, 1000000);
             continue;
         }
         break;
@@ -241,7 +241,7 @@ int analysis_loop (void) {
         }
         else 
         {
-            nd_delay_microsecond(0, 2000);
+            nd_delay_microsecond(0, 2000000);
         }
     }
 
@@ -272,7 +272,7 @@ void analysis_no_manual_mode (void)
             Gindex = 0;
         }
         else {
-            nd_delay_microsecond(0, 2000);
+            nd_delay_microsecond(0, 2000000);
         }
         return ;
     }
@@ -491,7 +491,7 @@ void analysis_manual_mode (void)
         return ;
     }
 
-    nd_delay_microsecond(0, 2000);
+    nd_delay_microsecond(0, 2000000);
     return ;
 }
 

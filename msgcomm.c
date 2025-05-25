@@ -748,7 +748,7 @@ int msgcomm_message_send(unsigned int dir, unsigned int msgtype, const char * ms
     while (1) {
         if (msgcomm_detection(rdir)) 
             break;
-        nd_delay_microsecond(0, 10000);
+        nd_delay_microsecond(0, 10000000);
     }
 
     message_t message;
@@ -790,7 +790,7 @@ int msgcomm_message_recv (unsigned int dir, message_t * message) {
         if (msgcomm_detection(dir)) {
             break;
         }
-        nd_delay_microsecond(0, 10000);
+        nd_delay_microsecond(0, 10000000);
     }
 
     if (unlikely((msgcomm_recvmsg(dir, message)) == ND_ERR)) {

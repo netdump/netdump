@@ -585,14 +585,14 @@ void * nd_called_mmap_lookup_memory (
 
 
 /**
- * @brief 
+ * @brief
  *  Use the select function to achieve millisecond delay
  * @param sec
  *  Delay in second
- * @param microseconds
- *  Delay in microseconds
+ * @param nanoseconds
+ *  Delay in nanoseconds
  */
-void nd_delay_microsecond (unsigned int sec, unsigned long microseconds);
+void nd_delay_microsecond(unsigned int sec, unsigned long nanoseconds);
 
 
 /*
