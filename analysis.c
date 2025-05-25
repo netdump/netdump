@@ -657,7 +657,7 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
             w5 = container_of(node, w5_node_t, w5node);
             *hsp = *asp = '\0';
             (void)snprintf(w5->content, W5NODE_CONTENT_LENGTH, 
-                    "0x%04x: %-*s  %s", oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, asciistuff);
+                    "0x%04x:\t%-*s\t%s", oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, asciistuff);
             i = 0;
             hsp = hexstuff;
             asp = asciistuff;
@@ -686,7 +686,7 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
         w5 = container_of(node, w5_node_t, w5node);
         *hsp = *asp = '\0';
         (void)snprintf(w5->content, W5NODE_CONTENT_LENGTH,
-                       "0x%04x: %-*s  %s", oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, asciistuff);
+                       "0x%04x:\t%-*s\t%s", oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, asciistuff);
         nd_dll_insert_into_tail(&(ifn->w5head), &(ifn->w5tail), &(w5->w5node));
     }
     
