@@ -234,7 +234,7 @@ int analysis_loop (void) {
         msgcomm_receive_status_value(msgcomm_st_cppc, flag);
         if (flag)
         {
-            if (G_dtoainfo->flag[0])
+            if (DTOA_ISOR_MANUAL_VAR_FLAG)
                 analysis_manual_mode();
             else
                 analysis_no_manual_mode();
@@ -267,6 +267,7 @@ void analysis_no_manual_mode (void)
             atodcomm_init_dtoainfo_to_zero();
             atodcomm_init_infonode_list();
             atodcomm_init_l1l2node_list();
+            atodcomm_init_w5node_list();
             G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
             Gindex = 0;
         }
@@ -283,6 +284,8 @@ void analysis_no_manual_mode (void)
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail), 
             &(infonode->l1head), &(infonode->l1tail)
         );
+
+        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
         G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
@@ -341,6 +344,9 @@ void analysis_manual_mode (void)
                     &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
                     &(infonode->l1head), &(infonode->l1tail)
                 );
+
+                analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+
                 G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
                 datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
@@ -376,10 +382,13 @@ void analysis_manual_mode (void)
             node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
 
             infonode = container_of(node, infonode_t, listnode);
+
             analysis_recover_l1l2node(
                 &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
                 &(infonode->l1head), &(infonode->l1tail)
             );
+
+            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
             nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
         }
@@ -409,6 +418,8 @@ void analysis_manual_mode (void)
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
         );
+
+        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
         node->next = NULL;
         node->prev = NULL;
@@ -460,6 +471,8 @@ void analysis_manual_mode (void)
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
         );
+
+        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
         node->next = NULL;
         node->prev = NULL;
@@ -580,6 +593,108 @@ void analysis_fill_basic_info(void *infonode, const struct pcap_pkthdr *h)
 
 
 /**
+ * @brief determine whether it is a graphic
+ */
+#define ND_ASCII_ISGRAPH(c) ((c) > 0x20 && (c) <= 0x7E)
+
+/**
+ * @brief
+ *  fill window 5 display content
+ * @param infonode
+ *  nodes to be filled
+ * @param sp
+ *  network frame raw data
+ * @param caplen
+ *  network frame capture length
+ */
+void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
+{
+    TC("Called { %s(%p, %p, %u)", __func__, infonode, sp, caplen);
+
+    if (!infonode || !sp || (caplen == 0) || (caplen > 0xFFFF)) {
+        TE("param is error, infonode: %p, sp: %p, caplen: %u [must less than 0xFFFF]", infonode, sp, caplen);
+        exit(1);
+    }
+
+    u_int i;
+    u_int s1, s2;
+    u_int nshorts;
+    char hexstuff[HEXDUMP_SHORTS_PER_LINE * HEXDUMP_HEXSTUFF_PER_SHORT + 1], *hsp;
+    char asciistuff[ASCII_LINELENGTH + 1], *asp;
+
+    u_int oset = 0;
+    u_int length = caplen;
+    w5_node_t * w5 = NULL;
+    nd_dll_t * node = NULL;
+
+    nshorts = length / sizeof(u_short);
+    i = 0;
+    hsp = hexstuff;
+    asp = asciistuff;
+
+    u_char * cp = (u_char *)sp;
+    infonode_t *ifn = (infonode_t *)infonode;
+    
+    while (nshorts != 0)
+    {
+        s1 = (uint8_t)(*(cp)); 
+        cp++;
+        s2 = (uint8_t)(*(cp));
+        cp++;
+        (void)snprintf(hsp, sizeof(hexstuff) - (hsp - hexstuff),
+                       " %02x%02x", s1, s2);
+        hsp += HEXDUMP_HEXSTUFF_PER_SHORT;
+        *(asp++) = (char)(ND_ASCII_ISGRAPH(s1) ? s1 : '.');
+        *(asp++) = (char)(ND_ASCII_ISGRAPH(s2) ? s2 : '.');
+        i++;
+        if (i >= HEXDUMP_SHORTS_PER_LINE)
+        {
+            node = nd_dll_takeout_from_head_s(&ATOD_DISPLAY_W5IDLE_DLL);
+            if (!node) {
+                TE("fatal logic error; node: %p; ATOD_DISPLAY_W5IDLE_DLL: %p", node, ATOD_DISPLAY_W5IDLE_DLL);
+                exit(1);
+            }
+            w5 = container_of(node, w5_node_t, w5node);
+            *hsp = *asp = '\0';
+            (void)snprintf(w5->content, W5NODE_CONTENT_LENGTH, 
+                    "0x%04x: %-*s  %s", oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, asciistuff);
+            i = 0;
+            hsp = hexstuff;
+            asp = asciistuff;
+            oset += HEXDUMP_BYTES_PER_LINE;
+            nd_dll_insert_into_tail(&(ifn->w5head), &(ifn->w5tail), &(w5->w5node));
+        }
+        nshorts--;
+    }
+    if (length & 1)
+    {
+        s1 = (uint8_t)(*(cp));
+        cp++;
+        (void)snprintf(hsp, sizeof(hexstuff) - (hsp - hexstuff),
+                       " %02x", s1);
+        hsp += 3;
+        *(asp++) = (char)(ND_ASCII_ISGRAPH(s1) ? s1 : '.');
+        ++i;
+    }
+    if (i > 0)
+    {
+        node = nd_dll_takeout_from_head_s(&ATOD_DISPLAY_W5IDLE_DLL);
+        if (!node) {
+            TE("fatal logic error; node: %p; ATOD_DISPLAY_W5IDLE_DLL: %p", node, ATOD_DISPLAY_W5IDLE_DLL);
+            exit(1);
+        }
+        w5 = container_of(node, w5_node_t, w5node);
+        *hsp = *asp = '\0';
+        (void)snprintf(w5->content, W5NODE_CONTENT_LENGTH,
+                       "0x%04x: %-*s  %s", oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, asciistuff);
+        nd_dll_insert_into_tail(&(ifn->w5head), &(ifn->w5tail), &(w5->w5node));
+    }
+    
+    RVoid();
+}
+
+
+/**
  * @brief
  *  Parsing network frames
  * @memberof infonode
@@ -589,7 +704,7 @@ void analysis_fill_basic_info(void *infonode, const struct pcap_pkthdr *h)
  * @memberof packet
  *  network frame data
  */
-void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const unsigned char *sp)
+void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const u_char *sp)
 {
 
     TC("Called { %s(%p, %p)", __func__, h, sp);
@@ -600,10 +715,9 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
 
     analysis_fill_basic_info(infonode, h);
 
-    analysis_ts_print(ndo, &(h->ts), ifn->timestamp);
+    analysis_fill_w5_content(infonode, sp, h->caplen);
 
-    ifn->datalen = h->caplen;
-    memcpy(ifn->dataroom, sp, h->caplen);
+    analysis_ts_print(ndo, &(h->ts), ifn->timestamp);
 
     ndo->ndo_snapend = sp + h->caplen;
     ndo->ndo_packetp = sp;
@@ -743,6 +857,8 @@ int analysis_put_node_into_display_dll (void)
                 &(infonode->l1head), &(infonode->l1tail)
             );
 
+            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+
             nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
             node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
             if (!ATOD_FINISH_DLL_HEAD) {
@@ -791,6 +907,11 @@ void analysis_recover_l1l2node(
         exit(1);
     }
 
+    if (!(*idlehead)) {
+        TE("fatal logic error; *idlehead: %p", *idlehead);
+        exit(1);
+    } 
+
     if ((!(*head) && *tail) || (*head && !(*tail)) || 
         (!(*l1head) && *l1tail) || (*l1head && !(*l1tail)))
     {
@@ -808,6 +929,49 @@ void analysis_recover_l1l2node(
 
     *head = NULL; *tail = NULL;
     *l1head = NULL; *l1tail = NULL;
+
+    RVoid();
+}
+
+
+/**
+ * @brief
+ *  recover w5node
+ * @param idlehead
+ *  w5node idle list head
+ * @param head
+ *  head pointer to be recycled
+ * @param tail
+ *  tail pointer to be recycled
+ */
+void analysis_recover_w5node(nd_dll_t ** idlehead, nd_dll_t ** head, nd_dll_t ** tail)
+{
+    TC("Called { %s(%p, %p, %p)", __func__, idlehead, head, tail);
+
+    if (!idlehead || !head || !tail) {
+        TE("there is a case where the parameter is NULL"
+           "(idlehead: %p, head: %p, tail: %p)", idlehead, head, tail);
+        exit(1);
+    }
+
+    if (!(*idlehead)) {
+        TE("fatal logic error; *idlehead: %p", *idlehead);
+        exit(1);
+    }
+
+    if ((!(*head) && *tail) || (*head && !(*tail))) {
+        TE("fatal logic error; *head: %p; *tail: %p", *head, *tail);
+        exit(1);
+    }
+
+    if (!(*head) && !(*tail)) {
+        TI("don't need recover l1l2node");
+        RVoid();
+    }
+
+    nd_dll_insert_into_head_multiple(idlehead, *head, *tail);
+
+    *head = NULL; *tail = NULL;
 
     RVoid();
 }

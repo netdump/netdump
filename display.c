@@ -873,6 +873,11 @@ void display_content_to_the_interface(nd_dll_t * head)
 		int i = 0;
 		infonode = container_of(ATOD_CUR_DISPLAY_LINE, infonode_t, listnode);
 
+		if (!(infonode->l1l2head)) {
+			TE("fatal logic error; infonode->l1l2head: %p", infonode->l1l2head);
+			exit(1);
+		}
+
 		l1l2_node_t * l1l2h = container_of(infonode->l1l2head, l1l2_node_t, l1l2node);
 		
 		ATOD_DISPLAY_L1L2_HEAD = l1l2h;
@@ -945,7 +950,41 @@ void display_content_to_the_interface(nd_dll_t * head)
 
 		/* window 5 display */
 		DISPLAY_WIN_5_CONTENT_CLEAR();
+		
+		w5_node_t * w5 = NULL, *w5tmp = NULL;
+		w5 = container_of(infonode->w5head, w5_node_t, w5node);
 
+		if (!(infonode->w5head)) {
+			TE("fatal logic error; infonode->w5head: %p", infonode->w5head);
+			exit(1);
+		}
+
+		ATOD_DISPLAY_W5_CURINDEX = rows_num = 1;
+		ATOD_DISPLAY_W5_PSSB = 0;
+		ATOD_DISPLAY_W5_PSTB = 0;
+		ATOD_DISPLAY_W5_HEAD = w5tmp = w5;
+		ATOD_DISPLAY_W5_CUR = w5;
+
+		for (i = 0; i < display_G_win5_context_lines; i++)
+		{
+			if (!w5tmp) break;
+
+			ATOD_DISPLAY_W5_TAIL = w5tmp;
+
+			if (w5tmp == ATOD_DISPLAY_W5_CUR)
+				wattron(G_display.wins[5], COLOR_PAIR(5));
+			else
+				wattroff(G_display.wins[5], COLOR_PAIR(5));
+
+			mvwprintw(G_display.wins[5], (rows_num + i), 1, "%s", w5tmp->content);
+
+			if (!(w5tmp->w5node.next)) {
+				TI("win5 output complete");
+				break;
+			}
+
+			w5tmp = container_of((w5tmp->w5node.next), w5_node_t, w5node);
+		}
 	}
 	
 	wrefresh(G_display.wins[3]);
@@ -965,12 +1004,9 @@ void display_win_3_move_up_selected_content (void)
 {
 	//TC("Called { %s(void)", __func__);
 
-	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
-	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
-
 	if (!ATOD_CUR_DISPLAY_LINE)
 		return ;
-	
+
 	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
 	
 	nd_dll_t *node = ATOD_CUR_DISPLAY_LINE;
@@ -1122,13 +1158,23 @@ void display_win_4_move_up_selected_content (void)
 
 	l1l2_node_t * prev = NULL, * su = NULL;
 
-	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.prev == NULL && ATOD_DISPLAY_L1L2_CURLINE == 1)
+	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.prev == NULL && ATOD_DISPLAY_L1L2_CURLINE != 1) {
+		TW("warning ATOD_DISPLAY_L1L2_CURLINE: %d; ATOD_DISPLAY_L1L2_CUR->l1l2node.prev: %p",
+		   ATOD_DISPLAY_L1L2_CURLINE, ATOD_DISPLAY_L1L2_CUR->l1l2node.prev);
+		RVoid();
+	}
+
+	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.prev == NULL /*&& ATOD_DISPLAY_L1L2_CURLINE == 1*/)
 	{
 		display_popup_message_notification("It's already at the top");
 		RVoid();
 	}
 
 	prev = container_of((ATOD_DISPLAY_L1L2_CUR->l1l2node.prev), l1l2_node_t, l1l2node);
+	if (!prev) {
+		TE("fatal logic error; prev: %p;", prev);
+		exit(1);
+	}
 
 	if ((prev) && ATOD_DISPLAY_L1L2_CURLINE == 1)
 	{
@@ -1197,13 +1243,97 @@ void display_win_4_move_up_selected_content (void)
 
 /**
  * @brief
+ * 	redraw the window 5 interface
+ */
+void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int line)
+{
+	TC("Called { %s(%p, %p, %d)", __func__, newhead, cur, line);
+
+	int i = 0;
+	w5_node_t * w5tmp = NULL;
+	unsigned short rows_num = 1;
+
+	ATOD_DISPLAY_W5_CURINDEX = line;
+	ATOD_DISPLAY_W5_HEAD = w5tmp = newhead;
+	ATOD_DISPLAY_W5_CUR = cur;
+
+	for (i = 0; i < display_G_win5_context_lines; i++)
+	{
+		if (!w5tmp) break;
+
+		ATOD_DISPLAY_W5_TAIL = w5tmp;
+
+		if (w5tmp == ATOD_DISPLAY_W5_CUR)
+			wattron(G_display.wins[5], COLOR_PAIR(5));
+		else
+			wattroff(G_display.wins[5], COLOR_PAIR(5));
+
+		mvwprintw(G_display.wins[5], (rows_num + i), 1, "%s", w5tmp->content);
+
+		if (!(w5tmp->w5node.next)) {
+			TI("win5 output complete");
+			break;
+		}
+
+		w5tmp = container_of((w5tmp->w5node.next), w5_node_t, w5node);
+	}
+
+	RVoid();
+}
+
+
+/**
+ * @brief
  * 	window 5 move selection up
  */
 void display_win_5_move_up_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
+	if (!ATOD_DISPLAY_W5_CUR)
+		RVoid();
 
+	if (ATOD_DISPLAY_W5_CURINDEX < 1 || ATOD_DISPLAY_W5_CURINDEX > display_G_win5_context_lines) {
+		TW("warning ATOD_DISPLAY_W5_CURINDEX value is error");
+		RVoid();
+	}
+
+	if (ATOD_DISPLAY_W5_CUR->w5node.prev == NULL && ATOD_DISPLAY_W5_CURINDEX != 1) {
+		TW("warning ATOD_DISPLAY_W5_CURINDEX: %d; ATOD_DISPLAY_W5_CUR->w5node.prev: %p", 
+				ATOD_DISPLAY_W5_CURINDEX, ATOD_DISPLAY_W5_CUR->w5node.prev);
+		RVoid();
+	}
+
+	if (ATOD_DISPLAY_W5_CUR->w5node.prev == NULL) {
+		display_popup_message_notification("It's already at the top");
+		RVoid();
+	}
+
+	w5_node_t * prev = container_of(ATOD_DISPLAY_W5_CUR->w5node.prev, w5_node_t, w5node);
+	if (!prev) {
+		TE("fatal logic error; prev: %p;", prev);
+		exit(1);
+	} 
+
+	if ((ATOD_DISPLAY_W5_CUR == ATOD_DISPLAY_W5_HEAD) && (ATOD_DISPLAY_W5_CURINDEX == 1) && (prev)) {
+		display_win_5_redraw_interface(prev, prev, ATOD_DISPLAY_W5_CURINDEX);
+		RVoid();
+	}
+
+	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
+	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
+	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", ATOD_DISPLAY_W5_CUR->content);
+
+	ATOD_DISPLAY_W5_CURINDEX--;
+	ATOD_DISPLAY_W5_CUR = prev;
+
+	wattron(G_display.wins[5], COLOR_PAIR(5));
+	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
+	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
+	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", prev->content);
+	wattroff(G_display.wins[5], COLOR_PAIR(5));
+
+	wrefresh(G_display.wins[5]);
 
 	RVoid();
 }
@@ -1231,7 +1361,7 @@ void display_move_up_selected_content (int winnumber)
 			display_win_5_move_up_selected_content();
 			break;
 		default:
-			TE("A fatal error occurred");
+			TE("a fatal error occurred");
 			exit(1);
 			break;
 	}
@@ -1406,6 +1536,55 @@ void display_win_5_move_down_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
+	if (!ATOD_DISPLAY_W5_CUR)
+		RVoid();
+
+	if (ATOD_DISPLAY_W5_CURINDEX < 1 || ATOD_DISPLAY_W5_CURINDEX > display_G_win5_context_lines) {
+		TW("warning ATOD_DISPLAY_W5_CURINDEX value is error");
+		RVoid();
+	}
+
+	if (ATOD_DISPLAY_W5_CUR == ATOD_DISPLAY_W5_TAIL && ATOD_DISPLAY_W5_CUR->w5node.next == NULL) {
+		display_popup_message_notification("It's already at the bottom");
+		RVoid();
+	}
+
+	if (ATOD_DISPLAY_W5_CUR->w5node.next == NULL && ATOD_DISPLAY_W5_CUR != ATOD_DISPLAY_W5_TAIL) {
+		TW("warning value is error; ATOD_DISPLAY_W5_CUR->w5node.next: %p; ATOD_DISPLAY_W5_CUR:%p; ATOD_DISPLAY_W5_TAIL: %p",
+		   ATOD_DISPLAY_W5_CUR->w5node.next, ATOD_DISPLAY_W5_CUR, ATOD_DISPLAY_W5_TAIL);
+		RVoid();
+	}
+
+	if (!(ATOD_DISPLAY_W5_CUR->w5node.next)) {
+		display_popup_message_notification("It's already at the bottom");
+		RVoid();
+	}
+
+	w5_node_t * next = container_of((ATOD_DISPLAY_W5_CUR->w5node.next), w5_node_t, w5node);
+
+	if (ATOD_DISPLAY_W5_CUR == ATOD_DISPLAY_W5_TAIL && ATOD_DISPLAY_W5_CUR->w5node.next &&
+		ATOD_DISPLAY_W5_CURINDEX == display_G_win5_context_lines)
+	{
+		w5_node_t * newhead = container_of(ATOD_DISPLAY_W5_HEAD->w5node.next, w5_node_t, w5node);
+		display_win_5_redraw_interface(newhead, next, ATOD_DISPLAY_W5_CURINDEX);
+		RVoid();
+	}
+
+	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
+	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
+	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", ATOD_DISPLAY_W5_CUR->content);
+
+	ATOD_DISPLAY_W5_CURINDEX++;
+	ATOD_DISPLAY_W5_CUR = next;
+
+	wattron(G_display.wins[5], COLOR_PAIR(5));
+	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
+	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
+	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", next->content);
+	wattroff(G_display.wins[5], COLOR_PAIR(5));
+
+	wrefresh(G_display.wins[5]);
+
 	RVoid();
 }
 
@@ -1432,7 +1611,7 @@ void display_move_down_selected_content (int winnumber)
 			display_win_5_move_down_selected_content();
 			break;
 		default:
-			TE("A fatal error occurred");
+			TE("a fatal error occurred");
 			exit(1);
 			break;
 	}

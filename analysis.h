@@ -68,6 +68,13 @@
 #define BASIC_INFO_SUB_CAPTURE_LENGTH               "capture length: %u"
 
 
+#define ASCII_LINELENGTH                            (32U)
+#define HEXDUMP_BYTES_PER_LINE                      (16U)
+#define HEXDUMP_SHORTS_PER_LINE                     (HEXDUMP_BYTES_PER_LINE / (2U))
+#define HEXDUMP_HEXSTUFF_PER_SHORT                  (5U) /* 4 hex digits and a space */
+#define HEXDUMP_HEXSTUFF_PER_LINE                   (HEXDUMP_HEXSTUFF_PER_SHORT * HEXDUMP_SHORTS_PER_LINE)
+
+
 /**
  * @brief 
  *  The main function of the packet parsing process
@@ -172,5 +179,17 @@ int analysis_put_node_into_display_dll(void);
  */
 void analysis_recover_l1l2node(
     nd_dll_t **idlehead, nd_dll_t **head, nd_dll_t **tail, nd_dll_t **l1head, nd_dll_t **l1tail);
+
+/**
+ * @brief
+ *  recover w5node
+ * @param idlehead
+ *  w5node idle list head
+ * @param head
+ *  head pointer to be recycled
+ * @param tail
+ *  tail pointer to be recycled
+ */
+void analysis_recover_w5node(nd_dll_t **idlehead, nd_dll_t **head, nd_dll_t **tail);
 
 #endif  // __ANALYSIS_H__

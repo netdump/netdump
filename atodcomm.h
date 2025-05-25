@@ -90,11 +90,14 @@ typedef struct dtoainfo_s
     l1l2_node_t * l1l2cur;
     unsigned short l1l2curline;
 
-    unsigned short w5_curline;
+    unsigned short w5_curindex;
     unsigned short w5_pre_select_startbyte;
     unsigned short w5_pre_select_tailbyte;
-    unsigned int w5_startbyte;
-    unsigned int w5_tailbyte;
+
+    nd_dll_t * w5idle;
+    w5_node_t * w5head;
+    w5_node_t * w5cur;
+    w5_node_t * w5tail;
 
     unsigned short nlines;
     unsigned short curindex;
@@ -172,11 +175,13 @@ typedef struct dtoainfo_s
 #define ATOD_DISPLAY_L1L2_TAIL      (G_dtoainfo->l1l2tail)
 #define ATOD_DISPLAY_L1L2_CUR       (G_dtoainfo->l1l2cur)
 #define ATOD_DISPLAY_L1L2_CURLINE   (G_dtoainfo->l1l2curline)
-#define ATOD_DISPLAY_W5_CURLINE     (G_dtoainfo->w5_curline)
+#define ATOD_DISPLAY_W5_CURINDEX    (G_dtoainfo->w5_curindex)
 #define ATOD_DISPLAY_W5_PSSB        (G_dtoainfo->w5_pre_select_startbyte)
 #define ATOD_DISPLAY_W5_PSTB        (G_dtoainfo->w5_pre_select_tailbyte)
-#define ATOD_DISPLAY_W5_STARTBYTE   (G_dtoainfo->w5_startbyte)
-#define ATOD_DISPLAY_W5_TAILBYTE    (G_dtoainfo->w5_tailbyte)
+#define ATOD_DISPLAY_W5IDLE_DLL     (G_dtoainfo->w5idle)
+#define ATOD_DISPLAY_W5_CUR         (G_dtoainfo->w5cur)
+#define ATOD_DISPLAY_W5_HEAD        (G_dtoainfo->w5head)
+#define ATOD_DISPLAY_W5_TAIL        (G_dtoainfo->w5tail)
 
 
 /**
@@ -204,15 +209,17 @@ extern dtoainfo_t * G_dtoainfo;
  * @brief
  *  define the size of the memory space used
  */
-#define DTOAIFO_T_USE_SIZE                                  (sizeof(dtoainfo_t))
-#define ALL_INFONODE_T_USE_SIZE                             ((sizeof(infonode_t)) * (INFONODE_NUMBER))
-#define ALL_L1L2NODE_T_USE_SIZE                             ((sizeof(l1l2_node_t)) * (INFONODE_NUMBER) * (l1l2_NODE_NUMS))
+#define DTOAIFO_T_USE_SIZE              (sizeof(dtoainfo_t))
+#define ALL_INFONODE_T_USE_SIZE         ((sizeof(infonode_t)) * (INFONODE_NUMBER))
+#define ALL_L1L2NODE_T_USE_SIZE         ((sizeof(l1l2_node_t)) * (INFONODE_NUMBER) * (l1l2_NODE_NUMS))
+#define ALL_W5NODE_T_USE_SIZE           ((sizeof(w5_node_t)) * (INFONODE_NUMBER) * (W5_NODE_NUMS))
 
 
 /**
  * @brief ctoa shared memory file size
  */
-#define ATODCOMM_SHM_FILESIZE                               (DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_L1L2NODE_T_USE_SIZE)
+#define ATODCOMM_SHM_FILESIZE           \
+    (DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_L1L2NODE_T_USE_SIZE + ALL_W5NODE_T_USE_SIZE)
 
 
 /**
@@ -244,6 +251,13 @@ int atodcomm_init_infonode_list (void);
  *  initialize the l1l2node list
  */
 int atodcomm_init_l1l2node_list (void);
+
+
+/**
+ * @brief
+ *  initialize the w5node list
+ */
+int atodcomm_init_w5node_list (void);
 
 
 /**

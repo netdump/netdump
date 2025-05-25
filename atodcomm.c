@@ -98,6 +98,38 @@ int atodcomm_init_l1l2node_list (void)
 
 /**
  * @brief
+ *  initialize the w5node list
+ */
+int atodcomm_init_w5node_list (void)
+{
+    TC("Called { %s (void)", __func__);
+
+    w5_node_t *tmp = (w5_node_t *)(G_atod_shm_mem + DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_W5NODE_T_USE_SIZE);
+
+    G_dtoainfo->w5idle = &(tmp->w5node);
+
+    int i, nums = (INFONODE_NUMBER) * (W5_NODE_NUMS);
+    for (i = 0; i < nums; i++)
+    {
+        if (i == 0)
+            tmp->w5node.prev = NULL;
+        else 
+            tmp->w5node.prev = (void *)(tmp - 1);
+
+        if (i == (nums -1))
+            tmp->w5node.next = NULL;
+        else    
+            tmp->w5node.next = (void *)(tmp + 1);
+
+        tmp = tmp + 1;
+    }
+
+    RInt(ND_OK);
+}
+
+
+/**
+ * @brief
  *  Open up shared memory for ATOD
  */
 int atodcomm_init_atodcomm(void)
@@ -124,6 +156,7 @@ int atodcomm_init_atodcomm(void)
 
     atodcomm_init_infonode_list();
     atodcomm_init_l1l2node_list();
+    atodcomm_init_w5node_list();
 
     TI("ATODCOMM_SHM_BASEADDR: %p; G_atod_shm_mem: %p", ATODCOMM_SHM_BASEADDR, G_atod_shm_mem);
 
@@ -148,6 +181,18 @@ void atodcomm_init_dtoainfo_to_zero(void)
     G_dtoainfo->finlisttail = NULL;
 
     G_dtoainfo->l1l2idle = NULL;
+    G_dtoainfo->l1l2head = NULL;
+    G_dtoainfo->l1l2tail = NULL;
+    G_dtoainfo->l1l2cur = NULL;
+    G_dtoainfo->l1l2curline = 0;
+
+    G_dtoainfo->w5_curindex = 0;
+    G_dtoainfo->w5_pre_select_startbyte = 0;
+    G_dtoainfo->w5_pre_select_tailbyte = 0;
+    G_dtoainfo->w5idle = NULL;
+    G_dtoainfo->w5head = NULL;
+    G_dtoainfo->w5tail = NULL;
+    G_dtoainfo->w5tail = NULL;
 
     G_dtoainfo->curindex = 0;
     G_dtoainfo->curlines = 0;

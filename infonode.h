@@ -6,28 +6,15 @@
 
 
 /**
- * @brief
- *  struct l1l2_node_s nums
+ * @brief struct l1l2_node_s nums
  */
 #define l1l2_NODE_NUMS                          (80U)
-
-
 /**
  * @brief l1l2node content length
  */
 #define L1L2NODE_CONTENT_LENGTH                 (128U)
-
-
 /**
- * @brief
- *  Specify the size of the dataroom
- */
-#define INFONODE_DATAROOM_SIZE                  (8192U) // 8K
-
-
-/**
- * @brief
- *  level 1 and level 2 tittle node
+ * @brief level 1 and level 2 tittle node
  */
 typedef struct l1l2_node_s l1l2_node_t;
 struct l1l2_node_s 
@@ -45,6 +32,24 @@ struct l1l2_node_s
 
     char content[L1L2NODE_CONTENT_LENGTH];
 };
+
+
+/**
+ * @brief struct w5_node_s nums
+ */
+#define W5_NODE_NUMS                            (128U)
+/**
+ * @brief w5node content length                 
+ */
+#define W5NODE_CONTENT_LENGTH                   (96U)
+/**
+ * @brief window 5 content 
+ */
+typedef struct w5_node_s 
+{
+    nd_dll_t w5node;
+    char content[W5NODE_CONTENT_LENGTH];
+} w5_node_t;
 
 
 /**
@@ -88,6 +93,9 @@ typedef struct infonode_s
     nd_dll_t * l1head;
     nd_dll_t * l1tail;
 
+    nd_dll_t * w5head;
+    nd_dll_t * w5tail;
+
     unsigned short typel2;
     unsigned short typel3;
     unsigned short typel4;
@@ -101,9 +109,6 @@ typedef struct infonode_s
     char protocol[16];
     char length[8];
     char brief[256];
-
-    unsigned int datalen;
-    unsigned char dataroom[INFONODE_DATAROOM_SIZE];
 
 } infonode_t;
 
