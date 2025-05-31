@@ -100,6 +100,31 @@ display_t G_display = {
 
 /**
  * @brief
+ * 	[win 5] specifies the byte offset in the content line [hex] [char]
+ * 	byte index from 0 to 15
+ * @param hex_offset hexadecimal offset
+ * @param char_offset character offset
+ */
+typedef struct content_line_hex_char_offset_s 
+{
+	unsigned char hex_offset_start;
+	unsigned char hex_offset_tail;
+	unsigned char char_offset;
+	unsigned char padding;
+} content_line_hex_char_offset_t;
+
+#define CLHCO_NUMBER											(16U)
+
+content_line_hex_char_offset_t clhco[CLHCO_NUMBER] = {
+	{10, 11, 52, 0}, {12, 13, 53, 0}, {15, 16, 54, 0}, {17, 18, 55, 0},
+	{20, 21, 56, 0}, {22, 23, 57, 0}, {25, 26, 58, 0}, {27, 28, 59, 0},
+	{30, 31, 60, 0}, {32, 33, 61, 0}, {35, 36, 62, 0}, {37, 38, 63, 0},
+	{40, 41, 64, 0}, {42, 43, 65, 0}, {45, 46, 66, 0}, {47, 48, 67, 0}
+};
+
+
+/**
+ * @brief
  * 	display the previous head, tail, and current value of the linked list
  * 	the following variables are related to window 3
  */
@@ -960,8 +985,8 @@ void display_content_to_the_interface(nd_dll_t * head)
 		}
 
 		ATOD_DISPLAY_W5_CURINDEX = rows_num = 1;
-		ATOD_DISPLAY_W5_PSSB = 0;
-		ATOD_DISPLAY_W5_PSTB = 0;
+		ATOD_DISPLAY_W5_START_BYTE_INDEX = w5->startindex;
+		ATOD_DISPLAY_W5_END_BYTE_INDEX = 0;
 		ATOD_DISPLAY_W5_HEAD = w5tmp = w5;
 		ATOD_DISPLAY_W5_CUR = w5;
 
@@ -985,6 +1010,8 @@ void display_content_to_the_interface(nd_dll_t * head)
 
 			w5tmp = container_of((w5tmp->w5node.next), w5_node_t, w5node);
 		}
+
+		ATOD_DISPLAY_W5_END_BYTE_INDEX = ATOD_DISPLAY_W5_TAIL->endindex;
 	}
 	
 	wrefresh(G_display.wins[3]);
@@ -1035,6 +1062,291 @@ void display_win_3_move_up_selected_content (void)
 }
 
 
+/** define display_win_5_redraw_interface */
+void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int line);
+
+/**
+ * @brief
+ * 	win4 clears the color of the curline area of win5
+ */
+#define DISPLAY_WIN4_CLEAR_WIN5_CURLINE_COLOR()																\
+	do {																									\
+		wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);												\
+		wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");									\
+		mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", ATOD_DISPLAY_W5_CUR->content);		\
+	} while(0);																								\
+
+
+/**
+ * @brief
+ * 	win4 clears the color of the specified area of ​​win5
+ * @param l1l2node win4 specified node
+ */
+void display_win4_clear_win5_specified_area_color(l1l2_node_t * l1l2node)
+{
+	TC("Called { %s(%p)", __func__, l1l2node);
+
+	if (!l1l2node) 
+	{
+		TE("param error; l1l2node: %p", l1l2node);
+		exit(1);
+	}
+
+	if (l1l2node->byte_start > INFONODE_BYTE_START_MAX || l1l2node->byte_end > INFONODE_BYTE_END_MAX
+		|| l1l2node->byte_start < 0 || l1l2node->byte_end < 0)
+	{
+		TE("byte_start or byte_end is problems; l1l2node->byte_start: %d; l1l2node->byte_end: %d",
+		   l1l2node->byte_start, l1l2node->byte_end);
+		exit(1);
+	}
+
+	if (l1l2node->byte_start == 0 && l1l2node->byte_end == 0)
+		RVoid();
+
+	if (l1l2node->byte_start < ATOD_DISPLAY_W5_START_BYTE_INDEX)
+	{
+		w5_node_t * tmp_w5_head = ATOD_DISPLAY_W5_HEAD;
+		unsigned short tmp_w5_start_byte_index = ATOD_DISPLAY_W5_START_BYTE_INDEX;
+		while (l1l2node->byte_start < tmp_w5_start_byte_index)
+		{
+			if (!(tmp_w5_head->w5node.prev))
+			{
+				TE("a fatal error occurred; l1l2node: %p; l1l2node->byte_start: %d; tmp_w5_start_byte_index: %hu",
+				l1l2node, l1l2node->byte_start, tmp_w5_start_byte_index);
+				exit(1);
+			}
+
+			tmp_w5_head = container_of(tmp_w5_head->w5node.prev, w5_node_t, w5node);
+			tmp_w5_start_byte_index = tmp_w5_head->startindex;
+		}
+
+		display_win_5_redraw_interface(tmp_w5_head, tmp_w5_head, 1);
+	}
+
+	DISPLAY_WIN4_CLEAR_WIN5_CURLINE_COLOR();
+
+	w5_node_t * byte_start = NULL, * tmp = NULL;
+	unsigned short byte_start_index = 0, tmp_index = 1;
+
+	for (tmp_index = 1, tmp = ATOD_DISPLAY_W5_HEAD; tmp_index <= display_G_win5_context_lines; tmp_index++)
+	{
+		if (l1l2node->byte_start >= tmp->startindex && l1l2node->byte_start <= tmp->endindex) 
+		{
+			byte_start = tmp;
+			byte_start_index = tmp_index;
+			break;
+		}
+		if (!(tmp->w5node.next)) 
+		{
+			TE("a fatal error occurred; l1l2node: %p; l1l2node->byte_start: %d;", l1l2node, l1l2node->byte_start);
+			exit(1);
+		}
+		tmp = container_of(tmp->w5node.next, w5_node_t, w5node);
+	}
+
+	if (!byte_start)
+	{
+		TE("a fatal error occurred; byte_start: %p;", byte_start);
+		exit(1);
+	}
+
+	tmp = byte_start;
+	tmp_index = byte_start_index;
+	for (tmp_index = byte_start_index; tmp_index <= display_G_win5_context_lines; tmp_index++)
+	{
+		wmove(G_display.wins[5], tmp_index, 1);
+		wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
+		mvwprintw(G_display.wins[5], tmp_index, 1, "%s", tmp->content);
+
+		if (l1l2node->byte_end > tmp->endindex) 
+		{
+			if (!(tmp->w5node.next))
+			{
+				TE("a fatal error occurred; l1l2node: %p; l1l2node->byte_start: %d;", l1l2node, l1l2node->byte_start);
+				exit(1);
+			}
+			tmp = container_of(tmp->w5node.next, w5_node_t, w5node);
+		}
+	}
+
+	wrefresh(G_display.wins[5]);
+
+	RVoid();
+}
+
+
+/**
+ * @brief
+ * win4 fills the color of the specified area of ​​win5
+ * @param l1l2node win4 specified node
+ */
+void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
+{
+	TC("Called { %s(%p)", __func__, l1l2node);
+
+	if (!l1l2node) {
+		TE("param error; l1l2node: %p", l1l2node);
+		exit(1);
+	}
+
+	if (l1l2node->byte_start > INFONODE_BYTE_START_MAX || l1l2node->byte_end > INFONODE_BYTE_END_MAX 
+		|| l1l2node->byte_start < 0 || l1l2node->byte_end < 0)
+	{
+		TE("byte_start or byte_end is problems; l1l2node->byte_start: %d; l1l2node->byte_end: %d",
+		   l1l2node->byte_start, l1l2node->byte_end);
+		exit(1);
+	}
+
+	if (l1l2node->byte_start == 0 && l1l2node->byte_end == 0)
+		RVoid();
+
+	if (l1l2node->byte_start < ATOD_DISPLAY_W5_START_BYTE_INDEX)
+	{
+		w5_node_t *tmp_w5_head = ATOD_DISPLAY_W5_HEAD;
+		unsigned short tmp_w5_start_byte_index = ATOD_DISPLAY_W5_START_BYTE_INDEX;
+		while (l1l2node->byte_start < tmp_w5_start_byte_index)
+		{
+			if (!(tmp_w5_head->w5node.prev))
+			{
+				TE("a fatal error occurred; l1l2node: %p; l1l2node->byte_start: %d; tmp_w5_start_byte_index: %hu",
+				   l1l2node, l1l2node->byte_start, tmp_w5_start_byte_index);
+				exit(1);
+			}
+
+			tmp_w5_head = container_of(tmp_w5_head->w5node.prev, w5_node_t, w5node);
+			tmp_w5_start_byte_index = tmp_w5_head->startindex;
+		}
+
+		display_win_5_redraw_interface(tmp_w5_head, tmp_w5_head, 1);
+	}
+
+	DISPLAY_WIN4_CLEAR_WIN5_CURLINE_COLOR();
+
+	w5_node_t * byte_start = NULL, * byte_tail = NULL, * tmp = NULL;
+	unsigned short byte_start_index = 0, byte_tail_index = 0, tmp_index = 1;
+
+	for (tmp_index = 1, tmp = ATOD_DISPLAY_W5_HEAD; tmp_index <= display_G_win5_context_lines; tmp_index++)
+	{
+		if (l1l2node->byte_start >= tmp->startindex && l1l2node->byte_start <= tmp->endindex)
+		{
+			byte_start = tmp;
+			byte_start_index = tmp_index;
+		}
+		if (l1l2node->byte_end >= tmp->startindex && l1l2node->byte_end <= tmp->endindex) 
+		{
+			byte_tail = tmp;
+			byte_tail_index = tmp_index;
+			break;
+		}
+
+		if (!(tmp->w5node.next))
+		{
+			TE("a fatal error occurred; l1l2node: %p; l1l2node->byte_start: %d;", l1l2node, l1l2node->byte_start);
+			exit(1);
+		}
+		tmp = container_of(tmp->w5node.next, w5_node_t, w5node);
+	}
+
+	unsigned char hex_start = 0, hex_tail = 0, char_start = 0, char_tail = 0;
+
+	if (!byte_start)
+	{
+		TE("a fatal error occurred; byte_start: %p;", byte_start);
+		exit(1);
+	}
+
+	if (byte_start == byte_tail)
+	{
+		if (byte_start_index != byte_tail_index)
+		{
+			TE("a fatal error occurred; byte_start(%p) == byte_tail(%p); but byte_start_index(%hu) != byte_tail_index(%hu)",
+			   byte_start, byte_tail, byte_start_index, byte_tail_index);
+			exit(1);
+		}
+		if ((l1l2node->byte_end - l1l2node->byte_start) > 15)
+		{
+			TE("a fatal error occurred; byte_start(%p) == byte_tail(%p); but (l1l2node->byte_end(%hu) - l1l2node->byte_start(%hu)) > 15",
+			   byte_start, byte_tail, l1l2node->byte_end, l1l2node->byte_start);
+			exit(1);
+		}
+	}
+
+	if (byte_start_index == byte_tail_index)
+	{
+		if (byte_start != byte_tail)
+		{
+			TE("a fatal error occurred; byte_start_index(%hu) == byte_tail_index(%hu); but byte_start(%p) != byte_tail(%p)",
+			   byte_start_index, byte_tail_index, byte_start, byte_tail);
+			exit(1);
+		}
+		if ((l1l2node->byte_end - l1l2node->byte_start) > 15)
+		{
+			TE("a fatal error occurred; byte_start_index(%hu) == byte_tail_index(%hu); but (l1l2node->byte_end(%hu) - l1l2node->byte_start(%hu)) > 15",
+			   byte_start_index, byte_tail_index, l1l2node->byte_end, l1l2node->byte_start);
+			exit(1);
+		}
+	}
+
+	if (byte_start == byte_tail && byte_start_index == byte_tail_index && (l1l2node->byte_end - l1l2node->byte_start) <= 15)
+	{
+		hex_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].hex_offset_start;
+		hex_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].hex_offset_tail;
+		char_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].char_offset;
+		char_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].char_offset;
+		wattron(G_display.wins[5], COLOR_PAIR(5));
+		mvwaddnstr(G_display.wins[5], byte_start_index, hex_start, byte_start->content + hex_start, hex_tail - hex_start + 1);
+		mvwaddnstr(G_display.wins[5], byte_start_index, char_start, byte_start->content + char_start, char_tail - char_start + 1);
+		wattroff(G_display.wins[5], COLOR_PAIR(5));
+		RVoid();
+	}
+
+	if (!(byte_start->w5node.next))
+	{
+		TE("a fatal error occurred; byte_start: %p; byte_start->w5node.next: %p;", byte_start, byte_start->w5node.next);
+		exit(1);
+	}
+
+	hex_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].hex_offset_start;
+	hex_tail = clhco[byte_start->endindex % CLHCO_NUMBER].hex_offset_tail;
+	char_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].char_offset;
+	char_tail = clhco[byte_start->endindex % CLHCO_NUMBER].char_offset;
+	wattron(G_display.wins[5], COLOR_PAIR(5));
+	mvwaddnstr(G_display.wins[5], byte_start_index, hex_start, byte_start->content + hex_start, hex_tail - hex_start + 1);
+	mvwaddnstr(G_display.wins[5], byte_start_index, char_start, byte_start->content + char_start, char_tail - char_start + 1);
+	wattroff(G_display.wins[5], COLOR_PAIR(5));
+
+	tmp = container_of(byte_start->w5node.next, w5_node_t, w5node);
+	for (tmp_index = (byte_start_index + 1); tmp_index <= display_G_win5_context_lines; tmp_index++)
+	{
+		if (byte_tail == tmp) 
+		{
+			hex_start = clhco[tmp->startindex % CLHCO_NUMBER].hex_offset_start;
+			hex_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].hex_offset_tail;
+			char_start = clhco[tmp->startindex % CLHCO_NUMBER].char_offset;
+			char_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].char_offset;
+			wattron(G_display.wins[5], COLOR_PAIR(5));
+			mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start, hex_tail - hex_start + 1);
+			mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start, char_tail - char_start + 1);
+			wattroff(G_display.wins[5], COLOR_PAIR(5));
+			break;
+		}
+
+		hex_start = clhco[tmp->startindex % CLHCO_NUMBER].hex_offset_start;
+		hex_tail = clhco[tmp->endindex % CLHCO_NUMBER].hex_offset_tail;
+		char_start = clhco[tmp->startindex % CLHCO_NUMBER].char_offset;
+		char_tail = clhco[tmp->endindex % CLHCO_NUMBER].char_offset;
+		wattron(G_display.wins[5], COLOR_PAIR(5));
+		mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start, hex_tail - hex_start + 1);
+		mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start, char_tail - char_start + 1);
+		wattroff(G_display.wins[5], COLOR_PAIR(5));
+	}
+
+	wrefresh(G_display.wins[5]);
+
+	RVoid();
+}
+
+
 /**
  * @brief
  * 	redraw the window 4 interface
@@ -1078,7 +1390,7 @@ void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, in
 
 		ATOD_DISPLAY_L1L2_TAIL = tmp;
 
-		if (rows_num == ATOD_DISPLAY_L1L2_CURLINE)
+		if (rows_num == ATOD_DISPLAY_L1L2_CURLINE) 
 			wattron(G_display.wins[4], COLOR_PAIR(5));
 		else
 			wattroff(G_display.wins[4], COLOR_PAIR(5));
@@ -1178,7 +1490,9 @@ void display_win_4_move_up_selected_content (void)
 
 	if ((prev) && ATOD_DISPLAY_L1L2_CURLINE == 1)
 	{
+		display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
 		display_win_4_redraw_interface(prev, prev, ATOD_DISPLAY_L1L2_CURLINE);
+		display_win4_fills_win5_specified_area_color(prev);
 		RVoid();
 	}
 
@@ -1201,6 +1515,8 @@ void display_win_4_move_up_selected_content (void)
 				ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
 		exit(1);
 	}
+
+	display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
 
 	if (prev->level == 2) 
 	{
@@ -1232,6 +1548,8 @@ void display_win_4_move_up_selected_content (void)
 
 	wattroff(G_display.wins[4], COLOR_PAIR(5));
 
+	display_win4_fills_win5_specified_area_color(prev);
+
 	ATOD_DISPLAY_L1L2_CURLINE--;
 	ATOD_DISPLAY_L1L2_CUR = prev;
 
@@ -1256,6 +1574,7 @@ void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int li
 	ATOD_DISPLAY_W5_CURINDEX = line;
 	ATOD_DISPLAY_W5_HEAD = w5tmp = newhead;
 	ATOD_DISPLAY_W5_CUR = cur;
+	ATOD_DISPLAY_W5_START_BYTE_INDEX = w5tmp->startindex;
 
 	for (i = 0; i < display_G_win5_context_lines; i++)
 	{
@@ -1277,6 +1596,10 @@ void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int li
 
 		w5tmp = container_of((w5tmp->w5node.next), w5_node_t, w5node);
 	}
+
+	ATOD_DISPLAY_W5_END_BYTE_INDEX = ATOD_DISPLAY_W5_TAIL->endindex;
+
+	wrefresh(G_display.wins[5]);
 
 	RVoid();
 }
@@ -1466,8 +1789,10 @@ void display_win_4_move_down_selected_content(void)
 		}
 		if (tmp->level == 1)
 			newhead = tmp;
-
+		display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
 		display_win_4_redraw_interface(newhead, next, ATOD_DISPLAY_L1L2_CURLINE);
+		display_win4_fills_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
+		RVoid();
 	}
 
 	if (ATOD_DISPLAY_L1L2_CUR->level == 1)
@@ -1489,6 +1814,8 @@ void display_win_4_move_down_selected_content(void)
 		   ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
 		exit(1);
 	}
+
+	display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
 
 	if (next->level == 2)
 	{
@@ -1518,6 +1845,8 @@ void display_win_4_move_down_selected_content(void)
 	}
 
 	wattroff(G_display.wins[4], COLOR_PAIR(5));
+
+	display_win4_fills_win5_specified_area_color(next);
 
 	ATOD_DISPLAY_L1L2_CURLINE++;
 	ATOD_DISPLAY_L1L2_CUR = next;

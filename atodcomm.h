@@ -91,8 +91,8 @@ typedef struct dtoainfo_s
     unsigned short l1l2curline;
 
     unsigned short w5_curindex;
-    unsigned short w5_pre_select_startbyte;
-    unsigned short w5_pre_select_tailbyte;
+    unsigned short w5_start_byte_index;         // from 0 start
+    unsigned short w5_end_byte_index;
 
     nd_dll_t * w5idle;
     w5_node_t * w5head;
@@ -160,28 +160,28 @@ typedef struct dtoainfo_s
  *  ATOD_DISPLAY_MAX_LINES: Maximum number of rows that can be displayed
  *  ATOD_CUR_DISPLAY_INDEX: current line index
  */
-#define ATOD_DISPLAY_DLL_NUMS       (G_dtoainfo->curlines)
-#define ATOD_FINISH_DLL_NUMS        (G_dtoainfo->finlines)
-#define ATOD_DISPLAY_MAX_LINES      (G_dtoainfo->nlines)
-#define ATOD_CUR_DISPLAY_LINE       (G_dtoainfo->curline)
-#define ATOD_CUR_DISPLAY_INDEX      (G_dtoainfo->curindex)
-#define ATOD_FINISH_DLL_HEAD        (G_dtoainfo->finlisthead)
-#define ATOD_FINISH_DLL_TAIL        (G_dtoainfo->finlisttail)
-#define ATOD_DISPLAY_DLL_HEAD       (G_dtoainfo->listhead)
-#define ATOD_DISPLAY_DLL_TAIL       (G_dtoainfo->listtail)
-#define ATOD_IDLE_DLL               (G_dtoainfo->idlelist)
-#define ATOD_L1L2IDLE_DLL           (G_dtoainfo->l1l2idle)
-#define ATOD_DISPLAY_L1L2_HEAD      (G_dtoainfo->l1l2head)
-#define ATOD_DISPLAY_L1L2_TAIL      (G_dtoainfo->l1l2tail)
-#define ATOD_DISPLAY_L1L2_CUR       (G_dtoainfo->l1l2cur)
-#define ATOD_DISPLAY_L1L2_CURLINE   (G_dtoainfo->l1l2curline)
-#define ATOD_DISPLAY_W5_CURINDEX    (G_dtoainfo->w5_curindex)
-#define ATOD_DISPLAY_W5_PSSB        (G_dtoainfo->w5_pre_select_startbyte)
-#define ATOD_DISPLAY_W5_PSTB        (G_dtoainfo->w5_pre_select_tailbyte)
-#define ATOD_DISPLAY_W5IDLE_DLL     (G_dtoainfo->w5idle)
-#define ATOD_DISPLAY_W5_CUR         (G_dtoainfo->w5cur)
-#define ATOD_DISPLAY_W5_HEAD        (G_dtoainfo->w5head)
-#define ATOD_DISPLAY_W5_TAIL        (G_dtoainfo->w5tail)
+#define ATOD_DISPLAY_DLL_NUMS                   (G_dtoainfo->curlines)
+#define ATOD_FINISH_DLL_NUMS                    (G_dtoainfo->finlines)
+#define ATOD_DISPLAY_MAX_LINES                  (G_dtoainfo->nlines)
+#define ATOD_CUR_DISPLAY_LINE                   (G_dtoainfo->curline)
+#define ATOD_CUR_DISPLAY_INDEX                  (G_dtoainfo->curindex)
+#define ATOD_FINISH_DLL_HEAD                    (G_dtoainfo->finlisthead)
+#define ATOD_FINISH_DLL_TAIL                    (G_dtoainfo->finlisttail)
+#define ATOD_DISPLAY_DLL_HEAD                   (G_dtoainfo->listhead)
+#define ATOD_DISPLAY_DLL_TAIL                   (G_dtoainfo->listtail)
+#define ATOD_IDLE_DLL                           (G_dtoainfo->idlelist)
+#define ATOD_L1L2IDLE_DLL                       (G_dtoainfo->l1l2idle)
+#define ATOD_DISPLAY_L1L2_HEAD                  (G_dtoainfo->l1l2head)
+#define ATOD_DISPLAY_L1L2_TAIL                  (G_dtoainfo->l1l2tail)
+#define ATOD_DISPLAY_L1L2_CUR                   (G_dtoainfo->l1l2cur)
+#define ATOD_DISPLAY_L1L2_CURLINE               (G_dtoainfo->l1l2curline)
+#define ATOD_DISPLAY_W5_CURINDEX                (G_dtoainfo->w5_curindex)
+#define ATOD_DISPLAY_W5_START_BYTE_INDEX        (G_dtoainfo->w5_start_byte_index)       // need to modify
+#define ATOD_DISPLAY_W5_END_BYTE_INDEX          (G_dtoainfo->w5_end_byte_index)         // need to modify
+#define ATOD_DISPLAY_W5IDLE_DLL                 (G_dtoainfo->w5idle)
+#define ATOD_DISPLAY_W5_CUR                     (G_dtoainfo->w5cur)
+#define ATOD_DISPLAY_W5_HEAD                    (G_dtoainfo->w5head)
+#define ATOD_DISPLAY_W5_TAIL                    (G_dtoainfo->w5tail)
 
 
 /**

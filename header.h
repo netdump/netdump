@@ -18,14 +18,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include "pcap.h"
 #include "trace.h"
 #include "ndo.h"
 #include "infonode.h"
 
+#if 1
 typedef unsigned char u_char;
 typedef unsigned int u_int;
+#endif
 
 /*
  * Check whether this is GCC major.minor or a later release, or some

@@ -27,7 +27,9 @@ struct l1l2_node_s
     int level;
     int isexpand;
     
-    int byte_start;
+    #define INFONODE_BYTE_START_MAX             (65535U)
+    int byte_start;                             // index from 0
+    #define INFONODE_BYTE_END_MAX               (65535U)
     int byte_end;
 
     char content[L1L2NODE_CONTENT_LENGTH];
@@ -48,6 +50,8 @@ struct l1l2_node_s
 typedef struct w5_node_s 
 {
     nd_dll_t w5node;
+    int startindex;
+    int endindex;
     char content[W5NODE_CONTENT_LENGTH];
 } w5_node_t;
 

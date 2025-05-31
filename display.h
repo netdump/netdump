@@ -14,6 +14,7 @@
 #ifndef __DISPLAY_H__
 #define __DISPLAY_H__
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 
 #include "panel.h"
 #include "ncurses.h"

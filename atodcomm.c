@@ -104,7 +104,7 @@ int atodcomm_init_w5node_list (void)
 {
     TC("Called { %s (void)", __func__);
 
-    w5_node_t *tmp = (w5_node_t *)(G_atod_shm_mem + DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_W5NODE_T_USE_SIZE);
+    w5_node_t *tmp = (w5_node_t *)(G_atod_shm_mem + DTOAIFO_T_USE_SIZE + ALL_INFONODE_T_USE_SIZE + ALL_L1L2NODE_T_USE_SIZE);
 
     G_dtoainfo->w5idle = &(tmp->w5node);
 
@@ -187,8 +187,8 @@ void atodcomm_init_dtoainfo_to_zero(void)
     G_dtoainfo->l1l2curline = 0;
 
     G_dtoainfo->w5_curindex = 0;
-    G_dtoainfo->w5_pre_select_startbyte = 0;
-    G_dtoainfo->w5_pre_select_tailbyte = 0;
+    G_dtoainfo->w5_start_byte_index = 0;
+    G_dtoainfo->w5_end_byte_index = 0;
     G_dtoainfo->w5idle = NULL;
     G_dtoainfo->w5head = NULL;
     G_dtoainfo->w5tail = NULL;
