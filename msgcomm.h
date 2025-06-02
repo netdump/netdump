@@ -406,16 +406,6 @@ extern memcomm_t memcomm;
  * 	Stores the pause status value
  * 	Stores the continue status value
  * 	Store exit status value
- * @memberof _top
- * 	Store the top status value
- * @memberof _bottom
- * 	Store the bottom status value
- * @memberof _win3_curline
- * 	Current line number of window 3
- * @memberof _win4_curline
- *	Current line number of window 4
- * @memberof _win5_curline
- *	Current line number of window 5
  * @memberof _cppc
  * 	Command parameter parsing completed
  * @memberof padding
@@ -443,13 +433,6 @@ typedef struct {
 
 	unsigned int _runflag_;
 	unsigned int _runflag_c2d;
-
-	unsigned int _top;
-	unsigned int _bottom;
-	unsigned int _win3_curline;
-	unsigned int _win4_curline;
-
-	unsigned int _win5_curline;
 
 	volatile unsigned int _cppc;
 
@@ -583,8 +566,8 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_transfer_status_change(address, value)											\
 	do {																						\
-		__atomic_store_n((address), value, __ATOMIC_SEQ_CST);									\
-		__atomic_thread_fence(__ATOMIC_SEQ_CST);												\
+		__atomic_store_n((address), value, __ATOMIC_RELEASE);									\
+		/*__atomic_thread_fence(__ATOMIC_SEQ_CST);*/											\
 	} while (0);
 
 
@@ -598,9 +581,25 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_receive_status_value(address, variable)											\
 	do {																						\
-		__atomic_thread_fence(__ATOMIC_SEQ_CST);												\
-		variable = __atomic_load_n(address, __ATOMIC_SEQ_CST);									\
+		/*__atomic_thread_fence(__ATOMIC_SEQ_CST);*/											\
+		variable = __atomic_load_n(address, __ATOMIC_ACQUIRE);									\
 	} while (0);
+
+
+/**
+ * @brief
+ * 	Receive the transmitted status value
+ * @param address
+ * 	Get the address of the status value
+ * @param variable
+ * 	Store the obtained status value
+ */
+#define msgcomm_receive_status_value_relaxed(address, variable)									\
+	do {																						\
+		/*__atomic_thread_fence(__ATOMIC_SEQ_CST);*/											\
+		variable = __atomic_load_n(address, __ATOMIC_RELAXED);									\
+	} while (0);
+
 
 
 /**
@@ -613,8 +612,22 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_increase_data_value(address, value)												\
 	do {																						\
-		__atomic_fetch_add(address, value, __ATOMIC_SEQ_CST);									\
+		__atomic_fetch_add(address, value, __ATOMIC_RELEASE);									\
 	} while(0);
+
+
+/**
+ * @brief
+ * 	Adds a value to the specified variable.
+ * @param address
+ * 	Specify the address of the data
+ * @param value
+ *	Accumulated value
+ */
+#define msgcomm_increase_data_value_relaxed(address, value)										\
+	do {																						\
+		__atomic_fetch_add(address, value, __ATOMIC_RELAXED);									\
+	} while (0);																	
 
 
 /**
@@ -625,8 +638,8 @@ extern _status_t * G_status_ptr;
  */
 #define msgcomm_zero_variable(address)															\
 	do {																						\
-		__atomic_store_n(address, 0, __ATOMIC_SEQ_CST);											\
-		__atomic_thread_fence(__ATOMIC_SEQ_CST);												\
+		__atomic_store_n(address, 0, __ATOMIC_RELEASE);											\
+		/*__atomic_thread_fence(__ATOMIC_SEQ_CST);*/											\
 	} while(0);
 
 

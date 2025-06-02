@@ -1451,7 +1451,7 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     unsigned int tmp = 0;
     int invalid_header = 0;
-    msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
+    msgcomm_receive_status_value_relaxed(msgcomm_st_runflag, tmp);
     if (MSGCOMM_ST_PAUSE == tmp)
         return ;
 
@@ -1526,8 +1526,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
 
-    msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
-    msgcomm_increase_data_value(msgcomm_st_NObytes, h->caplen);
+    msgcomm_increase_data_value_relaxed(msgcomm_st_NOpackages, 1);
+    msgcomm_increase_data_value_relaxed(msgcomm_st_NObytes, h->caplen);
 
     return ;
 }
@@ -1972,7 +1972,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     {
 
         unsigned int tmp = 0;
-        msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
+        msgcomm_receive_status_value_relaxed(msgcomm_st_runflag, tmp);
 
         if (MSGCOMM_ST_EXIT == tmp)
             break;

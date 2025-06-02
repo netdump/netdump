@@ -231,7 +231,7 @@ int analysis_loop (void) {
 
     for (;;) 
     {
-        msgcomm_receive_status_value(msgcomm_st_cppc, flag);
+        msgcomm_receive_status_value_relaxed(msgcomm_st_cppc, flag);
         if (flag)
         {
             if (DTOA_ISOR_MANUAL_VAR_FLAG)
@@ -255,7 +255,9 @@ int analysis_loop (void) {
  */
 void analysis_no_manual_mode (void) 
 {
-    unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+    // unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+    unsigned long tmp = 0;
+    msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
     if (tmp == Gindex || tmp == 0 || Gindex > tmp)
     {
         if (Gindex > tmp)
@@ -334,7 +336,9 @@ void analysis_manual_mode (void)
     if (ATOD_DISPLAY_MAX_LINES > ATOD_DISPLAY_DLL_NUMS)
     {
         infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
-        unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        //unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        unsigned long tmp = 0;
+        msgcomm_receive_status_value_relaxed(msgcomm_st_NOpackages, tmp);
         if (infonode->g_store_index < (tmp - 1))
         {
             infonode = analysis_get_infonode();
@@ -440,7 +444,9 @@ void analysis_manual_mode (void)
     else if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_BOTTOM)
     {
         infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
-        unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        //unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        unsigned long tmp = 0;
+        msgcomm_receive_status_value_relaxed(msgcomm_st_NOpackages, tmp);
         if (infonode->g_store_index == (tmp - 1)) {
             TI("It's at the bottom now.");
             RVoid();
