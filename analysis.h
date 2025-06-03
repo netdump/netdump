@@ -165,6 +165,20 @@ int analysis_put_node_into_display_dll(void);
 
 /**
  * @brief
+ *  count the number of l1l2nodes
+ */
+void analysis_count_l1l2node_nums (nd_dll_t * idlehead);
+
+
+/**
+ * @brief
+ *   count the number of w5nodes
+ */
+void analysis_count_w5node_nums (nd_dll_t *idlehead);
+
+
+/**
+ * @brief
  *  recover l1l2node
  * @param idlehead
  *  l1l2node idle list head

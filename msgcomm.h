@@ -573,6 +573,21 @@ extern _status_t * G_status_ptr;
 
 /**
  * @brief
+ * 	Passing state values ​​between processes
+ * @param address
+ * 	The address of the state variable to be passed
+ * @param value
+ * 	The state value that needs to be passed
+ */
+#define msgcomm_transfer_status_change_relaxed(address, value)									\
+	do {																						\
+		__atomic_store_n((address), value, __ATOMIC_RELAXED);									\
+		/*__atomic_thread_fence(__ATOMIC_SEQ_CST);*/											\
+	} while (0);
+
+
+/**
+ * @brief
  * 	Receive the transmitted status value
  * @param address
  * 	Get the address of the status value

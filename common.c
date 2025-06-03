@@ -1530,6 +1530,23 @@ int nd_dll_intsert_into_head_s(nd_dll_t ** head, nd_dll_t * node)
 
 
 /**
+ * @brief 
+ *  Check if the linked list segment is complete
+ */
+static void assert_link_valid(nd_dll_t *nodehead, nd_dll_t *nodetail)
+{
+    nd_dll_t *p = nodehead;
+    while (p && p != nodetail)
+        p = p->next;
+    if (p != nodetail)
+    {
+        TE("nodehead and nodetail are not in the same list!");
+        exit(1);
+    }
+}
+
+
+/**
  * @brief
  *  insert the head of a doubly linked list (multiple)
  * @param head
@@ -1553,6 +1570,8 @@ int nd_dll_insert_into_head_multiple (nd_dll_t ** head, nd_dll_t * nodehead, nd_
            head, nodehead, nodetail);
         exit(1);
     }
+
+    assert_link_valid(nodehead, nodetail);
 
     nd_dll_t * tmp = *head;
 

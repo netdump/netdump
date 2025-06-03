@@ -1951,7 +1951,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     ndo->ndo_if_printer = get_if_printer(dlt);
     *((ndo_t *)(msgcomm_G_ndo)) = Gndo;
 
-    msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
+    msgcomm_transfer_status_change_relaxed(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
 
     struct pollfd fds;
     int fd, ret;
@@ -1962,11 +1962,16 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         pcap_close(pd);
         pd = NULL;
         pcap_freecode(&fcode);
-        msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
+        msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
         RInt(ND_ERR);
     }
+    #if 1
     fds.fd = fd;
     fds.events = POLLIN;
+    #endif
+    //fcntl(fd, F_SETFL, O_NONBLOCK);
+    pcap_set_immediate_mode(pd, 1);
+    pcap_setnonblock(pd, 1, NULL);
 
     while (1)
     {
@@ -1979,8 +1984,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
         if (MSGCOMM_ST_SAVE == tmp)
             break;
-
-        ret = poll(&fds, 1, 1000);
+        #if 1
+        ret = poll(&fds, 1, -1);
 
         if (ret >= 0) 
         {
@@ -1989,13 +1994,13 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 if (status == -2)
                 {
                     TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
-                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
+                    msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
                     break;
                 }
                 if (status == -1)
                 {
                     TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
+                    msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
                     break;
                 }
             }
@@ -2003,9 +2008,29 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         else
         {
             TE("poll() error; errno: %d; errmsg: %s", errno, strerror(errno));
-            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_POLL_ERR);
+            msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_POLL_ERR);
             break;
         }
+        #else
+        status = pcap_dispatch(pd, -1, capture_copy_packet, NULL);
+        if (status == 0) 
+        {
+            nd_delay_microsecond(0, 100);
+            continue;
+        }
+        else if (status == -2)
+        {
+            TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
+            msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
+            break;
+        }
+        else if (status == -1)
+        {
+            TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
+            msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
+            break;
+        }
+        #endif
     }
 
     pcap_close(pd);

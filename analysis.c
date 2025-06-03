@@ -257,7 +257,7 @@ void analysis_no_manual_mode (void)
 {
     // unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
     unsigned long tmp = 0;
-    msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
+    msgcomm_receive_status_value_relaxed(msgcomm_st_NOpackages, tmp);
     if (tmp == Gindex || tmp == 0 || Gindex > tmp)
     {
         if (Gindex > tmp)
@@ -282,12 +282,13 @@ void analysis_no_manual_mode (void)
     infonode_t * infonode = analysis_get_infonode();
     if (infonode)
     {
+        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
         analysis_recover_l1l2node(
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail), 
             &(infonode->l1head), &(infonode->l1tail)
         );
-
-        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
         G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
@@ -344,12 +345,13 @@ void analysis_manual_mode (void)
             infonode = analysis_get_infonode();
             if (infonode)
             {
+                analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+                analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+                analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
                 analysis_recover_l1l2node(
                     &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
                     &(infonode->l1head), &(infonode->l1tail)
                 );
-
-                analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
                 G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
 
@@ -386,13 +388,13 @@ void analysis_manual_mode (void)
             node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
 
             infonode = container_of(node, infonode_t, listnode);
-
+            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
             analysis_recover_l1l2node(
                 &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
                 &(infonode->l1head), &(infonode->l1tail)
             );
-
-            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
             nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
         }
@@ -418,12 +420,13 @@ void analysis_manual_mode (void)
         node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
 
         infonode = container_of(node, infonode_t, listnode);
+        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
         analysis_recover_l1l2node(
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
         );
-
-        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
         node->next = NULL;
         node->prev = NULL;
@@ -473,12 +476,13 @@ void analysis_manual_mode (void)
         node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
 
         infonode = container_of(node, infonode_t, listnode);
+        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
         analysis_recover_l1l2node(
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
         );
-
-        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
         node->next = NULL;
         node->prev = NULL;
@@ -875,12 +879,15 @@ int analysis_put_node_into_display_dll (void)
             node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
 
             infonode_t * infonode = container_of(node, infonode_t, listnode);
+
+            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
+            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+
             analysis_recover_l1l2node(
                 &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
                 &(infonode->l1head), &(infonode->l1tail)
             );
-
-            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
 
             nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
             node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
@@ -900,6 +907,50 @@ int analysis_put_node_into_display_dll (void)
     ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
 
     RInt(ret);
+}
+
+
+/**
+ * @brief
+ *  count the number of l1l2nodes
+ */
+void analysis_count_l1l2node_nums (nd_dll_t * idlehead)
+{
+    unsigned int count = 0;
+
+    nd_dll_t * tmp = idlehead;
+
+    while (tmp) 
+    {
+        tmp = tmp->next;
+        count++;
+    }
+
+    TI("l1l2node nums: %u", count);
+
+    return ;
+}
+
+
+/**
+ * @brief
+ *   count the number of w5nodes
+ */
+void analysis_count_w5node_nums (nd_dll_t *idlehead)
+{
+    unsigned int count = 0;
+
+    nd_dll_t *tmp = idlehead;
+
+    while (tmp)
+    {
+        tmp = tmp->next;
+        count++;
+    }
+
+    TI("w5node nums: %u", count);
+
+    return;
 }
 
 
@@ -988,7 +1039,7 @@ void analysis_recover_w5node(nd_dll_t ** idlehead, nd_dll_t ** head, nd_dll_t **
     }
 
     if (!(*head) && !(*tail)) {
-        TI("don't need recover l1l2node");
+        TI("don't need recover w5node");
         RVoid();
     }
 
