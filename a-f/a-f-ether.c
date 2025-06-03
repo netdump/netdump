@@ -1,6 +1,24 @@
 
 #include "header.h"
 
+/*
+ * Length of an Ethernet header; note that some compilers may pad
+ * "struct ether_header" to a multiple of 4 bytes, for example, so
+ * "sizeof (struct ether_header)" may not give the right answer.
+ */
+#define ETHER_HDRLEN                            (14U)
+
+
+/*
+ * Structure of an Ethernet header.
+ */
+struct ether_header
+{
+    nd_mac_addr ether_dhost;
+    nd_mac_addr ether_shost;
+    nd_uint16_t ether_length_type;
+};
+
 
 /*
  * Common code for printing Ethernet frames.
@@ -23,7 +41,32 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
        ndo, infonode, p, length, caplen, print_switch_tag, switch_tag_len,
        print_encap_header, encap_header_arg);
 
-    
+    u_int orig_length;
+    const struct ether_header *ehp;
+    nd_dll_t *node = NULL;
+    l1l2_node_t *su = NULL, *l1l2 = NULL;
+
+    infonode_t *ifn = (infonode_t *)infonode;
+
+    if (length < caplen)
+    {
+        TW("[length %u < caplen %u]((invalid))", length, caplen);
+        return length;
+    }
+    if (caplen < ETHER_HDRLEN + switch_tag_len)
+    {
+        TW(" [|%s]", ndo->ndo_protocol);
+        return caplen;
+    }
+
+    if (print_encap_header != NULL)
+        (*print_encap_header)(ndo, encap_header_arg);
+
+    orig_length = length;
+
+    ehp = (const struct ether_header *)p;
+
+
 
     RUInt(ND_OK);
 }
