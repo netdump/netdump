@@ -22,6 +22,10 @@
 #include <sys/time.h>
 #include <setjmp.h>
 
+#define MAC_ADDR_LEN                        (6U) /* length of MAC addresses */
+typedef unsigned char nd_mac_addr[MAC_ADDR_LEN];
+
+typedef unsigned char nd_uint16_t[2];
 
 typedef struct ndo_s ndo_t;
 
@@ -129,5 +133,18 @@ typedef struct ndo_s
 } ndo_t;
 
 extern void analysis_ts_print(ndo_t *, const struct timeval *, char *);
+
+
+/*
+ * Test in two parts to avoid these warnings:
+ * comparison of unsigned expression >= 0 is always true [-Wtype-limits],
+ * comparison is always true due to limited range of data type [-Wtype-limits].
+ */
+#define IS_NOT_NEGATIVE(x) (((x) > 0) || ((x) == 0))
+
+#define ND_TTEST_LEN(p, l) \
+  (IS_NOT_NEGATIVE(l) && \
+	((uintptr_t)ndo->ndo_snapend - (l) <= (uintptr_t)ndo->ndo_snapend && \
+         (uintptr_t)(p) <= (uintptr_t)ndo->ndo_snapend - (l)))
 
 #endif  // __NDO_H__
