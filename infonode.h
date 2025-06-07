@@ -107,12 +107,17 @@ typedef struct infonode_s
 
     unsigned long g_store_index;
 
-    char timestamp[16];
-    char srcaddr[48];
-    char dstaddr[48];
-    char protocol[16];
-    char length[8];
-    char brief[256];
+    #define INFONODE_TIMESTAMP_LENGTH   (16U)
+    char timestamp[INFONODE_TIMESTAMP_LENGTH];
+    #define INFONODE_ADDR_LENGTH        (48U)
+    char srcaddr[INFONODE_ADDR_LENGTH];
+    char dstaddr[INFONODE_ADDR_LENGTH];
+    #define INFONODE_PROTOCOL_LENGTH    (16U)
+    char protocol[INFONODE_PROTOCOL_LENGTH];
+    #define INFONODE_LENGTH_LENGTH      (8U)
+    char length[INFONODE_LENGTH_LENGTH];
+    #define INFONODE_BRIEF_LENGTH       (256U)
+    char brief[INFONODE_BRIEF_LENGTH];
 
 } infonode_t;
 
