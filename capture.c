@@ -803,6 +803,7 @@ static char * capture_copy_argv(char **argv)
  *  capture suport data link type (array)
  */
 static const struct printer printers[] = {
+#if 0
 #ifdef DLT_APPLE_IP_OVER_IEEE1394
     {ap1394_if_print, DLT_APPLE_IP_OVER_IEEE1394},
 #endif
@@ -841,13 +842,16 @@ static const struct printer printers[] = {
 #ifdef DLT_ENC
     {enc_if_print, DLT_ENC},
 #endif
+#endif
     {ether_if_print, DLT_EN10MB},
+#if 0
     {fddi_if_print, DLT_FDDI},
 #ifdef DLT_FR
     {fr_if_print, DLT_FR},
 #endif
 #ifdef DLT_FRELAY
     {fr_if_print, DLT_FRELAY},
+#endif
 #endif
 #ifdef DLT_IEEE802_11
     {ieee802_11_if_print, DLT_IEEE802_11},
@@ -867,6 +871,7 @@ static const struct printer printers[] = {
 #ifdef DLT_IEEE802_15_4_TAP
     {ieee802_15_4_tap_if_print, DLT_IEEE802_15_4_TAP},
 #endif
+#if 0
 #ifdef DLT_IP_OVER_FC
     {ipfc_if_print, DLT_IP_OVER_FC},
 #endif
@@ -876,6 +881,8 @@ static const struct printer printers[] = {
 #ifdef DLT_IPOIB
     {ipoib_if_print, DLT_IPOIB},
 #endif
+#endif
+#if 0
 #ifdef DLT_JUNIPER_ATM1
     {juniper_atm1_if_print, DLT_JUNIPER_ATM1},
 #endif
@@ -921,6 +928,8 @@ static const struct printer printers[] = {
 #ifdef DLT_JUNIPER_SERVICES
     {juniper_services_if_print, DLT_JUNIPER_SERVICES},
 #endif
+#endif
+#if 0
 #ifdef DLT_LTALK
     {ltalk_if_print, DLT_LTALK},
 #endif
@@ -933,13 +942,17 @@ static const struct printer printers[] = {
 #ifdef DLT_NETANALYZER_TRANSPARENT
     {netanalyzer_transparent_if_print, DLT_NETANALYZER_TRANSPARENT},
 #endif
+#endif
+#if 0
 #ifdef DLT_NFLOG
     {nflog_if_print, DLT_NFLOG},
+#endif
 #endif
     {null_if_print, DLT_NULL},
 #ifdef DLT_LOOP
     {null_if_print, DLT_LOOP},
 #endif
+#if 0
 #ifdef DLT_PFLOG
     {pflog_if_print, DLT_PFLOG},
 #endif
@@ -959,11 +972,14 @@ static const struct printer printers[] = {
 #ifdef DLT_PPP_PPPD
     {ppp_if_print, DLT_PPP_PPPD},
 #endif
+#endif
 #ifdef DLT_PPP_ETHER
     {pppoe_if_print, DLT_PPP_ETHER},
 #endif
+#if 0
 #ifdef DLT_PRISM_HEADER
     {prism_if_print, DLT_PRISM_HEADER},
+#endif
 #endif
     {raw_if_print, DLT_RAW},
 #ifdef DLT_IPV4
@@ -972,23 +988,28 @@ static const struct printer printers[] = {
 #ifdef DLT_IPV6
     {raw_if_print, DLT_IPV6},
 #endif
+#if 0
 #ifdef DLT_SLIP_BSDOS
     {sl_bsdos_if_print, DLT_SLIP_BSDOS},
 #endif
     {sl_if_print, DLT_SLIP},
+#endif
 #ifdef DLT_LINUX_SLL
     {sll_if_print, DLT_LINUX_SLL},
 #endif
 #ifdef DLT_LINUX_SLL2
     {sll2_if_print, DLT_LINUX_SLL2},
 #endif
+#if 0
 #ifdef DLT_SUNATM
     {sunatm_if_print, DLT_SUNATM},
 #endif
 #ifdef DLT_SYMANTEC_FIREWALL
     {symantec_if_print, DLT_SYMANTEC_FIREWALL},
 #endif
+
     {token_if_print, DLT_IEEE802},
+
 #ifdef DLT_USB_LINUX
     {usb_linux_48_byte_if_print, DLT_USB_LINUX},
 #endif /* DLT_USB_LINUX */
@@ -997,6 +1018,7 @@ static const struct printer printers[] = {
 #endif /* DLT_USB_LINUX_MMAPPED */
 #ifdef DLT_VSOCK
     {vsock_if_print, DLT_VSOCK},
+#endif
 #endif
     {NULL, 0},
 };
@@ -1512,6 +1534,11 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     {
         TI("]\n");
         return ;
+    }
+
+    if (h->len != h->caplen)
+    {
+        TE("h->len: %d != h->caplen: %d", h->len, h->caplen);
     }
 
     G_ctoa_shm_mem_wp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp);

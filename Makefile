@@ -13,6 +13,7 @@ PCAP_PATH = ./Third/pcap
 
 CFLAGS = -O0 -g
 CFLAGS += -Wall
+CFLAGS += -Wno-unused-function
 CFLAGS += -DTRACE
 CFLAGS += -DTOPTRACE
 CFLAGS += -I ./

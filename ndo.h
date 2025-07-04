@@ -21,11 +21,39 @@
 #include <time.h>
 #include <sys/time.h>
 #include <setjmp.h>
+#include "funcattrs.h"
+#include "pcap.h"
+
+/*
+ * Data types corresponding to multi-byte integral values within data
+ * structures.  These are defined as arrays of octets, so that they're
+ * not aligned on their "natural" boundaries, and so that you *must*
+ * use the EXTRACT_ macros to extract them (which you should be doing
+ * *anyway*, so as not to assume a particular byte order or alignment
+ * in your code).
+ *
+ * We even want EXTRACT_U_1 used for 8-bit integral values, so we
+ * define nd_uint8_t and nd_int8_t as arrays as well.
+ */
+typedef unsigned char nd_uint8_t[1];
+typedef unsigned char nd_uint16_t[2];
+typedef unsigned char nd_uint24_t[3];
+typedef unsigned char nd_uint32_t[4];
+
 
 #define MAC_ADDR_LEN                        (6U) /* length of MAC addresses */
 typedef unsigned char nd_mac_addr[MAC_ADDR_LEN];
 
 typedef unsigned char nd_uint16_t[2];
+
+struct tok
+{
+  u_int v;       /* value */
+  const char *s; /* string */
+};
+
+/* tok2str is deprecated */
+extern const char *tok2str(const struct tok *, const char *, u_int);
 
 typedef struct ndo_s ndo_t;
 
@@ -134,6 +162,10 @@ typedef struct ndo_s
 
 extern void analysis_ts_print(ndo_t *, const struct timeval *, char *);
 
+/*
+ * Report a packet truncation with a longjmp().
+ */
+NORETURN void nd_trunc_longjmp(ndo_t *ndo);
 
 /*
  * Test in two parts to avoid these warnings:
@@ -142,9 +174,17 @@ extern void analysis_ts_print(ndo_t *, const struct timeval *, char *);
  */
 #define IS_NOT_NEGATIVE(x) (((x) > 0) || ((x) == 0))
 
-#define ND_TTEST_LEN(p, l) \
+#define ND_TTEST_LEN(ndo, p, l) \
   (IS_NOT_NEGATIVE(l) && \
 	((uintptr_t)ndo->ndo_snapend - (l) <= (uintptr_t)ndo->ndo_snapend && \
          (uintptr_t)(p) <= (uintptr_t)ndo->ndo_snapend - (l)))
 
-#endif  // __NDO_H__
+extern char *bittok2str_nosep(const struct tok *, const char *, u_int);
+
+extern int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void *su,
+                u_int *index, u_int *lengthp, u_int *caplenp, u_int *hdrlenp);
+
+extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
+                u_short ether_type, const u_char *p, u_int length, u_int caplen);
+
+#endif // __NDO_H__

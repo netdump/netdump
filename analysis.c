@@ -623,7 +623,7 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
 
     if (!infonode || !sp || (caplen == 0) || (caplen > 0xFFFF)) {
         TE("param is error, infonode: %p, sp: %p, caplen: %u [must less than 0xFFFF]", infonode, sp, caplen);
-        exit(1);
+        abort();
     }
 
     u_int i;
@@ -663,13 +663,13 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
             node = nd_dll_takeout_from_head_s(&ATOD_DISPLAY_W5IDLE_DLL);
             if (!node) {
                 TE("fatal logic error; node: %p; ATOD_DISPLAY_W5IDLE_DLL: %p", node, ATOD_DISPLAY_W5IDLE_DLL);
-                exit(1);
+                abort();
             }
             w5 = container_of(node, w5_node_t, w5node);
             *hsp = *asp = '\0';
 
             (void)snprintf(w5->content, W5NODE_CONTENT_LENGTH,
-                           "0x%04x:  %-*s   %-*s", 
+                           "0x%04x:   %-*s   %-*s",
                            oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, HEXDUMP_BYTES_PER_LINE, asciistuff);
 
             w5->startindex = startindex;
@@ -702,13 +702,13 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
         node = nd_dll_takeout_from_head_s(&ATOD_DISPLAY_W5IDLE_DLL);
         if (!node) {
             TE("fatal logic error; node: %p; ATOD_DISPLAY_W5IDLE_DLL: %p", node, ATOD_DISPLAY_W5IDLE_DLL);
-            exit(1);
+            abort();
         }
         w5 = container_of(node, w5_node_t, w5node);
         *hsp = *asp = '\0';
 
         (void)snprintf(w5->content, W5NODE_CONTENT_LENGTH,
-                       "0x%04x:  %-*s   %-*s", 
+                       "0x%04x:   %-*s   %-*s",
                        oset, HEXDUMP_HEXSTUFF_PER_LINE, hexstuff, HEXDUMP_BYTES_PER_LINE, asciistuff);
 
         w5->startindex = startindex;
