@@ -106,7 +106,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
         return hdrlen + caplen;
     }
 
-    if (GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_SC)
+    if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC)
     {
         sectag_len = MACSEC_SECTAG_LEN_SCI;
         if (caplen < MACSEC_SECTAG_LEN_SCI)
@@ -131,8 +131,8 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
     else
         sectag_len = MACSEC_SECTAG_LEN_NOSCI;
 
-    if ((GET_U_1(ndo, sectag->short_length) & ~MACSEC_SL_MASK) != 0 ||
-        GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_VERSION)
+    if ((GET_U_1(sectag->short_length) & ~MACSEC_SL_MASK) != 0 ||
+        GET_U_1(sectag->tci_an) & MACSEC_TCI_VERSION)
     {
         TW("((invalid))");
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "((invalid))");
@@ -142,26 +142,26 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
     }
 
     nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, LAYER_2_MACSEC_TCI_FORMAT, 
-        (GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_FLAGS),
-        bittok2str_nosep(macsec_flag_values, "none", GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_FLAGS)
+        (GET_U_1(sectag->tci_an) & MACSEC_TCI_FLAGS),
+        bittok2str_nosep(macsec_flag_values, "none", GET_U_1(sectag->tci_an) & MACSEC_TCI_FLAGS)
     );
 
     nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-        LAYER_2_MACSEC_AN_FORMAT, GET_U_1(ndo, sectag->tci_an) & MACSEC_AN_MASK);
+        LAYER_2_MACSEC_AN_FORMAT, GET_U_1(sectag->tci_an) & MACSEC_AN_MASK);
 
     *index = *index + 1;
 
     nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-        LAYER_2_MACSEC_SL_FORMAT, GET_U_1(ndo, sectag->short_length) & MACSEC_SL_MASK);
+        LAYER_2_MACSEC_SL_FORMAT, GET_U_1(sectag->short_length) & MACSEC_SL_MASK);
 
     *index = *index + 1;
 
     nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + sizeof(nd_uint32_t) - 1,
-        LAYER_2_MACSEC_PN_FORMAT, GET_BE_U_4(ndo, sectag->packet_number));
+        LAYER_2_MACSEC_PN_FORMAT, GET_BE_U_4(sectag->packet_number));
 
     *index = *index + sizeof(nd_uint32_t);
 
-    if (GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_SC) 
+    if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) 
     {
         nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + sizeof(sectag->secure_channel_id) - 1,
                 LAYER_2_MACSEC_SCI_FORMAT, 
@@ -182,7 +182,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
     *lengthp -= sectag_len;
     *caplenp -= sectag_len;
 
-    if ((GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_CONFID))
+    if ((GET_U_1(sectag->tci_an) & MACSEC_TCI_CONFID))
     {
         /*
          * The payload is encrypted.  Print link-layer
@@ -191,15 +191,15 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
 
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "an %u, pn %u, flags %s, sl %u",
-            GET_U_1(ndo, sectag->tci_an) & MACSEC_AN_MASK, GET_BE_U_4(ndo, sectag->packet_number),
-            bittok2str_nosep(macsec_flag_values, "none", GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_FLAGS),
-            GET_U_1(ndo, sectag->short_length) & MACSEC_SL_MASK
+            GET_U_1(sectag->tci_an) & MACSEC_AN_MASK, GET_BE_U_4(sectag->packet_number),
+            bittok2str_nosep(macsec_flag_values, "none", GET_U_1(sectag->tci_an) & MACSEC_TCI_FLAGS),
+            GET_U_1(sectag->short_length) & MACSEC_SL_MASK
         );
 
-        if (GET_U_1(ndo, sectag->tci_an) & MACSEC_TCI_SC) 
+        if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) 
         {
             snprintf(ifn->brief + strlen(ifn->brief), INFONODE_BRIEF_LENGTH - strlen(ifn->brief), 
-                SCI_FMT, GET_BE_U_8(ndo, sectag->secure_channel_id)
+                SCI_FMT, GET_BE_U_8(sectag->secure_channel_id)
             );
         }
 
@@ -250,7 +250,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
      * Secure Data; otherwise, the Secure Data is what's left
      * ver after the MACsec header and ICV are removed.
      */
-    short_length = GET_U_1(ndo, sectag->short_length) & MACSEC_SL_MASK;
+    short_length = GET_U_1(sectag->short_length) & MACSEC_SL_MASK;
     if (short_length != 0)
     {
         /*

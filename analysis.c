@@ -14,7 +14,6 @@
 
 #include "analysis.h"
 
-
 /**
  * @brief 
  *  The main function of the packet parsing process
@@ -720,6 +719,13 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
     RVoid();
 }
 
+/**
+ * @brief
+ *  Define ndo global variables
+ *  Load in the function analysis_network_frames
+ *  In header.h declaration
+ */
+ndo_t * ndo = NULL;
 
 /**
  * @brief
@@ -736,7 +742,7 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
 
     TC("Called { %s(%p, %p)", __func__, h, sp);
 
-    ndo_t *ndo = ((ndo_t *)(msgcomm_G_ndo));
+    ndo = ((ndo_t *)(msgcomm_G_ndo));
 
     infonode_t * ifn = (infonode_t *)infonode;
 

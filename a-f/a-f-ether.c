@@ -185,7 +185,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
      * Get the length/type field, skip past it, and print it
      * if we're printing the link-layer header.
      */
-    length_type = GET_BE_U_2(ndo, p);
+    length_type = GET_BE_U_2(p);
 
     length -= 2;
     caplen -= 2;
@@ -243,7 +243,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
                 snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "remaining length < 2 ((invalid))");
                 goto invalid;
             }
-            length_type = GET_BE_U_2(ndo, p);
+            length_type = GET_BE_U_2(p);
             memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
             fill_ether_type(length_type, buffer);
             nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_FORMAT, buffer);
@@ -282,12 +282,12 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
             return hdrlen + length;
         }
 
-        uint16_t tag = GET_BE_U_2(ndo, p);
+        uint16_t tag = GET_BE_U_2(p);
         nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_IEEE8021Q_FMT, 
             ((tag >> 13) & 0x07), ((tag >> 12) & 0x01), (tag & 0x0FFF));
         index += 2;
 
-        length_type = GET_BE_U_2(ndo, (p + 2));
+        length_type = GET_BE_U_2((p + 2));
         memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
         fill_ether_type(length_type, buffer);
         nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_FORMAT, buffer);
@@ -424,7 +424,8 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
             return (1);
 
         case ETHERTYPE_ARP:
-            //arp_print(ndo, p, length, caplen);
+        case ETHERTYPE_REVARP:
+            arp_print(ndo, index, infonode, p, length, caplen);
             return (1);
         
         case ETHERTYPE_PPPOED:
@@ -458,7 +459,6 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
         case ETHERTYPE_MOPRC:
         case ETHERTYPE_MOPDL:
         case ETHERTYPE_IEEE1905_1:
-        case ETHERTYPE_REVARP:
         case ETHERTYPE_DN:
         case ETHERTYPE_ATALK:
         case ETHERTYPE_AARP:

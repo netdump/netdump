@@ -223,17 +223,17 @@ EXTRACT_BE_U_8(const void *p)
 /*
  * Macros to check the presence of the values in question.
  */
-#define ND_TTEST_1(ndo, p) ND_TTEST_LEN(ndo, (p), 1)
-#define ND_TTEST_2(ndo, p) ND_TTEST_LEN(ndo, (p), 2)
-#define ND_TTEST_4(ndo, p) ND_TTEST_LEN(ndo, (p), 4)
-#define ND_TTEST_8(ndo, p) ND_TTEST_LEN(ndo, (p), 8)
+#define ND_TTEST_1(p) ND_TTEST_LEN((p), 1)
+#define ND_TTEST_2(p) ND_TTEST_LEN((p), 2)
+#define ND_TTEST_4(p) ND_TTEST_LEN((p), 4)
+#define ND_TTEST_8(p) ND_TTEST_LEN((p), 8)
 
 /* get_u_1 and get_s_1 */
 
 static inline uint8_t
 get_u_1(ndo_t *ndo, const u_char *p)
 {
-    if (!ND_TTEST_1(ndo, p))
+    if (!ND_TTEST_1(p))
         nd_trunc_longjmp(ndo);
     return EXTRACT_U_1(p);
 }
@@ -241,7 +241,7 @@ get_u_1(ndo_t *ndo, const u_char *p)
 static inline int8_t
 get_s_1(ndo_t *ndo, const u_char *p)
 {
-    if (!ND_TTEST_1(ndo, p))
+    if (!ND_TTEST_1(p))
         nd_trunc_longjmp(ndo);
     return EXTRACT_S_1(p);
 }
@@ -251,7 +251,7 @@ get_s_1(ndo_t *ndo, const u_char *p)
 static inline uint16_t
 get_be_u_2(ndo_t *ndo, const u_char *p)
 {
-    if (!ND_TTEST_2(ndo, p))
+    if (!ND_TTEST_2(p))
         nd_trunc_longjmp(ndo);
     return EXTRACT_BE_U_2(p);
 }
@@ -259,7 +259,7 @@ get_be_u_2(ndo_t *ndo, const u_char *p)
 static inline uint32_t
 get_be_u_4(ndo_t *ndo, const u_char *p)
 {
-    if (!ND_TTEST_4(ndo, p))
+    if (!ND_TTEST_4(p))
         nd_trunc_longjmp(ndo);
     return EXTRACT_BE_U_4(p);
 }
@@ -267,16 +267,16 @@ get_be_u_4(ndo_t *ndo, const u_char *p)
 static inline uint64_t
 get_be_u_8(ndo_t *ndo, const u_char *p)
 {
-    if (!ND_TTEST_8(ndo, p))
+    if (!ND_TTEST_8(p))
         nd_trunc_longjmp(ndo);
     return EXTRACT_BE_U_8(p);
 }
 
-#define GET_U_1(ndo, p) get_u_1(ndo, (const u_char *)(p))
-#define GET_S_1(ndo, p) get_s_1(ndo, (const u_char *)(p))
+#define GET_U_1(p) get_u_1(ndo, (const u_char *)(p))
+#define GET_S_1(p) get_s_1(ndo, (const u_char *)(p))
 
-#define GET_BE_U_2(ndo, p) get_be_u_2(ndo, (const u_char *)(p))
-#define GET_BE_U_4(ndo, p) get_be_u_4(ndo, (const u_char *)(p))
-#define GET_BE_U_8(ndo, p) get_be_u_8(ndo, (const u_char *)(p))
+#define GET_BE_U_2(p) get_be_u_2(ndo, (const u_char *)(p))
+#define GET_BE_U_4(p) get_be_u_4(ndo, (const u_char *)(p))
+#define GET_BE_U_8(p) get_be_u_8(ndo, (const u_char *)(p))
 
 #endif // __AF_EXTRACT_H__

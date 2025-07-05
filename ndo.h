@@ -160,6 +160,14 @@ typedef struct ndo_s
 #endif
 } ndo_t;
 
+/**
+ * @brief
+ *  Define ndo global variables
+ *  Load in the function analysis_network_frames
+ *  In header.h declaration
+ */
+extern ndo_t *ndo;
+
 extern void analysis_ts_print(ndo_t *, const struct timeval *, char *);
 
 /*
@@ -174,10 +182,22 @@ NORETURN void nd_trunc_longjmp(ndo_t *ndo);
  */
 #define IS_NOT_NEGATIVE(x) (((x) > 0) || ((x) == 0))
 
-#define ND_TTEST_LEN(ndo, p, l) \
+#define ND_TTEST_LEN(p, l) \
   (IS_NOT_NEGATIVE(l) && \
 	((uintptr_t)ndo->ndo_snapend - (l) <= (uintptr_t)ndo->ndo_snapend && \
          (uintptr_t)(p) <= (uintptr_t)ndo->ndo_snapend - (l)))
+
+
+/* Bail out if "l" bytes from "p" were not captured */
+#ifdef ND_LONGJMP_FROM_TCHECK
+#define ND_TCHECK_LEN(p, l) if (!ND_TTEST_LEN(p, l)) nd_trunc_longjmp(ndo)
+#else
+#define ND_TCHECK_LEN(p, l) if (!ND_TTEST_LEN(p, l)) goto trunc
+#endif
+
+/* Bail out if "*(p)" was not captured */
+#define ND_TCHECK_SIZE(p) ND_TCHECK_LEN(p, sizeof(*(p)))
+
 
 extern char *bittok2str_nosep(const struct tok *, const char *, u_int);
 
@@ -186,5 +206,8 @@ extern int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void *su,
 
 extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
                 u_short ether_type, const u_char *p, u_int length, u_int caplen);
+
+extern void arp_print(ndo_t *ndo, u_int index, void *infonode,
+                      const u_char *bp, u_int length, u_int caplen);
 
 #endif // __NDO_H__
