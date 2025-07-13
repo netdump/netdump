@@ -54,7 +54,7 @@ int ctoacomm_init_ctoacomm (void)
         RInt(ND_ERR);
     }
 
-    memset(G_ctoa_shm_mem, 0, CTOACOMM_SHM_FILESIZE);
+    //memset(G_ctoa_shm_mem, 0, CTOACOMM_SHM_FILESIZE);
 
     TI("CTOACOMM_SHM_BASEADDR: %p; G_ctoa_shm_mem: %p", CTOACOMM_SHM_BASEADDR, G_ctoa_shm_mem);
 

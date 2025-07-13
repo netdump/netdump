@@ -3,6 +3,7 @@
 #define __ADDRTONAME_H__
 
 #include "ndo.h"
+#include "a-f-extract.h"
 
 /* Name to address translation routines. */
 
@@ -17,15 +18,25 @@ enum
 
 #define BUFSIZE 128
 
-extern void etheraddr_string(ndo_t *, const uint8_t *, char *roomage);
+extern const char *etheraddr_string(ndo_t *, const uint8_t *);
+extern const char *ipaddr_string(ndo_t*, const u_char *);
 
-static inline void
-fill_etheraddr_string(ndo_t *ndo, const uint8_t *p, char * roomage)
+static inline const char *
+get_etheraddr_string(ndo_t *ndo, const uint8_t *p)
 {
     if (!ND_TTEST_LEN(p, MAC_ADDR_LEN))
         nd_trunc_longjmp(ndo);
-    return etheraddr_string(ndo, p, roomage);
+    return etheraddr_string(ndo, p);
 }
 
+static inline const char *
+get_ipaddr_string(ndo_t *ndo, const u_char *p)
+{
+    if (!ND_TTEST_4(p))
+        nd_trunc_longjmp(ndo);
+    return ipaddr_string(ndo, p);
+}
+
+#define GET_IPADDR_STRING(p) get_ipaddr_string(ndo, (const u_char *)(p))
 
 #endif

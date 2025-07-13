@@ -666,7 +666,7 @@ void display_second_tui_exec_logic (void) {
 		}
 
 		unsigned int tmp = 0;
-		msgcomm_receive_status_value_relaxed(msgcomm_st_runflag_c2d, tmp);
+		msgcomm_receive_status_value(msgcomm_st_runflag_c2d, tmp);
 		if (tmp == MSGCOMM_ST_C2D_FD_ERR || 
 			tmp == MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR || 
 			tmp == MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR || 
@@ -679,14 +679,14 @@ void display_second_tui_exec_logic (void) {
 		if ('q' == ch) 
 		{
 			TI("ch: %u", ch);
-			msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag, MSGCOMM_ST_EXIT);
+			msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_EXIT);
 			// Whether the CP process needs to return the exit status
 			break;
 		}
 		else if ('s' == ch) 
 		{
 			TI("ch: %u", ch);
-			msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag, MSGCOMM_ST_SAVE);
+			msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_SAVE);
 			// Pop-up prompt window & Check whether the data is saved
 			break;
 		}
@@ -715,11 +715,11 @@ void display_second_tui_exec_logic (void) {
 				break;
 			case 'p':
 				TI("ch: %u", ch);
-				msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag, MSGCOMM_ST_PAUSE);
+				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_PAUSE);
 				break;
 			case 'c':
 				TI("ch: %u", ch);
-				msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
+				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
 				break;
 			case KEY_UP:
 				TI("ch: %u; KEY_UP: %u; g_display_second_cur_win: %d", ch, KEY_UP, g_display_second_cur_win);

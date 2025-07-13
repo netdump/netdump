@@ -12,7 +12,7 @@
 #define ETHER_HDRLEN 14
 
 #define LAYER_2_FORMAT                      "%s"
-#define LAYER_2_CONTENT                     "layer 2 infomation"
+#define LAYER_2_CONTENT                     "Ethernet II: "
 #define LAYER_2_SOURCE_MAC_FORMAT           "source mac: %s"
 #define LAYER_2_DESTINATION_MAC_FORMAT      "destination mac: %s"
 #define LAYER_2_ETHERTYPE_FORMAT            "ether type: %s"
@@ -118,6 +118,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
     u_int hdrlen;
     u_short length_type;
     const struct ether_header *ehp;
+    struct lladdr_info src, dst;
     char buffer[L1L2NODE_CONTENT_LENGTH] = {0};
     l1l2_node_t *su = NULL;
 
@@ -148,17 +149,24 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
 
     ehp = (const struct ether_header *)p;
 
+    src.addr = ehp->ether_shost;
+    src.addr_string = etheraddr_string;
+    dst.addr = ehp->ether_dhost;
+    dst.addr_string = etheraddr_string;
+
     su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_2_FORMAT, LAYER_2_CONTENT);
 
-    memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
-    fill_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost, buffer);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + MAC_ADDR_LEN - 1), LAYER_2_SOURCE_MAC_FORMAT, buffer);
+    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + MAC_ADDR_LEN - 1), 
+        LAYER_2_DESTINATION_MAC_FORMAT, 
+        get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost)
+    );
 
     index += MAC_ADDR_LEN;
 
-    memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
-    fill_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost, buffer);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + MAC_ADDR_LEN - 1), LAYER_2_DESTINATION_MAC_FORMAT, buffer);
+    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + MAC_ADDR_LEN - 1), 
+        LAYER_2_SOURCE_MAC_FORMAT, 
+        get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost)
+    );
 
     index += MAC_ADDR_LEN;
 
@@ -211,12 +219,8 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         if (ret == 0) {
             /* Payload is encrypted; print it as raw data. */
             snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
-            memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
-            fill_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost, buffer);
-            memcpy(ifn->srcaddr, buffer, INFONODE_ADDR_LENGTH);
-            memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
-            fill_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost, buffer);
-            memcpy(ifn->dstaddr, buffer, INFONODE_ADDR_LENGTH);
+            snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost));
+            snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost));
             RUInt(hdrlen);
         }
         else if (ret > 0) {
@@ -311,7 +315,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         goto invalid;
     }
 
-    if (ethertype_print(ndo, index, infonode, length_type, p, length, caplen) == 0)
+    if (ethertype_print(ndo, index, infonode, length_type, p, length, caplen, &src, &dst) == 0)
     {
         memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
         fill_ether_type(length_type, buffer);
@@ -410,8 +414,13 @@ void netanalyzer_transparent_if_print(ndo_t *ndo, void *infonode,
  */
 
 int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
-        u_short ether_type, const u_char *p, u_int length, u_int caplen)
+        u_short ether_type, const u_char *p, u_int length, u_int caplen,
+        const struct lladdr_info *src, const struct lladdr_info *dst
+    )
 {
+
+    infonode_t *ifn = (infonode_t *)infonode;
+
     switch (ether_type)
     {
 
@@ -425,6 +434,8 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
 
         case ETHERTYPE_ARP:
         case ETHERTYPE_REVARP:
+            snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", src->addr_string(ndo, (const uint8_t *)src->addr));
+            snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", dst->addr_string(ndo, (const uint8_t *)dst->addr));
             arp_print(ndo, index, infonode, p, length, caplen);
             return (1);
         

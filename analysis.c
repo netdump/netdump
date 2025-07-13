@@ -230,7 +230,7 @@ int analysis_loop (void) {
 
     for (;;) 
     {
-        msgcomm_receive_status_value_relaxed(msgcomm_st_cppc, flag);
+        msgcomm_receive_status_value(msgcomm_st_cppc, flag);
         if (flag)
         {
             if (DTOA_ISOR_MANUAL_VAR_FLAG)
@@ -240,6 +240,19 @@ int analysis_loop (void) {
         }
         else 
         {
+            if (Gindex)
+            {
+                memset(G_frame_ptr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
+                unsigned short tmp_nlines = ATOD_DISPLAY_MAX_LINES;
+                memset(ATODCOMM_SHM_BASEADDR, 0, ATODCOMM_SHM_FILESIZE);
+                ATOD_DISPLAY_MAX_LINES = tmp_nlines;
+                atodcomm_init_dtoainfo_to_zero();
+                atodcomm_init_infonode_list();
+                atodcomm_init_l1l2node_list();
+                atodcomm_init_w5node_list();
+                G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
+                Gindex = 0;
+            }
             nd_delay_microsecond(0, 2000000);
         }
     }
@@ -256,7 +269,7 @@ void analysis_no_manual_mode (void)
 {
     // unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
     unsigned long tmp = 0;
-    msgcomm_receive_status_value_relaxed(msgcomm_st_NOpackages, tmp);
+    msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
     if (tmp == Gindex || tmp == 0 || Gindex > tmp)
     {
         if (Gindex > tmp)
@@ -338,7 +351,7 @@ void analysis_manual_mode (void)
         infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
         //unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
         unsigned long tmp = 0;
-        msgcomm_receive_status_value_relaxed(msgcomm_st_NOpackages, tmp);
+        msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
         if (infonode->g_store_index < (tmp - 1))
         {
             infonode = analysis_get_infonode();
@@ -448,7 +461,7 @@ void analysis_manual_mode (void)
         infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
         //unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
         unsigned long tmp = 0;
-        msgcomm_receive_status_value_relaxed(msgcomm_st_NOpackages, tmp);
+        msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
         if (infonode->g_store_index == (tmp - 1)) {
             TI("It's at the bottom now.");
             RVoid();

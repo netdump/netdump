@@ -283,7 +283,7 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
-    ctoacomm_memory_load();
+    //ctoacomm_memory_load();
 
     if (unlikely((capture_loop()) == ND_ERR)) {
         TE("Analysis loop startup failed");
@@ -313,7 +313,7 @@ int capture_loop (void) {
 
     while (1) {
 
-        ctoacomm_memory_load();
+        //ctoacomm_memory_load();
 
         G_ctoa_shm_mem_wp = CTOACOMM_SHM_BASEADDR;
 
@@ -1473,7 +1473,7 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     unsigned int tmp = 0;
     int invalid_header = 0;
-    msgcomm_receive_status_value_relaxed(msgcomm_st_runflag, tmp);
+    msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
     if (MSGCOMM_ST_PAUSE == tmp)
         return ;
 
@@ -1553,8 +1553,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
 
-    msgcomm_increase_data_value_relaxed(msgcomm_st_NOpackages, 1);
-    msgcomm_increase_data_value_relaxed(msgcomm_st_NObytes, h->caplen);
+    msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
+    msgcomm_increase_data_value(msgcomm_st_NObytes, h->caplen);
 
     return ;
 }
@@ -1978,7 +1978,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     ndo->ndo_if_printer = get_if_printer(dlt);
     *((ndo_t *)(msgcomm_G_ndo)) = Gndo;
 
-    msgcomm_transfer_status_change_relaxed(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
+    msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
 
     struct pollfd fds;
     int fd, ret;
@@ -1989,7 +1989,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         pcap_close(pd);
         pd = NULL;
         pcap_freecode(&fcode);
-        msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
+        msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
         RInt(ND_ERR);
     }
     #if 1
@@ -2004,7 +2004,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     {
 
         unsigned int tmp = 0;
-        msgcomm_receive_status_value_relaxed(msgcomm_st_runflag, tmp);
+        msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
 
         if (MSGCOMM_ST_EXIT == tmp)
             break;
@@ -2021,13 +2021,13 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 if (status == -2)
                 {
                     TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
-                    msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
+                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
                     break;
                 }
                 if (status == -1)
                 {
                     TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-                    msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
+                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
                     break;
                 }
             }
@@ -2035,7 +2035,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         else
         {
             TE("poll() error; errno: %d; errmsg: %s", errno, strerror(errno));
-            msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_POLL_ERR);
+            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_POLL_ERR);
             break;
         }
         #else
@@ -2048,13 +2048,13 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         else if (status == -2)
         {
             TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
-            msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
+            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
             break;
         }
         else if (status == -1)
         {
             TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-            msgcomm_transfer_status_change_relaxed(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
+            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
             break;
         }
         #endif

@@ -40,11 +40,25 @@ typedef unsigned char nd_uint16_t[2];
 typedef unsigned char nd_uint24_t[3];
 typedef unsigned char nd_uint32_t[4];
 
+/*
+ * "unsigned char" so that sign extension isn't done on the
+ * individual bytes while they're being assembled.  Use
+ * GET_S_BE_n() and GET_S_LE_n() macros to extract the value
+ * as a signed integer.
+ */
+typedef unsigned char nd_uint16_t[2];
 
-#define MAC_ADDR_LEN                        (6U) /* length of MAC addresses */
+/*
+ * Use this for MAC addresses.
+ */
+#define MAC_ADDR_LEN 6U /* length of MAC addresses */
 typedef unsigned char nd_mac_addr[MAC_ADDR_LEN];
 
-typedef unsigned char nd_uint16_t[2];
+/*
+ * Use this for blobs of bytes; make them arrays of nd_byte.
+ */
+typedef unsigned char nd_byte;
+
 
 struct tok
 {
@@ -198,14 +212,32 @@ NORETURN void nd_trunc_longjmp(ndo_t *ndo);
 /* Bail out if "*(p)" was not captured */
 #define ND_TCHECK_SIZE(p) ND_TCHECK_LEN(p, sizeof(*(p)))
 
-
 extern char *bittok2str_nosep(const struct tok *, const char *, u_int);
+
+/*
+ * Structure passed to some printers to allow them to print
+ * link-layer address information if ndo_eflag isn't set
+ * (because they are for protocols that don't have their
+ * own addresses, so that we'd want to report link-layer
+ * address information).
+ *
+ * This contains a pointer to an address and a pointer to a routine
+ * to which we pass that pointer in order to get a string.
+ */
+struct lladdr_info
+{
+  const char *(*addr_string)(ndo_t *, const u_char *);
+  const u_char *addr;
+};
+
+/* The printer routines. */
 
 extern int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void *su,
                 u_int *index, u_int *lengthp, u_int *caplenp, u_int *hdrlenp);
 
 extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
-                u_short ether_type, const u_char *p, u_int length, u_int caplen);
+                u_short ether_type, const u_char *p, u_int length, u_int caplen,
+                const struct lladdr_info *src, const struct lladdr_info *dst);
 
 extern void arp_print(ndo_t *ndo, u_int index, void *infonode,
                       const u_char *bp, u_int length, u_int caplen);
