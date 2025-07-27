@@ -1315,8 +1315,8 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 	char_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].char_offset;
 	char_tail = clhco[byte_start->endindex % CLHCO_NUMBER].char_offset;
 	wattron(G_display.wins[5], COLOR_PAIR(5));
-	mvwaddnstr(G_display.wins[5], byte_start_index, hex_start, byte_start->content + hex_start, hex_tail - hex_start + 1);
-	mvwaddnstr(G_display.wins[5], byte_start_index, char_start, byte_start->content + char_start, char_tail - char_start + 1);
+	mvwaddnstr(G_display.wins[5], byte_start_index, hex_start, byte_start->content + hex_start - 1, hex_tail - hex_start + 1);
+	mvwaddnstr(G_display.wins[5], byte_start_index, char_start, byte_start->content + char_start - 1, char_tail - char_start + 1);
 	wattroff(G_display.wins[5], COLOR_PAIR(5));
 
 	tmp = container_of(byte_start->w5node.next, w5_node_t, w5node);
@@ -1329,8 +1329,8 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 			char_start = clhco[tmp->startindex % CLHCO_NUMBER].char_offset;
 			char_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].char_offset;
 			wattron(G_display.wins[5], COLOR_PAIR(5));
-			mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start, hex_tail - hex_start + 1);
-			mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start, char_tail - char_start + 1);
+			mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
+			mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
 			wattroff(G_display.wins[5], COLOR_PAIR(5));
 			break;
 		}
@@ -1340,8 +1340,8 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 		char_start = clhco[tmp->startindex % CLHCO_NUMBER].char_offset;
 		char_tail = clhco[tmp->endindex % CLHCO_NUMBER].char_offset;
 		wattron(G_display.wins[5], COLOR_PAIR(5));
-		mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start, hex_tail - hex_start + 1);
-		mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start, char_tail - char_start + 1);
+		mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
+		mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
 		wattroff(G_display.wins[5], COLOR_PAIR(5));
 	}
 

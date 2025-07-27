@@ -769,6 +769,7 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
     ndo->ndo_packetp = sp;
     ndo->ndo_protocol = "";
     ndo->ndo_ll_hdr_len = 0;
+    ndo->ndo_packet_info_stack = NULL;
 
     switch (setjmp(ndo->ndo_early_end))
     {

@@ -109,3 +109,14 @@ bittok2str_nosep(const struct tok *lp, const char *fmt,
 {
     return (bittok2str_internal(lp, fmt, v, ""));
 }
+
+/*
+ * Convert a bit token value to a string; use "fmt" if not found.
+ * this is useful for parsing bitfields, the output strings are comma separated.
+ */
+char *
+bittok2str(const struct tok *lp, const char *fmt,
+           u_int v)
+{
+    return (bittok2str_internal(lp, fmt, v, ", "));
+}

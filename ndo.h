@@ -40,13 +40,43 @@ typedef unsigned char nd_uint16_t[2];
 typedef unsigned char nd_uint24_t[3];
 typedef unsigned char nd_uint32_t[4];
 
+typedef signed char nd_int8_t[1];
+
 /*
  * "unsigned char" so that sign extension isn't done on the
  * individual bytes while they're being assembled.  Use
  * GET_S_BE_n() and GET_S_LE_n() macros to extract the value
  * as a signed integer.
  */
-typedef unsigned char nd_uint16_t[2];
+typedef unsigned char nd_int16_t[2];
+
+/*
+ * Use this for IPv4 addresses and netmasks.
+ *
+ * It's defined as an array of octets, so that it's not guaranteed to
+ * be aligned on its "natural" boundary (in some packet formats, it
+ * *isn't* so aligned).  We have separate EXTRACT_ calls for them;
+ * sometimes you want the host-byte-order value, other times you want
+ * the network-byte-order value.
+ *
+ * Don't use EXTRACT_BE_U_4() on them, use EXTRACT_IPV4_TO_HOST_ORDER()
+ * if you want them in host byte order and EXTRACT_IPV4_TO_NETWORK_ORDER()
+ * if you want them in network byte order (which you want with system APIs
+ * that expect network-order IPv4 addresses, such as inet_ntop()).
+ *
+ * If, on your little-endian machine (e.g., an "IBM-compatible PC", no matter
+ * what the OS, or an Intel Mac, no matter what the OS), you get the wrong
+ * answer, and you've used EXTRACT_BE_U_4(), do *N*O*T* "fix" this by using
+ * EXTRACT_LE_U_4(), fix it by using EXTRACT_IPV4_TO_NETWORK_ORDER(),
+ * otherwise you're breaking the result on big-endian machines (e.g.,
+ * most PowerPC/Power ISA machines, System/390 and z/Architecture, SPARC,
+ * etc.).
+ *
+ * Yes, people do this; that's why Wireshark has tvb_get_ipv4(), to extract
+ * an IPv4 address from a packet data buffer; it was introduced in reaction
+ * to somebody who *had* done that.
+ */
+typedef unsigned char nd_ipv4[4];
 
 /*
  * Use this for MAC addresses.
@@ -94,12 +124,12 @@ typedef void(*if_printer) IF_PRINTER_ARGS;
  * on the stack with null buffer pointer, meaning there's nothing to
  * free.
  */
-struct netdissect_saved_packet_info
+struct ndo_saved_packet_info
 {
-    unsigned char *ndspi_buffer;                     /* pointer to allocated buffer data */
-    const unsigned char *ndspi_packetp;              /* saved beginning of data */
-    const unsigned char *ndspi_snapend;              /* saved end of data */
-    struct netdissect_saved_packet_info *ndspi_prev; /* previous buffer on the stack */
+    unsigned char *ndspi_buffer;                      /* pointer to allocated buffer data */
+    const unsigned char *ndspi_packetp;               /* saved beginning of data */
+    const unsigned char *ndspi_snapend;               /* saved end of data */
+    struct ndo_saved_packet_info *ndspi_prev;         /* previous buffer on the stack */
 };
 
 /* 'val' value(s) for longjmp */
@@ -148,7 +178,7 @@ typedef struct ndo_s
     const unsigned char *ndo_snapend;
 
     /* stack of saved packet boundary and buffer information */
-    struct netdissect_saved_packet_info *ndo_packet_info_stack;
+    struct ndo_saved_packet_info *ndo_packet_info_stack;
 
     /* pointer to the if_printer function */
     if_printer ndo_if_printer;
@@ -173,6 +203,12 @@ typedef struct ndo_s
 				PRINTFLIKE_FUNCPTR(2, 3);
 #endif
 } ndo_t;
+
+extern WARN_UNUSED_RESULT int nd_push_buffer(ndo_t *, u_char *, const u_char *, const u_int);
+extern WARN_UNUSED_RESULT int nd_push_snaplen(ndo_t *, const u_char *, const u_int);
+extern void nd_change_snaplen(ndo_t *, const u_char *, const u_int);
+extern void nd_pop_packet_info(ndo_t *);
+extern void nd_pop_all_packet_info(ndo_t *);
 
 /**
  * @brief
@@ -212,6 +248,20 @@ NORETURN void nd_trunc_longjmp(ndo_t *ndo);
 /* Bail out if "*(p)" was not captured */
 #define ND_TCHECK_SIZE(p) ND_TCHECK_LEN(p, sizeof(*(p)))
 
+/*
+ * Number of bytes between two pointers.
+ */
+#define ND_BYTES_BETWEEN(p1, p2) ((const u_char *)(p1) >= (const u_char *)(p2) ? 0 : ((u_int)(((const u_char *)(p2)) - (const u_char *)(p1))))
+
+/*
+ * Number of bytes remaining in the captured data, starting at the
+ * byte pointed to by the argument.
+ */
+#define ND_BYTES_AVAILABLE_AFTER(p) ((const u_char *)(p) < ndo->ndo_packetp ? 0 : ND_BYTES_BETWEEN((p), ndo->ndo_snapend))
+
+/* tok2str is deprecated */
+extern const char *tok2str(const struct tok *, const char *, u_int);
+extern char *bittok2str(const struct tok *, const char *, u_int);
 extern char *bittok2str_nosep(const struct tok *, const char *, u_int);
 
 /*
@@ -239,7 +289,18 @@ extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
                 u_short ether_type, const u_char *p, u_int length, u_int caplen,
                 const struct lladdr_info *src, const struct lladdr_info *dst);
 
+extern void ip_print(ndo_t *ndo, u_int index, void *infonode, 
+                      const u_char *bp, const u_int length);
+
 extern void arp_print(ndo_t *ndo, u_int index, void *infonode,
                       const u_char *bp, u_int length, u_int caplen);
+
+struct cksum_vec
+{
+  const uint8_t *ptr;
+  int len;
+};
+extern uint16_t in_cksum(const struct cksum_vec *, int);
+extern uint16_t in_cksum_shouldbe(uint16_t, uint16_t);
 
 #endif // __NDO_H__

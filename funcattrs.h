@@ -4,4 +4,6 @@
 
 #define NORETURN __attribute((noreturn))
 
+#define WARN_UNUSED_RESULT __attribute((warn_unused_result))
+
 #endif // __FUNCATTRS_H__
