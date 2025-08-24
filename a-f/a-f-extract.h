@@ -223,10 +223,11 @@ EXTRACT_BE_U_8(const void *p)
 /*
  * Macros to check the presence of the values in question.
  */
-#define ND_TTEST_1(p) ND_TTEST_LEN((p), 1)
-#define ND_TTEST_2(p) ND_TTEST_LEN((p), 2)
-#define ND_TTEST_4(p) ND_TTEST_LEN((p), 4)
-#define ND_TTEST_8(p) ND_TTEST_LEN((p), 8)
+#define ND_TTEST_1(p)   ND_TTEST_LEN((p), 1)
+#define ND_TTEST_2(p)   ND_TTEST_LEN((p), 2)
+#define ND_TTEST_4(p)   ND_TTEST_LEN((p), 4)
+#define ND_TTEST_8(p)   ND_TTEST_LEN((p), 8)
+#define ND_TTEST_16(p)  ND_TTEST_LEN((p), 16)
 
 /* get_u_1 and get_s_1 */
 

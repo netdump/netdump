@@ -428,7 +428,7 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
             return (1);
 
         case ETHERTYPE_IPV6:
-            //ip6_print(ndo, p, length);
+            ip6_print(ndo, index, infonode, p, length);
             return (1);
 
         case ETHERTYPE_ARP:

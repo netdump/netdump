@@ -25,6 +25,35 @@
 #include "pcap.h"
 
 /*
+ * Check whether this is GCC major.minor or a later release, or some
+ * compiler that claims to be "just like GCC" of that version or a
+ * later release.
+ */
+
+#if !defined(__GNUC__)
+/* Not GCC and not "just like GCC" */
+#define ND_IS_AT_LEAST_GNUC_VERSION(major, minor) 0
+#else
+/* GCC or "just like GCC" */
+#define ND_IS_AT_LEAST_GNUC_VERSION(major, minor) \
+  (__GNUC__ > (major) ||                          \
+   (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
+#endif
+
+#if __has_attribute(unused) || ND_IS_AT_LEAST_GNUC_VERSION(2, 0)
+/*
+ * Compiler with support for __attribute__((unused)), or GCC 2.0 and
+ * later, so it supports __attribute__((unused)).
+ */
+#define _U_ __attribute__((unused))
+#else
+/*
+ * We don't know of any way to mark a variable as unused.
+ */
+#define _U_
+#endif
+
+/*
  * Data types corresponding to multi-byte integral values within data
  * structures.  These are defined as arrays of octets, so that they're
  * not aligned on their "natural" boundaries, and so that you *must*
@@ -77,6 +106,11 @@ typedef unsigned char nd_int16_t[2];
  * to somebody who *had* done that.
  */
 typedef unsigned char nd_ipv4[4];
+
+/*
+ * Use this for IPv6 addresses and netmasks.
+ */
+typedef unsigned char nd_ipv6[16];
 
 /*
  * Use this for MAC addresses.
@@ -292,8 +326,26 @@ extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
 extern void ip_print(ndo_t *ndo, u_int index, void *infonode, 
                       const u_char *bp, const u_int length);
 
+extern void ip6_print(ndo_t *ndo, u_int index, void *infonode,
+                      const u_char *bp, u_int length);
+
 extern void arp_print(ndo_t *ndo, u_int index, void *infonode,
                       const u_char *bp, u_int length, u_int caplen);
+
+extern int hbhopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
+                   const u_char *bp, int *found_jumbo, uint32_t *jumbolen);
+
+extern int dstopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
+                   const u_char *bp);
+
+extern int frag6_print(ndo_t *ndo, void *infonode, void *_su, u_int *index, 
+                  const u_char *bp, const char *bp2);
+
+extern int rt6_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
+              const u_char *bp, const char *bp2);
+
+extern int mobility_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
+                   const u_char *bp, const char *bp2 _U_);
 
 struct cksum_vec
 {

@@ -60,6 +60,60 @@ int nd_push_snaplen(ndo_t *ndo, const u_char *bp, const u_int newlen)
     return (1); /* success */
 }
 
+/*
+ * In a given netdissect_options structure:
+ *
+ *    given a pointer into the packet and a length past that point in
+ *    the packet, calculate a new snapshot end that's at the lower
+ *    of the previous snapshot end - or, if there is no previous
+ *    snapshot end, the current snapshot end - and that point in the
+ *    packet;
+ *
+ *    set the snapshot end to that new value.
+ *
+ * This is to change the current snapshot end.  This may increase the
+ * snapshot end, as it may be used, for example, for a Jumbo Payload
+ * option in IPv6.  It must not increase it past the snapshot length
+ * atop which the current one was pushed, however.
+ */
+void nd_change_snaplen(ndo_t *ndo, const u_char *bp, const u_int newlen)
+{
+    struct ndo_saved_packet_info *ndspi;
+    const u_char *previous_snapend;
+    u_int snaplen_remaining;
+
+    ndspi = ndo->ndo_packet_info_stack;
+    if (ndspi->ndspi_prev != NULL)
+        previous_snapend = ndspi->ndspi_prev->ndspi_snapend;
+    else
+        previous_snapend = ndo->ndo_snapend;
+
+    /*
+     * Find out how many bytes remain after the previous
+     * snapend - or, if there is no previous snapend, after
+     * the current snapend.
+     *
+     * We're restricted to packets with at most UINT_MAX bytes;
+     * cast the result to u_int, so that we don't get truncation
+     * warnings on LP64 and LLP64 platforms.  (ptrdiff_t is
+     * signed and we want an unsigned difference; the pointer
+     * should at most be equal to snapend, and must *never*
+     * be past snapend.)
+     */
+    snaplen_remaining = (u_int)(previous_snapend - bp);
+
+    /*
+     * If the new snapend is smaller than the one calculated
+     * above, set the snapend to that value, otherwise leave
+     * it unchanged.
+     */
+    if (newlen <= snaplen_remaining)
+    {
+        /* Snapend isn't past the previous snapend */
+        ndo->ndo_snapend = bp + newlen;
+    }
+}
+
 void nd_pop_packet_info(ndo_t *ndo)
 {
     struct ndo_saved_packet_info *ndspi;

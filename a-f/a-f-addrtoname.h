@@ -20,6 +20,7 @@ enum
 
 extern const char *etheraddr_string(ndo_t *, const uint8_t *);
 extern const char *ipaddr_string(ndo_t*, const u_char *);
+extern const char *ip6addr_string(ndo_t *, const u_char *);
 
 static inline const char *
 get_etheraddr_string(ndo_t *ndo, const uint8_t *p)
@@ -37,6 +38,15 @@ get_ipaddr_string(ndo_t *ndo, const u_char *p)
     return ipaddr_string(ndo, p);
 }
 
+static inline const char *
+get_ip6addr_string(ndo_t *ndo, const u_char *p)
+{
+    if (!ND_TTEST_16(p))
+        nd_trunc_longjmp(ndo);
+    return ip6addr_string(ndo, p);
+}
+
 #define GET_IPADDR_STRING(p) get_ipaddr_string(ndo, (const u_char *)(p))
+#define GET_IP6ADDR_STRING(p) get_ip6addr_string(ndo, (const u_char *)(p))
 
 #endif
