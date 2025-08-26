@@ -166,6 +166,9 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
         LAYER_3_IP6_DESTINATION_ADDRESS, GET_IP6ADDR_STRING(ip6->ip6_dst));
     index = index + 16;
 
+    snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", GET_IP6ADDR_STRING(ip6->ip6_src));
+    snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", GET_IP6ADDR_STRING(ip6->ip6_dst));
+
     cp = (const u_char *)ip6;
     advance = sizeof(struct ip6_hdr);
     total_advance = 0;
@@ -257,12 +260,12 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                 if (advance < 0)
                 {
                     nd_pop_packet_info(ndo);
-                    return;
+                    RVoid();
                 }
                 found_extension_header = 1;
                 nh = GET_U_1(cp);
                 nd_pop_packet_info(ndo);
-                return;
+                RVoid();
                 break;
             case IPPROTO_ROUTING:
                 if (!ND_TTEST_LEN(cp, 1))
@@ -275,7 +278,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                 if (advance < 0)
                 {
                     nd_pop_packet_info(ndo);
-                    return;
+                    RVoid();
                 }
                 found_extension_header = 1;
                 nh = GET_U_1(cp);
@@ -363,7 +366,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                                GET_U_1(ip6->ip6_hlim), nh, bp);
                 nd_pop_packet_info(ndo);
                 #endif
-                return ;
+                RVoid();
         }
         ph = nh;
         /* ndo_protocol reassignment after xxx_print() calls */
@@ -371,7 +374,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
     }
 
     nd_pop_packet_info(ndo);
-    return;
+    RVoid();
 
 invalid:
 

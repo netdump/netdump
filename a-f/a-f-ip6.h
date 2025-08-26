@@ -76,7 +76,7 @@ Segment Routing Header 'SRH'
 
 
 #define LAYER_3_IP6_FORMAT                  "%s"
-#define LAYER_3_IP6_CONTENT                 "Internet Protocol Version 4: "
+#define LAYER_3_IP6_CONTENT                 "Internet Protocol Version 6: "
 #define LAYER_3_IP6_VERSION                 "version: %u"
 #define LAYER_3_IP6_TC_FL                   "Traffic Class: 0x%02x, Flow Label: 0x%05x"
 #define LAYER_3_IP6_PAYLOAD_LEN             "Payload Length: %u"
