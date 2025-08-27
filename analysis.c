@@ -633,7 +633,7 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
 {
     TC("Called { %s(%p, %p, %u)", __func__, infonode, sp, caplen);
 
-    if (!infonode || !sp || (caplen == 0) || (caplen > 0xFFFF)) {
+    if (!infonode || !sp || (caplen == 0) || (caplen > 0x100000/*0xFFFF*/)) {
         TE("param is error, infonode: %p, sp: %p, caplen: %u [must less than 0xFFFF]", infonode, sp, caplen);
         abort();
     }

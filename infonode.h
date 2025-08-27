@@ -39,7 +39,7 @@ struct l1l2_node_s
 /**
  * @brief struct w5_node_s nums
  */
-#define W5_NODE_NUMS                            (128U)
+#define W5_NODE_NUMS                            (1024U)
 /**
  * @brief w5node content length                 
  */
