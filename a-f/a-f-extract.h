@@ -215,6 +215,17 @@ EXTRACT_BE_U_8(const void *p)
 /*
  * Non-power-of-2 sizes.
  */
+#define EXTRACT_BE_U_6(p)                                         \
+    ((uint64_t)(((uint64_t)(*((const uint8_t *)(p) + 0)) << 40) | \
+                ((uint64_t)(*((const uint8_t *)(p) + 1)) << 32) | \
+                ((uint64_t)(*((const uint8_t *)(p) + 2)) << 24) | \
+                ((uint64_t)(*((const uint8_t *)(p) + 3)) << 16) | \
+                ((uint64_t)(*((const uint8_t *)(p) + 4)) << 8) |  \
+                ((uint64_t)(*((const uint8_t *)(p) + 5)) << 0)))
+
+/*
+ * Non-power-of-2 sizes.
+ */
 #define EXTRACT_BE_U_3(p)                                         \
     ((uint32_t)(((uint32_t)(*((const uint8_t *)(p) + 0)) << 16) | \
                 ((uint32_t)(*((const uint8_t *)(p) + 1)) << 8) |  \
@@ -226,6 +237,7 @@ EXTRACT_BE_U_8(const void *p)
 #define ND_TTEST_1(p)   ND_TTEST_LEN((p), 1)
 #define ND_TTEST_2(p)   ND_TTEST_LEN((p), 2)
 #define ND_TTEST_4(p)   ND_TTEST_LEN((p), 4)
+#define ND_TTEST_6(p)   ND_TTEST_LEN((p), 6)
 #define ND_TTEST_8(p)   ND_TTEST_LEN((p), 8)
 #define ND_TTEST_16(p)  ND_TTEST_LEN((p), 16)
 
@@ -266,6 +278,14 @@ get_be_u_4(ndo_t *ndo, const u_char *p)
 }
 
 static inline uint64_t
+get_be_u_6(ndo_t *ndo, const u_char *p)
+{
+    if (!ND_TTEST_6(p))
+        nd_trunc_longjmp(ndo);
+    return EXTRACT_BE_U_6(p);
+}
+
+static inline uint64_t
 get_be_u_8(ndo_t *ndo, const u_char *p)
 {
     if (!ND_TTEST_8(p))
@@ -278,6 +298,7 @@ get_be_u_8(ndo_t *ndo, const u_char *p)
 
 #define GET_BE_U_2(p) get_be_u_2(ndo, (const u_char *)(p))
 #define GET_BE_U_4(p) get_be_u_4(ndo, (const u_char *)(p))
+#define GET_BE_U_6(p) get_be_u_6(ndo, (const u_char *)(p))
 #define GET_BE_U_8(p) get_be_u_8(ndo, (const u_char *)(p))
 
 #endif // __AF_EXTRACT_H__

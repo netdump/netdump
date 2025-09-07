@@ -461,7 +461,7 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
             return (1);
 
         case ETHERTYPE_PTP:
-            //ptp_print(ndo, p, length);
+            ptp_print(ndo, index, infonode, p, length);
             return (1);
 
         case ETHERTYPE_LAT:
