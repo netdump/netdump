@@ -350,6 +350,11 @@ extern int mobility_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
 extern void ptp_print(ndo_t *ndo, u_int index, void *infonode, 
                     const u_char *bp, u_int length);
 
+extern void mpls_print(ndo_t *ndo, u_int index, void *infonode, 
+                    const u_char *bp, u_int length);
+
+extern void eapol_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, u_int length);
+
 struct cksum_vec
 {
   const uint8_t *ptr;

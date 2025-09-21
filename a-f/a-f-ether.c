@@ -444,7 +444,9 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
             return (1);
 
         case ETHERTYPE_EAPOL:
-            //eapol_print(ndo, p);
+            snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", src->addr_string(ndo, (const uint8_t *)src->addr));
+            snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", dst->addr_string(ndo, (const uint8_t *)dst->addr));
+            eapol_print(ndo, index, infonode, p, length);
             return (1);
 
         case ETHERTYPE_SLOW:
@@ -457,7 +459,7 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
 
         case ETHERTYPE_MPLS:
         case ETHERTYPE_MPLS_MULTI:
-            //mpls_print(ndo, p, length);
+            mpls_print(ndo, index, infonode, p, length);
             return (1);
 
         case ETHERTYPE_PTP:
