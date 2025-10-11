@@ -68,6 +68,10 @@ typedef unsigned char nd_uint8_t[1];
 typedef unsigned char nd_uint16_t[2];
 typedef unsigned char nd_uint24_t[3];
 typedef unsigned char nd_uint32_t[4];
+typedef unsigned char nd_uint40_t[5];
+typedef unsigned char nd_uint48_t[6];
+typedef unsigned char nd_uint56_t[7];
+typedef unsigned char nd_uint64_t[8];
 
 typedef signed char nd_int8_t[1];
 
@@ -78,6 +82,12 @@ typedef signed char nd_int8_t[1];
  * as a signed integer.
  */
 typedef unsigned char nd_int16_t[2];
+typedef unsigned char nd_int24_t[3];
+typedef unsigned char nd_int32_t[4];
+typedef unsigned char nd_int40_t[5];
+typedef unsigned char nd_int48_t[6];
+typedef unsigned char nd_int56_t[7];
+typedef unsigned char nd_int64_t[8];
 
 /*
  * Use this for IPv4 addresses and netmasks.
@@ -238,6 +248,47 @@ typedef struct ndo_s
 #endif
 } ndo_t;
 
+#if (defined(__i386__) || defined(_M_IX86) || defined(__X86__) || defined(__x86_64__) || defined(_M_X64)) ||     \
+    (defined(__arm__) || defined(_M_ARM) || defined(__aarch64__)) ||                                             \
+    (defined(__m68k__) && (!defined(__mc68000__) && !defined(__mc68010__))) ||                                   \
+    (defined(__ppc__) || defined(__ppc64__) || defined(_M_PPC) || defined(_ARCH_PPC) || defined(_ARCH_PPC64)) || \
+    (defined(__s390__) || defined(__s390x__) || defined(__zarch__)) ||                                           \
+    defined(__vax__)
+/*
+ * The processor natively handles unaligned loads, so just use memcpy()
+ * and memcmp(), to enable those optimizations.
+ *
+ * XXX - are those all the x86 tests we need?
+ * XXX - do we need to worry about ARMv1 through ARMv5, which didn't
+ * support unaligned loads, and, if so, do we need to worry about all
+ * of them, or just some of them, e.g. ARMv5?
+ * XXX - are those the only 68k tests we need not to generated
+ * unaligned accesses if the target is the 68000 or 68010?
+ * XXX - are there any tests we don't need, because some definitions are for
+ * compilers that also predefine the GCC symbols?
+ * XXX - do we need to test for both 32-bit and 64-bit versions of those
+ * architectures in all cases?
+ */
+#define UNALIGNED_MEMCPY(p, q, l) memcpy((p), (q), (l))
+#define UNALIGNED_MEMCMP(p, q, l) memcmp((p), (q), (l))
+#else
+/*
+ * The processor doesn't natively handle unaligned loads,
+ * and the compiler might "helpfully" optimize memcpy()
+ * and memcmp(), when handed pointers that would normally
+ * be properly aligned, into sequences that assume proper
+ * alignment.
+ *
+ * Do copies and compares of possibly-unaligned data by
+ * calling routines that wrap memcpy() and memcmp(), to
+ * prevent that optimization.
+ */
+extern void unaligned_memcpy(void *, const void *, size_t);
+extern int unaligned_memcmp(const void *, const void *, size_t);
+#define UNALIGNED_MEMCPY(p, q, l) unaligned_memcpy((p), (q), (l))
+#define UNALIGNED_MEMCMP(p, q, l) unaligned_memcmp((p), (q), (l))
+#endif
+
 extern WARN_UNUSED_RESULT int nd_push_buffer(ndo_t *, u_char *, const u_char *, const u_int);
 extern WARN_UNUSED_RESULT int nd_push_snaplen(ndo_t *, const u_char *, const u_int);
 extern void nd_change_snaplen(ndo_t *, const u_char *, const u_int);
@@ -258,6 +309,12 @@ extern void analysis_ts_print(ndo_t *, const struct timeval *, char *);
  * Report a packet truncation with a longjmp().
  */
 NORETURN void nd_trunc_longjmp(ndo_t *ndo);
+
+#define ND_MIN(a, b) ((a) > (b) ? (b) : (a))
+#define ND_MAX(a, b) ((b) > (a) ? (b) : (a))
+
+/* For source or destination ports tests (UDP, TCP, ...) */
+#define IS_SRC_OR_DST_PORT(p) (sport == (p) || dport == (p))
 
 /*
  * Test in two parts to avoid these warnings:
@@ -316,6 +373,8 @@ struct lladdr_info
 
 /* The printer routines. */
 
+extern int ah_print(ndo_t *ndo, u_int * indexp, void *infonode, const u_char *bp);
+
 extern int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void *su,
                     u_int *index, u_int *lengthp, u_int *caplenp, u_int *hdrlenp);
 
@@ -325,6 +384,15 @@ extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
 
 extern void ip_print(ndo_t *ndo, u_int index, void *infonode, 
                     const u_char *bp, const u_int length);
+
+extern void ipcomp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, 
+                    u_int length);
+
+extern void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
+                    u_int length, const u_char *bp2, int fragmented, u_int ttl_hl);
+
+extern void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, 
+                    u_int length, const u_char *bp2, int fragmented);
 
 extern void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                     const u_char *bp, u_int length);
@@ -353,7 +421,15 @@ extern void ptp_print(ndo_t *ndo, u_int index, void *infonode,
 extern void mpls_print(ndo_t *ndo, u_int index, void *infonode, 
                     const u_char *bp, u_int length);
 
-extern void eapol_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, u_int length);
+extern void eapol_print(ndo_t *ndo, u_int index, void *infonode, 
+                    const u_char *bp, u_int length);
+
+extern void ip_demux_print(ndo_t *ndo, u_int index, void *infonode,
+                    const u_char *bp, u_int length, u_int ver, int fragmented, 
+                    u_int ttl_hl, uint8_t nh, const u_char *iph);
+
+extern int mptcp_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
+                    const u_char *cp, u_int len, u_char flags);
 
 struct cksum_vec
 {
@@ -362,5 +438,45 @@ struct cksum_vec
 };
 extern uint16_t in_cksum(const struct cksum_vec *, int);
 extern uint16_t in_cksum_shouldbe(uint16_t, uint16_t);
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+/*
+ * Locale-independent macros for testing character properties and
+ * stripping the 8th bit from characters.
+ *
+ * Byte values outside the ASCII range are considered unprintable, so
+ * both ND_ASCII_ISPRINT() and ND_ASCII_ISGRAPH() return "false" for them.
+ *
+ * Assumed to be handed a value between 0 and 255, i.e. don't hand them
+ * a char, as those might be in the range -128 to 127.
+ */
+#define ND_ISASCII(c) (!((c) & 0x80)) /* value is an ASCII code point */
+#define ND_ASCII_ISPRINT(c) ((c) >= 0x20 && (c) <= 0x7E)
+#define ND_ASCII_ISGRAPH(c) ((c) > 0x20 && (c) <= 0x7E)
+#define ND_ASCII_ISDIGIT(c) ((c) >= '0' && (c) <= '9')
+#define ND_TOASCII(c) ((c) & 0x7F)
+
+/*
+ * Locale-independent macros for converting to upper or lower case.
+ *
+ * Byte values outside the ASCII range are not converted.  Byte values
+ * *in* the ASCII range are converted to byte values in the ASCII range;
+ * in particular, 'i' is upper-cased to 'I" and 'I' is lower-cased to 'i',
+ * even in Turkish locales.
+ */
+#define ND_ASCII_TOLOWER(c) (((c) >= 'A' && (c) <= 'Z') ? (c) - 'A' + 'a' : (c))
+#define ND_ASCII_TOUPPER(c) (((c) >= 'a' && (c) <= 'z') ? (c) - 'a' + 'A' : (c))
+
+/*
+ * Print out a character, filtering out the non-printable ones
+ */
+extern void fn_print_char(ndo_t *ndo, u_char c, char *buffer);
 
 #endif // __NDO_H__

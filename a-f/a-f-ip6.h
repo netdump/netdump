@@ -246,4 +246,8 @@ struct ip6_frag {
 #define IP6F_RESERVED_MASK	        0x0006	/* reserved bits in ip6f_offlg */
 #define IP6F_MORE_FRAG		        0x0001	/* more-fragments flag */
 
+/* in print-ip6.c */
+extern uint16_t nextproto6_cksum(ndo_t *, const struct ip6_hdr *, const uint8_t *,
+                                 u_int, u_int, uint8_t);
+
 #endif

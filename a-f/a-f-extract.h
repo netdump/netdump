@@ -76,7 +76,15 @@ EXTRACT_BE_U_8(const void *p)
     return ((uint64_t)(((uint64_t)ntohl(*((const uint32_t *)(p) + 0))) << 32 |
                        ((uint64_t)ntohl(*((const uint32_t *)(p) + 1))) << 0));
 }
-
+/*
+ * Extract an IPv4 address, which is in network byte order, and not
+ * necessarily aligned, and provide the result in host byte order.
+ */
+UNALIGNED_OK static inline uint32_t
+EXTRACT_IPV4_TO_HOST_ORDER(const void *p)
+{
+    return ((uint32_t)ntohl(*(const uint32_t *)(p)));
+}
 #elif ND_IS_AT_LEAST_GNUC_VERSION(2, 0) &&     \
     (defined(__alpha) || defined(__alpha__) || \
      defined(__mips) || defined(__mips__))
@@ -171,6 +179,15 @@ EXTRACT_BE_U_8(const void *p)
                        ((uint64_t)ntohl(((const unaligned_uint32_t *)(p) + 1)->val)) << 0));
 }
 
+/*
+ * Extract an IPv4 address, which is in network byte order, and not
+ * necessarily aligned, and provide the result in host byte order.
+ */
+UNALIGNED_OK static inline uint32_t
+EXTRACT_IPV4_TO_HOST_ORDER(const void *p)
+{
+    return ((uint32_t)ntohl(((const unaligned_uint32_t *)(p))->val));
+}
 #else
 /*
  * This architecture doesn't natively support unaligned loads, and either
@@ -210,6 +227,15 @@ EXTRACT_BE_U_8(const void *p)
                 ((uint64_t)(*((const uint8_t *)(p) + 6)) << 8) |  \
                 ((uint64_t)(*((const uint8_t *)(p) + 7)) << 0)))
 
+/*
+ * Extract an IPv4 address, which is in network byte order, and not
+ * necessarily aligned, and provide the result in host byte order.
+ */
+#define EXTRACT_IPV4_TO_HOST_ORDER(p)                             \
+    ((uint32_t)(((uint32_t)(*((const uint8_t *)(p) + 0)) << 24) | \
+                ((uint32_t)(*((const uint8_t *)(p) + 1)) << 16) | \
+                ((uint32_t)(*((const uint8_t *)(p) + 2)) << 8) |  \
+                ((uint32_t)(*((const uint8_t *)(p) + 3)) << 0)))
 #endif /* unaligned access checks */
 
 /*
@@ -234,12 +260,18 @@ EXTRACT_BE_U_8(const void *p)
 /*
  * Macros to check the presence of the values in question.
  */
-#define ND_TTEST_1(p)   ND_TTEST_LEN((p), 1)
-#define ND_TTEST_2(p)   ND_TTEST_LEN((p), 2)
-#define ND_TTEST_4(p)   ND_TTEST_LEN((p), 4)
-#define ND_TTEST_6(p)   ND_TTEST_LEN((p), 6)
-#define ND_TTEST_8(p)   ND_TTEST_LEN((p), 8)
-#define ND_TTEST_16(p)  ND_TTEST_LEN((p), 16)
+#define ND_TTEST_1(p)       ND_TTEST_LEN((p), 1)
+#define ND_TCHECK_1(p)      ND_TCHECK_LEN((p), 1)
+#define ND_TTEST_2(p)       ND_TTEST_LEN((p), 2)
+#define ND_TCHECK_2(p)      ND_TCHECK_LEN((p), 2)
+#define ND_TTEST_4(p)       ND_TTEST_LEN((p), 4)
+#define ND_TCHECK_4(p)      ND_TCHECK_LEN((p), 4)
+#define ND_TTEST_6(p)       ND_TTEST_LEN((p), 6)
+#define ND_TCHECK_6(p)      ND_TCHECK_LEN((p), 6)
+#define ND_TTEST_8(p)       ND_TTEST_LEN((p), 8)
+#define ND_TCHECK_8(p)      ND_TCHECK_LEN((p), 8)
+#define ND_TTEST_16(p)      ND_TTEST_LEN((p), 16)
+#define ND_TCHECK_16(p)     ND_TCHECK_LEN((p), 16)
 
 /* get_u_1 and get_s_1 */
 
@@ -293,6 +325,48 @@ get_be_u_8(ndo_t *ndo, const u_char *p)
     return EXTRACT_BE_U_8(p);
 }
 
+/*
+ * Extract an IPv4 address, which is in network byte order, and which
+ * is not necessarily aligned on a 4-byte boundary, and provide the
+ * result in network byte order.
+ *
+ * This works the same way regardless of the host's byte order.
+ */
+static inline uint32_t
+EXTRACT_IPV4_TO_NETWORK_ORDER(const void *p)
+{
+    uint32_t addr;
+
+    UNALIGNED_MEMCPY(&addr, p, sizeof(uint32_t));
+    return addr;
+}
+
+/* get_ipv4_to_{host|network]_order */
+
+static inline uint32_t
+get_ipv4_to_host_order(ndo_t *ndo, const u_char *p)
+{
+    if (!ND_TTEST_4(p))
+        nd_trunc_longjmp(ndo);
+    return EXTRACT_IPV4_TO_HOST_ORDER(p);
+}
+
+static inline uint32_t
+get_ipv4_to_network_order(ndo_t *ndo, const u_char *p)
+{
+    if (!ND_TTEST_4(p))
+        nd_trunc_longjmp(ndo);
+    return EXTRACT_IPV4_TO_NETWORK_ORDER(p);
+}
+
+static inline void
+get_cpy_bytes(ndo_t *ndo, u_char *dst, const u_char *p, size_t len)
+{
+    if (!ND_TTEST_LEN(p, len))
+        nd_trunc_longjmp(ndo);
+    UNALIGNED_MEMCPY(dst, p, len);
+}
+
 #define GET_U_1(p) get_u_1(ndo, (const u_char *)(p))
 #define GET_S_1(p) get_s_1(ndo, (const u_char *)(p))
 
@@ -300,5 +374,10 @@ get_be_u_8(ndo_t *ndo, const u_char *p)
 #define GET_BE_U_4(p) get_be_u_4(ndo, (const u_char *)(p))
 #define GET_BE_U_6(p) get_be_u_6(ndo, (const u_char *)(p))
 #define GET_BE_U_8(p) get_be_u_8(ndo, (const u_char *)(p))
+
+#define GET_IPV4_TO_HOST_ORDER(p) get_ipv4_to_host_order(ndo, (const u_char *)(p))
+#define GET_IPV4_TO_NETWORK_ORDER(p) get_ipv4_to_network_order(ndo, (const u_char *)(p))
+
+#define GET_CPY_BYTES(dst, p, len) get_cpy_bytes(ndo, (u_char *)(dst), (const u_char *)(p), len)
 
 #endif // __AF_EXTRACT_H__

@@ -40,6 +40,93 @@ static const struct tok ip_option_values[] = {
     {0, NULL}
 };
 
+/*
+ * If source-routing is present and valid, return the final destination.
+ * Otherwise, return IP destination.
+ *
+ * This is used for UDP and TCP pseudo-header in the checksum
+ * calculation.
+ */
+static uint32_t
+ip_finddst(ndo_t *ndo, const struct ip *ip)
+{
+    u_int length;
+    u_int len;
+    const u_char *cp;
+
+    cp = (const u_char *)(ip + 1);
+    length = IP_HL(ip) * 4;
+    if (length < sizeof(struct ip))
+        goto trunc;
+    length -= sizeof(struct ip);
+
+    for (; length != 0; cp += len, length -= len)
+    {
+        int tt;
+
+        tt = GET_U_1(cp);
+        if (tt == IPOPT_EOL)
+            break;
+        else if (tt == IPOPT_NOP)
+            len = 1;
+        else
+        {
+            len = GET_U_1(cp + 1);
+            if (len < 2)
+                break;
+        }
+        if (length < len)
+            goto trunc;
+        ND_TCHECK_LEN(cp, len);
+        switch (tt)
+        {
+
+        case IPOPT_SSRR:
+        case IPOPT_LSRR:
+            if (len < 7)
+                break;
+            return (GET_IPV4_TO_NETWORK_ORDER(cp + len - 4));
+        }
+    }
+trunc:
+    return (GET_IPV4_TO_NETWORK_ORDER(ip->ip_dst));
+}
+
+/*
+ * Compute a V4-style checksum by building a pseudoheader.
+ */
+uint16_t
+nextproto4_cksum(ndo_t *ndo,
+                 const struct ip *ip, const uint8_t *data,
+                 u_int len, u_int covlen, uint8_t next_proto)
+{
+    struct phdr
+    {
+        uint32_t src;
+        uint32_t dst;
+        uint8_t mbz;
+        uint8_t proto;
+        uint16_t len;
+    } ph;
+    struct cksum_vec vec[2];
+
+    /* pseudo-header.. */
+    ph.len = htons((uint16_t)len);
+    ph.mbz = 0;
+    ph.proto = next_proto;
+    ph.src = GET_IPV4_TO_NETWORK_ORDER(ip->ip_src);
+    if (IP_HL(ip) == 5)
+        ph.dst = GET_IPV4_TO_NETWORK_ORDER(ip->ip_dst);
+    else
+        ph.dst = ip_finddst(ndo, ip);
+
+    vec[0].ptr = (const uint8_t *)(void *)&ph;
+    vec[0].len = sizeof(ph);
+    vec[1].ptr = data;
+    vec[1].len = covlen;
+    return (in_cksum(vec, 2));
+}
+
 const char *dscp_name(uint8_t dscp)
 {
     switch (dscp)
@@ -566,7 +653,7 @@ void ip_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, const u
     snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", GET_IPADDR_STRING(ip->ip_src));
     snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", GET_IPADDR_STRING(ip->ip_dst));
 
-    //len -= hlen;
+    len -= hlen;
     
     if ((hlen - sizeof(struct ip)) > 0) 
     {
@@ -580,6 +667,7 @@ void ip_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, const u
     
     if ((off & IP_OFFMASK) == 0)
     {
+        uint8_t nh = GET_U_1(ip->ip_p);
         if (!ND_TTEST_LEN((const u_char *)ip, hlen))
         {
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, 
@@ -589,7 +677,8 @@ void ip_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, const u
             nd_trunc_longjmp(ndo);
         }
         index = index + hlen - sizeof(struct ip);
-        //ip_demux_print();
+        ip_demux_print(ndo, index, infonode, (const u_char *)ip + hlen, len, 4,
+                       off & IP_MF, GET_U_1(ip->ip_ttl), nh, bp);
     }
     else 
     {
@@ -615,7 +704,7 @@ void ip_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, const u
     }
 
     nd_pop_packet_info(ndo);
-    return;
+    RVoid();
 
 invalid:
 

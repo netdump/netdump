@@ -12,6 +12,27 @@
 #define TOKBUFSIZE 128
 
 /*
+ * Print out a character, filtering out the non-printable ones
+ */
+void fn_print_char(ndo_t *ndo, u_char c, char * buffer)
+{
+    if (!ND_ISASCII(c))
+    {
+        c = ND_TOASCII(c);
+        //ND_PRINT("M-");
+        sprintf(buffer + strlen(buffer), "%s", "M-");
+    }
+    if (!ND_ASCII_ISPRINT(c))
+    {
+        c ^= 0x40; /* DEL to ?, others to alpha */
+        //ND_PRINT("^");
+        sprintf(buffer + strlen(buffer), "%s", "^");
+    }
+    //ND_PRINT("%c", c);
+    sprintf(buffer + strlen(buffer), "%c", c);
+}
+
+/*
  * Convert a token value to a string; use "fmt" if not found.
  */
 static const char *

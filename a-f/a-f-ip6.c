@@ -38,6 +38,195 @@ Destination Address	    128 bits	目标 IPv6 地址
 #endif
 
 /*
+ * If routing headers are presend and valid, set dst to the final destination.
+ * Otherwise, set it to the IPv6 destination.
+ *
+ * This is used for UDP and TCP pseudo-header in the checksum
+ * calculation.
+ */
+static void
+ip6_finddst(ndo_t *ndo, nd_ipv6 *dst,
+            const struct ip6_hdr *ip6)
+{
+    const u_char *cp;
+    u_int advance;
+    u_int nh;
+    const void *dst_addr;
+    const struct ip6_rthdr *dp;
+    const struct ip6_rthdr0 *dp0;
+    const struct ip6_srh *srh;
+    const u_char *p;
+    int i, len;
+
+    cp = (const u_char *)ip6;
+    advance = sizeof(struct ip6_hdr);
+    nh = GET_U_1(ip6->ip6_nxt);
+    dst_addr = (const void *)ip6->ip6_dst;
+
+    while (cp < ndo->ndo_snapend)
+    {
+        cp += advance;
+
+        switch (nh)
+        {
+
+        case IPPROTO_HOPOPTS:
+        case IPPROTO_DSTOPTS:
+        case IPPROTO_MOBILITY_OLD:
+        case IPPROTO_MOBILITY:
+            /*
+             * These have a header length byte, following
+             * the next header byte, giving the length of
+             * the header, in units of 8 octets, excluding
+             * the first 8 octets.
+             */
+            advance = (GET_U_1(cp + 1) + 1) << 3;
+            nh = GET_U_1(cp);
+            break;
+
+        case IPPROTO_FRAGMENT:
+            /*
+             * The byte following the next header byte is
+             * marked as reserved, and the header is always
+             * the same size.
+             */
+            advance = sizeof(struct ip6_frag);
+            nh = GET_U_1(cp);
+            break;
+
+        case IPPROTO_ROUTING:
+            /*
+             * OK, we found it.
+             */
+            dp = (const struct ip6_rthdr *)cp;
+            ND_TCHECK_SIZE(dp);
+            len = GET_U_1(dp->ip6r_len);
+            switch (GET_U_1(dp->ip6r_type))
+            {
+
+            case IPV6_RTHDR_TYPE_0:
+            case IPV6_RTHDR_TYPE_2: /* Mobile IPv6 ID-20 */
+                dp0 = (const struct ip6_rthdr0 *)dp;
+                if (len % 2 == 1)
+                    goto trunc;
+                len >>= 1;
+                p = (const u_char *)dp0->ip6r0_addr;
+                for (i = 0; i < len; i++)
+                {
+                    ND_TCHECK_16(p);
+                    dst_addr = (const void *)p;
+                    p += 16;
+                }
+                break;
+            case IPV6_RTHDR_TYPE_4:
+                /* IPv6 Segment Routing Header (SRH) */
+                srh = (const struct ip6_srh *)dp;
+                if (len % 2 == 1)
+                    goto trunc;
+                p = (const u_char *)srh->srh_segments;
+                /*
+                 * The list of segments are encoded in the reverse order.
+                 * Accordingly, the final DA is encoded in srh_segments[0]
+                 */
+                ND_TCHECK_16(p);
+                dst_addr = (const void *)p;
+                break;
+
+            default:
+                break;
+            }
+
+            /*
+             * Only one routing header to a customer.
+             */
+            goto done;
+
+        case IPPROTO_AH:
+        case IPPROTO_ESP:
+        case IPPROTO_IPCOMP:
+        default:
+            /*
+             * AH and ESP are, in the RFCs that describe them,
+             * described as being "viewed as an end-to-end
+             * payload" "in the IPv6 context, so that they
+             * "should appear after hop-by-hop, routing, and
+             * fragmentation extension headers".  We assume
+             * that's the case, and stop as soon as we see
+             * one.  (We can't handle an ESP header in
+             * the general case anyway, as its length depends
+             * on the encryption algorithm.)
+             *
+             * IPComp is also "viewed as an end-to-end
+             * payload" "in the IPv6 context".
+             *
+             * All other protocols are assumed to be the final
+             * protocol.
+             */
+            goto done;
+        }
+    }
+
+done:
+trunc:
+    GET_CPY_BYTES(dst, dst_addr, sizeof(nd_ipv6));
+}
+
+/*
+ * Compute a V6-style checksum by building a pseudoheader.
+ */
+uint16_t
+nextproto6_cksum(ndo_t *ndo,
+                 const struct ip6_hdr *ip6, const uint8_t *data,
+                 u_int len, u_int covlen, uint8_t next_proto)
+{
+    struct
+    {
+        nd_ipv6 ph_src;
+        nd_ipv6 ph_dst;
+        uint32_t ph_len;
+        uint8_t ph_zero[3];
+        uint8_t ph_nxt;
+    } ph;
+    struct cksum_vec vec[2];
+    u_int nh;
+
+    /* pseudo-header */
+    memset(&ph, 0, sizeof(ph));
+    GET_CPY_BYTES(&ph.ph_src, ip6->ip6_src, sizeof(nd_ipv6));
+    nh = GET_U_1(ip6->ip6_nxt);
+    switch (nh)
+    {
+
+    case IPPROTO_HOPOPTS:
+    case IPPROTO_DSTOPTS:
+    case IPPROTO_MOBILITY_OLD:
+    case IPPROTO_MOBILITY:
+    case IPPROTO_FRAGMENT:
+    case IPPROTO_ROUTING:
+        /*
+         * The next header is either a routing header or a header
+         * after which there might be a routing header, so scan
+         * for a routing header.
+         */
+        ip6_finddst(ndo, &ph.ph_dst, ip6);
+        break;
+
+    default:
+        GET_CPY_BYTES(&ph.ph_dst, ip6->ip6_dst, sizeof(nd_ipv6));
+        break;
+    }
+    ph.ph_len = htonl(len);
+    ph.ph_nxt = next_proto;
+
+    vec[0].ptr = (const uint8_t *)(void *)&ph;
+    vec[0].len = sizeof(ph);
+    vec[1].ptr = data;
+    vec[1].len = covlen;
+
+    return in_cksum(vec, 2);
+}
+
+/*
  * print an IP6 datagram.
  */
 void ip6_print(ndo_t *ndo, u_int index, void *infonode,
@@ -361,11 +550,9 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                         len -= total_advance;
                     }
                 }
-                #if 0
-                ip_demux_print(ndo, cp, len, 6, fragmented,
+                ip_demux_print(ndo, index, infonode, cp, len, 6, fragmented,
                                GET_U_1(ip6->ip6_hlim), nh, bp);
                 nd_pop_packet_info(ndo);
-                #endif
                 RVoid();
         }
         ph = nh;

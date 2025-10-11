@@ -93,4 +93,7 @@ struct ip {
 #define IPOPT_TS_TSANDADDR 1 /* timestamps and addresses */
 #define IPOPT_TS_PRESPEC 3   /* specified modules only */
 
+extern uint16_t nextproto4_cksum(ndo_t *, const struct ip *, const uint8_t *,
+                                 u_int, u_int, uint8_t);
+
 #endif

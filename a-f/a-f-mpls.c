@@ -49,7 +49,7 @@ void mpls_print(ndo_t *ndo, u_int index, void *infonode,
 
     const u_char *p;
     uint32_t label_entry;
-    uint16_t label_stack_depth = 0;
+    //uint16_t label_stack_depth = 0;
     uint8_t first;
     enum mpls_packet_type pt = PT_UNKNOWN;
     u_int rsdl = length;
