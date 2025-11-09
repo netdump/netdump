@@ -83,6 +83,13 @@ again:
         case IPPROTO_UDP:
             udp_print(ndo, &index, infonode, bp, length, iph, fragmented, ttl_hl);
             break;
+        case IPPROTO_ICMP:
+            if (ver == 4) {
+                icmp_print(ndo, &index, infonode, bp, length, iph, fragmented);
+            }
+            else {
+
+            }
     }
 
     RVoid();

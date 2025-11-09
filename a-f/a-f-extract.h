@@ -264,6 +264,8 @@ EXTRACT_IPV4_TO_HOST_ORDER(const void *p)
 #define ND_TCHECK_1(p)      ND_TCHECK_LEN((p), 1)
 #define ND_TTEST_2(p)       ND_TTEST_LEN((p), 2)
 #define ND_TCHECK_2(p)      ND_TCHECK_LEN((p), 2)
+#define ND_TTEST_3(p)       ND_TTEST_LEN((p), 3)
+#define ND_TCHECK_3(p)      ND_TCHECK_LEN((p), 3)
 #define ND_TTEST_4(p)       ND_TTEST_LEN((p), 4)
 #define ND_TCHECK_4(p)      ND_TCHECK_LEN((p), 4)
 #define ND_TTEST_6(p)       ND_TTEST_LEN((p), 6)
@@ -299,6 +301,14 @@ get_be_u_2(ndo_t *ndo, const u_char *p)
     if (!ND_TTEST_2(p))
         nd_trunc_longjmp(ndo);
     return EXTRACT_BE_U_2(p);
+}
+
+static inline uint32_t
+get_be_u_3(ndo_t *ndo, const u_char *p)
+{
+    if (!ND_TTEST_3(p))
+        nd_trunc_longjmp(ndo);
+    return EXTRACT_BE_U_3(p);
 }
 
 static inline uint32_t
@@ -371,6 +381,7 @@ get_cpy_bytes(ndo_t *ndo, u_char *dst, const u_char *p, size_t len)
 #define GET_S_1(p) get_s_1(ndo, (const u_char *)(p))
 
 #define GET_BE_U_2(p) get_be_u_2(ndo, (const u_char *)(p))
+#define GET_BE_U_3(p) get_be_u_3(ndo, (const u_char *)(p))
 #define GET_BE_U_4(p) get_be_u_4(ndo, (const u_char *)(p))
 #define GET_BE_U_6(p) get_be_u_6(ndo, (const u_char *)(p))
 #define GET_BE_U_8(p) get_be_u_8(ndo, (const u_char *)(p))

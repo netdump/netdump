@@ -1343,6 +1343,8 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 		mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
 		mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
 		wattroff(G_display.wins[5], COLOR_PAIR(5));
+
+		tmp = container_of(tmp->w5node.next, w5_node_t, w5node);
 	}
 
 	wrefresh(G_display.wins[5]);
