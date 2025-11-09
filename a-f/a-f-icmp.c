@@ -1071,9 +1071,6 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
 
     /* ndo_protocol reassignment after ip_print() call */
     ndo->ndo_protocol = "icmp";
-    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", plen - 8);
-    snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", str);
-    snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
 
     /*
      * Attempt to decode multi-part message extensions (rfc4884) only for some ICMP types.
@@ -1201,9 +1198,19 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
         }
     }
 
+    ndo->ndo_protocol = "icmp";
+    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", plen - 8);
+    snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", str);
+    snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
+
     RVoid();
 
 trunc:
+
+    ndo->ndo_protocol = "icmp";
+    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", plen - 8);
+    snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s (truncated (invalid))", str);
+    snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
 
     RVoid();
 }
