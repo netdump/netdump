@@ -397,6 +397,9 @@ extern void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *b
 extern void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                     u_int plen, const u_char *bp2, int fragmented);
 
+extern void icmp6_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
+                    u_int length, const u_char *bp2, int fragmented);
+
 extern void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                     const u_char *bp, u_int length);
 

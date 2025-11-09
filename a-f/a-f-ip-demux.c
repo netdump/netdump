@@ -88,8 +88,25 @@ again:
                 icmp_print(ndo, &index, infonode, bp, length, iph, fragmented);
             }
             else {
-
+                snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+                snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", "icmp");
+                snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, " %s requires IPv4 (invalid)",
+                    tok2str(ipproto_values,"unknown",nh)
+                );
             }
+            break;
+        case IPPROTO_ICMPV6:
+            if (ver == 6) {
+                
+            }
+            else {
+                snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+                snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", "icmp");
+                snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, " %s requires IPv4 (invalid)",
+                    tok2str(ipproto_values,"unknown",nh)
+                );
+            }
+            break;
     }
 
     RVoid();
