@@ -14,11 +14,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <locale.h>
 #include "netdump.h"
 
 
 int main(int argc, char ** argv) {
+
+    setlocale(LC_ALL, "");
 
     #if 1
     if (geteuid() != 0)
