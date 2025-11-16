@@ -1980,8 +1980,11 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
 
+    #if 0
     struct pollfd fds;
-    int fd, ret;
+    int ret = 0;
+    #endif
+    int fd;
     fd = pcap_get_selectable_fd(pd);
     if (fd == -1)
     {
@@ -1992,7 +1995,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
         RInt(ND_ERR);
     }
-    #if 1
+    #if 0
     fds.fd = fd;
     fds.events = POLLIN;
     #endif
@@ -2011,7 +2014,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
         if (MSGCOMM_ST_SAVE == tmp)
             break;
-        #if 1
+        #if 0
         ret = poll(&fds, 1, -1);
 
         if (ret >= 0) 
