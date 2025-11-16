@@ -852,7 +852,7 @@ void display_second_tui_exec_logic(void);
 	    wattrset(G_display.wins[8], A_BOLD);                                                                                            \
 	    wattron(G_display.wins[8], COLOR_PAIR((4)));                                                                                    \
         char tmpbuf[2048] = {0};                                                                                                        \
-        sprintf(tmpbuf, "%s. Capture Packages: %lu. Capture Bytes: %lu.", (char*)msgcomm_G_cpinfo, *msgcomm_st_NOpackages, *msgcomm_st_NObytes);\
+        sprintf(tmpbuf, "%s."/*"%s. Capture Packages: %lu. Capture Bytes: %lu."*/, (char*)msgcomm_G_cpinfo/*, *msgcomm_st_NOpackages, *msgcomm_st_NObytes*/);\
 	    waddstr(G_display.wins[8], tmpbuf);                                                                                             \
 	    wattroff(G_display.wins[8], COLOR_PAIR((4)));                                                                                   \
 	    wattron(G_display.wins[8], COLOR_PAIR((4)));                                                                                    \

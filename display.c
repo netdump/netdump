@@ -753,7 +753,7 @@ void display_second_tui_exec_logic (void) {
 			display_previous_cur_index = ATOD_CUR_DISPLAY_INDEX;
 		}
 		DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYED;
-		display_draw_cpinfo_win();
+		//display_draw_cpinfo_win();
 	}
 
 	display_hide_wins_3_4_5();
