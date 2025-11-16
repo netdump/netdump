@@ -285,7 +285,7 @@ void trace_resource_destruction(void);
  * @brief 
  *  Re-definition of trace_log
  */
-#define TC /* nothing */
+#define TC(fmt, ...)            do {} while(0);
 
 #define RBool(code)		        return code
 #define RChar(code)		        return ((char) code)
@@ -309,77 +309,63 @@ void trace_resource_destruction(void);
  * @brief 
  *  Start tracing and logging
  */
-#define TRACE_STARTUP() /* nothing */
+#define TRACE_STARTUP()                 do {} while(0);
 
 
 /**
  * @brief 
  *  TRACE log resource destruction
  */
-#define TRACE_DESTRUCTION() /* nothing */
-
-
-/**
- * @brief 
- *  Logging
- */
-#define trace_log(level, format, ...)\
-    do { \
-        if (level >= CURRENT_LOG_LEVEL) { \
-            error_at_line(0, 0, __FILE__, __LINE__, "[%s] [%s] " format, \
-                          __TIME__, #level, ##__VA_ARGS__); \
-        } \
-    } while (0)
-
-
-/**
- * @brief 
- *  Re-definition of trace_log
- */
-#define T	trace_log
-
+#define TRACE_DESTRUCTION()             do {} while(0);
 
 /**
  * @brief
- *  Re-definition of trace_log; loging allmsg 
+ *  Logging
  */
-#define TA(fmt, ...)    trace_log(allmesg, fmt, ##__VA_ARGS__)
+#define trace_log(level, format, ...)   do {} while(0);
 
+/**
+ * @brief
+ *  Re-definition of trace_log
+ */
+#define T trace_log
+
+/**
+ * @brief
+ *  Re-definition of trace_log; loging allmsg
+ */
+#define TA(fmt, ...)                    do {} while(0);
 
 /**
  * @brief
  *  Re-definition of trace_log; loging dbugmsg
  */
-#define TD(fmt, ...)    trace_log(dbugmsg, fmt, ##__VA_ARGS__)
-
+#define TD(fmt, ...)                    do {} while(0);
 
 /**
  * @brief
  *  Re-definition of trace_log; loging infomsg
  */
-#define TI(fmt, ...)    trace_log(infomsg, fmt, ##__VA_ARGS__)
-
+#define TI(fmt, ...)                    do {} while(0);
 
 /**
  * @brief
  *  Re-definition of trace_log; loging warnmsg
  */
-#define TW(fmt, ...)    trace_log(warnmsg, fmt, ##__VA_ARGS__)
-
+#define TW(fmt, ...)                    do {} while(0);
 
 /**
  * @brief
  *  Re-definition of trace_log; loging erromsg
  */
-#define TE(fmt, ...)    trace_log(erromsg, fmt, ##__VA_ARGS__)
-
+#define TE(fmt, ...)                    do {} while(0);
 
 
 /**
- * @brief 
+ * @brief   
  *  Re-definition of trace_log
  */
-#define TC /* nothing */
+#define TC(fmt, ...)                    do {} while(0);
 
 #define RBool(code)		        return code
 #define RChar(code)		        return ((char) code)
