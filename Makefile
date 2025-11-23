@@ -22,21 +22,25 @@ CFLAGS += -I ${PCAP_PATH}/include
 CFLAGS += -I ${PCAP_PATH}/include/pcap
 
 
-LDFLAGS = 
-LDFLAGS = -L ${NCURSESW_PATH}/lib
-LDFLAGS = -L ${PCAP_PATH}/lib
+STATIC = -Wl,-Bstatic
+
+STATIC_LIB = 
+STATIC_LIB += -lmenuw
+STATIC_LIB += -lpanelw
+STATIC_LIB += -lncursesw
+STATIC_LIB += -lpcap
+
+STATIC_LIB_PATH = 
+STATIC_LIB_PATH += -L ${NCURSESW_PATH}/lib
+STATIC_LIB_PATH += -L ${PCAP_PATH}/lib
 
 
+DYNAMIC = -Wl,-Bdynamic
 
-LINKLIB = 
-LINKLIB += -lrt
-LINKLIB += -lmenuw
-LINKLIB += -lpanelw
-LINKLIB += -lncursesw
-LINKLIB += -lpcap
+DYNAMIC_LIB = -lrt
 
 
-LDFLAGS += $(LINKLIB)
+LDFLAGS += $(STATIC) $(STATIC_LIB_PATH) $(STATIC_LIB) $(DYNAMIC) $(DYNAMIC_LIB)
 
 
 SRCS = $(wildcard *.c)
