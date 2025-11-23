@@ -373,69 +373,56 @@ struct lladdr_info
 
 /* The printer routines. */
 
-extern int ah_print(ndo_t *ndo, u_int * indexp, void *infonode, const u_char *bp);
+extern int ah_print(ndo_t *ndo, void *infonode, const u_char *bp);
 
 extern int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void *su,
-                    u_int *index, u_int *lengthp, u_int *caplenp, u_int *hdrlenp);
+                    u_int *lengthp, u_int *caplenp, u_int *hdrlenp);
 
-extern int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
-                    u_short ether_type, const u_char *p, u_int length, u_int caplen,
+extern int ethertype_print(ndo_t *ndo, void *infonode, u_short ether_type, 
+					const u_char *p, u_int length, u_int caplen,
                     const struct lladdr_info *src, const struct lladdr_info *dst);
 
-extern void ip_print(ndo_t *ndo, u_int index, void *infonode, 
-                    const u_char *bp, const u_int length);
+extern void ip_print(ndo_t *ndo, void *infonode, const u_char *bp, const u_int length);
 
-extern void ipcomp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, 
-                    u_int length);
+extern void ipcomp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length);
 
-extern void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
-                    u_int length, const u_char *bp2, int fragmented, u_int ttl_hl);
+extern void udp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, 
+                    const u_char *bp2, int fragmented, u_int ttl_hl);
 
-extern void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, 
-                    u_int length, const u_char *bp2, int fragmented);
+extern void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, 
+                    const u_char *bp2, int fragmented);
 
-extern void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
-                    u_int plen, const u_char *bp2, int fragmented);
+extern void icmp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int plen, 
+                    const u_char *bp2, int fragmented);
 
-extern void icmp6_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
-                    u_int length, const u_char *bp2, int fragmented);
+extern void icmp6_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, 
+                    const u_char *bp2, int fragmented);
 
-extern void ip6_print(ndo_t *ndo, u_int index, void *infonode,
-                    const u_char *bp, u_int length);
+extern void ip6_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length);
 
-extern void arp_print(ndo_t *ndo, u_int index, void *infonode,
-                    const u_char *bp, u_int length, u_int caplen);
+extern void arp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, u_int caplen);
 
-extern int hbhopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                    const u_char *bp, int *found_jumbo, uint32_t *jumbolen);
+extern int hbhopt_process(ndo_t *ndo, void *infonode, void *_su, const u_char *bp, 
+                    int *found_jumbo, uint32_t *jumbolen);
 
-extern int dstopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                    const u_char *bp);
+extern int dstopt_process(ndo_t *ndo, void *infonode, void *_su, const u_char *bp);
 
-extern int frag6_print(ndo_t *ndo, void *infonode, void *_su, u_int *index, 
-                    const u_char *bp, const char *bp2);
+extern int frag6_print(ndo_t *ndo, void *infonode, void *_su, const u_char *bp, const char *bp2);
 
-extern int rt6_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                    const u_char *bp, const char *bp2);
+extern int rt6_print(ndo_t *ndo, void *infonode, void *_su, const u_char *bp, const char *bp2);
 
-extern int mobility_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                    const u_char *bp, const char *bp2 _U_);
+extern int mobility_print(ndo_t *ndo, void *infonode, void *_su, const u_char *bp, const char *bp2 _U_);
 
-extern void ptp_print(ndo_t *ndo, u_int index, void *infonode, 
-                    const u_char *bp, u_int length);
+extern void ptp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length);
 
-extern void mpls_print(ndo_t *ndo, u_int index, void *infonode, 
-                    const u_char *bp, u_int length);
+extern void mpls_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length);
 
-extern void eapol_print(ndo_t *ndo, u_int index, void *infonode, 
-                    const u_char *bp, u_int length);
+extern void eapol_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length);
 
-extern void ip_demux_print(ndo_t *ndo, u_int index, void *infonode,
-                    const u_char *bp, u_int length, u_int ver, int fragmented, 
-                    u_int ttl_hl, uint8_t nh, const u_char *iph);
+extern void ip_demux_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
+                    u_int ver, int fragmented, u_int ttl_hl, uint8_t nh, const u_char *iph);
 
-extern int mptcp_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-                    const u_char *cp, u_int len, u_char flags);
+extern int mptcp_print(ndo_t *ndo, void *infonode, void *psu, const u_char *cp, u_int len, u_char flags);
 
 struct cksum_vec
 {

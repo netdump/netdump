@@ -38,17 +38,15 @@ struct ipcomp
 #define LAYER_4_IPCOMP_FLAGS                "flags: %u"
 #define LAYER_4_IPCOMP_CPI                  "compression parameter index(cpi): 0x%04x"
 
-void ipcomp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, u_int length)
+void ipcomp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length)
 {
-    TC("Called { %s(%p, %p, %u, %p, %p, %u)", __func__, ndo, infonode, *indexp, 
-        indexp, bp, length);
+    TC("Called { %s(%p, %p, %p, %u)", __func__, ndo, infonode, bp, length);
 
     const struct ipcomp *ipcomp;
     uint16_t cpi;
     uint8_t ipcomp_nh;
     uint8_t ipcomp_flags;
 
-    u_int idx = *indexp;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
 
@@ -56,24 +54,17 @@ void ipcomp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, u
     ipcomp = (const struct ipcomp *)bp;
     cpi = GET_BE_U_2(ipcomp->comp_cpi);
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, "%s", LAYER_4_IPCOMP_CONTENT);
+    su = nd_filling_l1(ifn, 0, "%s", LAYER_4_IPCOMP_CONTENT);
 
     ipcomp_nh = GET_U_1(ipcomp->comp_nxt);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_IPCOMP_NXT, 
-            ipcomp_nh, tok2str(ipproto_values, "unknown", ipcomp_nh));
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_IPCOMP_NXT, 
+        ipcomp_nh, tok2str(ipproto_values, "unknown", ipcomp_nh));
 
     ipcomp_flags = GET_U_1(ipcomp->comp_flags);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_IPCOMP_FLAGS, 
-            ipcomp_flags);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_IPCOMP_FLAGS, ipcomp_flags);
 
     cpi = GET_BE_U_2(ipcomp->comp_cpi);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_IPCOMP_CPI, 
-            cpi);
-    idx = idx + 2;
-
-    *indexp = idx;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_IPCOMP_CPI, cpi);
 
     snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%ld", (length - sizeof(struct ipcomp)));
     snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);

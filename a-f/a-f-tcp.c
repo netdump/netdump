@@ -180,12 +180,11 @@ tcp6_cksum(ndo_t *ndo, const struct ip6_hdr *ip6, const struct tcphdr *tp, u_int
                             IPPROTO_TCP);
 }
 
-void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
-               const u_char *bp, u_int length,
+void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
                const u_char *bp2, int fragmented)
 {
-    TC("Called { %s(%p, %p, %u, %p, %p, %u, %p, %d)", __func__, ndo, infonode,
-       *indexp, indexp, bp, length, bp2, fragmented);
+    TC("Called { %s(%p, %p, %p, %u, %p, %d)", __func__, 
+        ndo, infonode, bp, length, bp2, fragmented);
 
     const struct tcphdr *tp;
     const struct ip *ip;
@@ -204,7 +203,6 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
     tp = (const struct tcphdr *)bp;
     ip = (const struct ip *)bp2;
 
-    u_int idx = *indexp;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
 
@@ -217,8 +215,7 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
 
     //ch = '\0';
 
-    if (!ND_TTEST_2(tp->th_dport))
-    {
+    if (!ND_TTEST_2(tp->th_dport)) {
         snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, " truncated (invalid)");
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
@@ -233,8 +230,7 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
     snprintf((ifn->dstaddr) + strlen((ifn->dstaddr)),
              INFONODE_ADDR_LENGTH - strlen((ifn->dstaddr)), ".%d", dport);
 
-    if (!ND_TTEST_LEN(tp, sizeof(*(tp))))
-    {
+    if (!ND_TTEST_LEN(tp, sizeof(*(tp)))) {
         snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, " truncated (invalid)");
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
@@ -243,8 +239,7 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
 
     hlen = TH_OFF(tp) * 4;
 
-    if (hlen < sizeof(*tp))
-    {
+    if (hlen < sizeof(*tp)) {
         snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "head length too short (%u < %lu)",
                 hlen, sizeof(*tp));
@@ -257,8 +252,7 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
     win = GET_BE_U_2(tp->th_win);
     urp = GET_BE_U_2(tp->th_urp);
 
-    if (hlen > length) 
-    {
+    if (hlen > length) {
         snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "head length too long (%u > %u)",
                 hlen, length);
@@ -266,87 +260,64 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
         RVoid();
     }
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, "%s", LAYER_4_TCP_CONTENT);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_TCP_SPORT, sport);
-    idx = idx + 2;
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_TCP_DPORT, dport);
-    idx = idx + 2;
+    su = nd_filling_l1(ifn, 0, "%s", LAYER_4_TCP_CONTENT);
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_SPORT, sport);
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_DPORT, dport);
 
     flags = GET_U_1(tp->th_flags);
     if (ndo->ndo_vflag > 1 || length > 0 || flags & (TH_SYN | TH_FIN | TH_RST)) {
         if ((length - hlen) == 0) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-                LAYER_4_TCP_SEQ, seq);
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_TCP_SEQ, seq);
         }
         else if ((length - hlen) > 0) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                    LAYER_4_TCP_SEQ ":%u", seq, seq + length - hlen);
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_TCP_SEQ ":(length %u)", seq, seq + length - hlen);
         }
-        idx = idx + 4;
     }
     
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, LAYER_4_TCP_ACK, ack);
-    idx = idx + 4;
+    nd_filling_l2(ifn, su, 0, 4, LAYER_4_TCP_ACK, ack);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OFFX2, 
-        TH_OFF(tp), hlen, TH_RESV(tp));
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OFFX2, TH_OFF(tp), hlen, TH_RESV(tp));
 
     flags = GET_U_1(tp->th_flags);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_FLAGS, 
-        bittok2str_nosep(tcp_flag_values, "none", flags), flags);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_FLAGS, bittok2str_nosep(tcp_flag_values, "none", flags), flags);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_TCP_WIN, win);
-    idx = idx + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_WIN, win);
 
     if (ndo->ndo_vflag && !ndo->ndo_Kflag && !fragmented) {
         /* Check the checksum, if possible. */
         uint16_t sum, tcp_sum;
-        if (IP_V(ip) == 4)
-        {
+        if (IP_V(ip) == 4) {
             if (ND_TTEST_LEN(tp->th_sport, length)) {
                 sum = tcp_cksum(ndo, ip, tp, length);
                 tcp_sum = GET_BE_U_2(tp->th_sum);
-                if (sum != 0)
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
+                if (sum != 0) {
+                    nd_filling_l2(ifn, su, 0, 2, 
                         LAYER_4_TCP_CHECKSUM "(incorrect -> 0x%04x)", tcp_sum,
-                        in_cksum_shouldbe(tcp_sum, sum)
-                    );
-                    idx = idx + 2;
+                        in_cksum_shouldbe(tcp_sum, sum));
                 }
                 else {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                        LAYER_4_TCP_CHECKSUM, tcp_sum);
-                    idx = idx + 2;
+                    nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_CHECKSUM, tcp_sum);
                 }
             }
         }
-        else if (IP_V(ip) == 6)
-        {
+        else if (IP_V(ip) == 6) {
             if (ND_TTEST_LEN(tp->th_sport, length)) {
                 sum = tcp6_cksum(ndo, ip6, tp, length);
                 tcp_sum = GET_BE_U_2(tp->th_sum);
-                if (sum != 0)
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
+                if (sum != 0) {
+                    nd_filling_l2(ifn, su, 0, 2,
                         LAYER_4_TCP_CHECKSUM "(incorrect -> 0x%04x)", tcp_sum,
                         in_cksum_shouldbe(tcp_sum, sum)
                     );
-                    idx = idx + 2;
                 }
                 else {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                        LAYER_4_TCP_CHECKSUM, tcp_sum);
-                    idx = idx + 2;
+                    nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_CHECKSUM, tcp_sum);
                 }
             }
         }
     }
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_TCP_URP, urp);
-    idx = idx + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_URP, urp);
 
     length -= hlen;
     /*
@@ -366,8 +337,7 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
             if (ZEROLENOPT(opt)) {
                 len = 1;
             }
-            else
-            {
+            else {
                 len = GET_U_1(cp);
                 cp++; /* total including type, len */
                 if (len < 2 || len > hlen)
@@ -384,52 +354,36 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
                 case TCPOPT_MAXSEG:
                     datalen = 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                        "mss value: %u", GET_BE_U_2(cp));
-                    idx = idx + 2;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    nd_filling_l2(ifn, su, 0, 2, "mss value: %u", GET_BE_U_2(cp));
                     break;
                 case TCPOPT_WSCALE:
                     datalen = 1;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
-                        "shift count: %u (multiply by %u)", GET_U_1(cp), (1 << GET_U_1(cp)));
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    nd_filling_l2(ifn, su, 0, 1, "shift count: %u (multiply by %u)",
+                        GET_U_1(cp), (1 << GET_U_1(cp)));
                     break;
                 case TCPOPT_SACK:
                     datalen = len - 2;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    if (datalen % 8 != 0)
-                    {
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                            "value: invalid");
-                        idx = idx + datalen;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    if (datalen % 8 != 0) {
+                        nd_filling_l2(ifn, su, 0, datalen, "value: invalid");
                     }
-                    else
-                    {
+                    else {
                         uint32_t s, e;
-                        for (i = 0; i < datalen; i += 8)
-                        {
+                        for (i = 0; i < datalen; i += 8) {
                             LENCHECK(i + 4);
                             s = GET_BE_U_4(cp + i);
                             LENCHECK(i + 8);
                             e = GET_BE_U_4(cp + i + 4);
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1,
-                                "left edge: %u, right edge: %u", s, e);
-                            idx = idx + 8;
+                            nd_filling_l2(ifn, su, 0, 8, "left edge: %u, right edge: %u", s, e);
                         }
                     }
                     break;
@@ -444,132 +398,99 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
                      */
                     datalen = 4;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                        "value: %u", GET_BE_U_4(cp));
-                    idx = idx + datalen;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    nd_filling_l2(ifn, su, 0, 4, "value: %u", GET_BE_U_4(cp));
                     break;
                 case TCPOPT_TIMESTAMP:
                     datalen = 8;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    nd_filling_l2(ifn, su, 0, 8, 
                         "option timestamp value: %u, timestamp echo reply: %u", GET_BE_U_4(cp), GET_BE_U_4(cp + 4));
-                    idx = idx + datalen;
                     break;
                 case TCPOPT_SIGNATURE:
                     datalen = TCP_SIGLEN;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     char buffer[48] = {0};
                     for (i = 0; i < TCP_SIGLEN; ++i) {
                         snprintf(buffer + strlen(buffer), (48 - strlen(buffer)), "%02x", GET_U_1(cp + i));
                     }
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                        "md5 digest: %s", buffer);
-                    idx = idx + datalen;
+                    nd_filling_l2(ifn, su, 0, datalen, "md5 digest: %s", buffer);
                 case TCPOPT_SCPS:
                     datalen = 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                        "flags: cap %02x id %u", GET_U_1(cp), GET_U_1(cp + 1));
-                    idx = idx + datalen;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    nd_filling_l2(ifn, su, 0, datalen, "flags: cap %02x id %u", GET_U_1(cp), GET_U_1(cp + 1));
                     break;
                 case TCPOPT_TCPAO:
                     datalen = len - 2;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     /* RFC 5925 Section 2.2:
                      * "The Length value MUST be greater than or equal to 4."
                      * (This includes the Kind and Length fields already processed
                      * at this point.)
                      */
-                    if (datalen < 2)
-                    {
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                            "value: invalid");
-                        idx = idx + datalen;
+                    if (datalen < 2) {
+                        nd_filling_l2(ifn, su, 0, datalen, "value: invalid");
                     }
-                    else
-                    {
+                    else {
                         char buffer[80] = {0};
                         LENCHECK(1);
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "keyid: %u", GET_U_1(cp));
-                        idx = idx + 1;
+                        nd_filling_l2(ifn, su, 0, 1, "keyid: %u", GET_U_1(cp));
                         LENCHECK(2);
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "rnextkeyid: %u", GET_U_1(cp + 1));
-                        idx = idx + 1;
-                        if (datalen > 2)
-                        {
+                        nd_filling_l2(ifn, su, 0, 1, "rnextkeyid: %u", GET_U_1(cp + 1));
+                        if (datalen > 2) {
                             snprintf(buffer + strlen(buffer), 80 - strlen(buffer), "mac 0x");
-                            for (i = 2; i < datalen; i++)
-                            {
+                            for (i = 2; i < datalen; i++) {
                                 LENCHECK(i + 1);
                                 snprintf(buffer + strlen(buffer), 80 - strlen(buffer), "%02x", GET_U_1(cp + i));
                             }
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 2 - 1, "%s", buffer);
-                            idx = idx + datalen - 2;
+                            nd_filling_l2(ifn, su, 0, datalen - 2, "%s", buffer);
                         }
                     }
                     break;
                 case TCPOPT_EOL:
                 case TCPOPT_NOP:
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
                     break;
                 case TCPOPT_SACKOK:
                     /*
                     * Nothing interesting.
                     * fall through
                     */
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     break;
                 case TCPOPT_UTO:
                     datalen = 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     utoval = GET_BE_U_2(cp);
                     if (utoval & 0x0001) {
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
+                        nd_filling_l2(ifn, su, 0, datalen, 
                             "granularity: minutes, user timeout: %u (%.3f seconds)", 
                             (utoval >> 1), ((utoval >> 1) * 60.0));
-                        idx = idx + datalen;
                     }
                     else {
                         utoval >>= 1;
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
+                        nd_filling_l2(ifn, su, 0, datalen,
                             "granularity: milliseconds, user timeout: %u (%.3f seconds)", 
                             utoval, (utoval / 1000.0));
-                        idx = idx + datalen;
                     }
                     break;
                 case TCPOPT_MPTCP:
@@ -579,13 +500,9 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
 
                     datalen = len - 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE, 
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-
-                    *indexp = idx;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
 
                     /* Update the snapend to the end of the option
                      * before calling mptcp_print(). Some options
@@ -596,13 +513,11 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
                      */
                     snapend_save = ndo->ndo_snapend;
                     ndo->ndo_snapend = ND_MIN(cp - 2 + len, ndo->ndo_snapend);
-                    ret = mptcp_print(ndo, indexp, ifn, su, cp - 2, len, flags);
+                    ret = mptcp_print(ndo, ifn, su, cp - 2, len, flags);
                     ndo->ndo_snapend = snapend_save;
                     if (!ret) {
                         if (datalen > 0) {
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, 
-                                idx + datalen - 1, "invaild value");
-                            idx = idx + datalen;
+                            nd_filling_l2(ifn, su, 0, datalen, "value: invalid");
                         }
                         goto bad;
                     }
@@ -611,20 +526,16 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
                 case TCPOPT_FASTOPEN:
                     datalen = len - 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     if (datalen == 0) {
-                        idx = idx - 1;
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "No Cookie present (TFO request)");
-                        idx = idx + 1;
+                        ifn->idx -= 1;
+                        nd_filling_l2(ifn, su, 0, 1, "No Cookie present (TFO request)");
                     }
                     else {
                         if (datalen % 2 != 0 || datalen < 4 || datalen > 16) {
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1, "invalid");
-                            idx = idx + datalen;
+                            nd_filling_l2(ifn, su, 0, datalen, "invalid");
                         }
                         else {
                             int i = 0;
@@ -633,8 +544,7 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
                             for (i = 0; i < datalen; ++i) {
                                 snprintf(buffer + strlen(buffer), 64 - strlen(buffer), "%02x", GET_U_1(cp + i));
                             }
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1, "%s", buffer);
-                            idx = idx + datalen;
+                            nd_filling_l2(ifn, su, 0, datalen, "%s", buffer);
                         }
                     }
                     break;
@@ -662,28 +572,20 @@ void tcp_print(ndo_t *ndo, u_int *indexp, void *infonode,
                     #endif
                     datalen = len - 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     if (datalen < 2)
                         goto bad;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                        "not supported temporarily");
-                    idx = idx + datalen;
+                    nd_filling_l2(ifn, su, 0, datalen, "not supported temporarily");
                     break;
                 default:
                     datalen = len - 2;
                     LENCHECK(datalen);
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_TYPE,
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_TYPE,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_TCP_OPTION_LEN, len);
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + datalen - 1,
-                        "value: not supported temporarily");
-                    idx = idx + datalen;
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
+                    nd_filling_l2(ifn, su, 0, datalen, "value: not supported temporarily");
                     break;
             }
             /* Account for data printed */

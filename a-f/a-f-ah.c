@@ -29,10 +29,10 @@
 #include "a-f-ipproto.h"
 #include "a-f-ah.h"
 
-int ah_print(ndo_t *ndo, u_int * indexp, void *infonode, const u_char *bp)
+int ah_print(ndo_t *ndo, void *infonode, const u_char *bp)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p)", __func__, ndo, infonode, *indexp, indexp, bp);
+    TC("Called { %s(%p, %p, %p)", __func__, ndo, infonode, bp);
 
     const struct ah *ah;
     uint8_t ah_nh;
@@ -41,7 +41,6 @@ int ah_print(ndo_t *ndo, u_int * indexp, void *infonode, const u_char *bp)
     uint16_t reserved;
     const u_char *p;
 
-    u_int idx = *indexp;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
 
@@ -60,29 +59,20 @@ int ah_print(ndo_t *ndo, u_int * indexp, void *infonode, const u_char *bp)
 
     // need judgment ah_len and ah_hdr_len
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, "%s", LAYER_4_AH_CONTENT);
+    su = nd_filling_l1(ifn, 0, "%s", LAYER_4_AH_CONTENT);
 
     ah_nh = GET_U_1(ah->ah_nxt);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_AH_NEXT_HEADER, 
-            ah_nh, tok2str(ipproto_values, "unknown", ah_nh));
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_AH_NEXT_HEADER, 
+        ah_nh, tok2str(ipproto_values, "unknown", ah_nh));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_AH_PAYLOAD_LEN, 
-            ah_len, ah_hdr_len);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_AH_PAYLOAD_LEN, ah_len, ah_hdr_len);
 
     reserved = GET_BE_U_2(ah->ah_reserved);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_AH_RSVD, 
-            reserved);
-    idx = idx + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_AH_RSVD, reserved);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, LAYER_4_AH_SPI, 
-            GET_BE_U_4(ah->ah_spi));
-    idx = idx + 4;
+    nd_filling_l2(ifn, su, 0, 4, LAYER_4_AH_SPI, GET_BE_U_4(ah->ah_spi));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, LAYER_4_AH_SEQ, 
-            GET_BE_U_4(ah->ah_seq));
-    idx = idx + 4;
+    nd_filling_l2(ifn, su, 0, 4, LAYER_4_AH_SEQ, GET_BE_U_4(ah->ah_seq));
 
     u_int temp = 0;
     u_char buffer[80] = {0};
@@ -91,11 +81,7 @@ int ah_print(ndo_t *ndo, u_int * indexp, void *infonode, const u_char *bp)
         temp++;
     }
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + temp - 1, LAYER_4_AH_ICV, 
-            buffer);
-    idx = idx + temp;
-
-    *indexp = idx;
+    nd_filling_l2(ifn, su, 0, temp, LAYER_4_AH_ICV, buffer);
 
     RInt(ah_hdr_len);
 }

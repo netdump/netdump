@@ -229,11 +229,10 @@ nextproto6_cksum(ndo_t *ndo,
 /*
  * print an IP6 datagram.
  */
-void ip6_print(ndo_t *ndo, u_int index, void *infonode,
-               const u_char *bp, u_int length)
+void ip6_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %u)", __func__, ndo, infonode, index, bp, length);
+    TC("Called { %s(%p, %p, %p, %u)", __func__, ndo, infonode, bp, length);
 
     const struct ip6_hdr *ip6;
     int advance;
@@ -324,36 +323,27 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
         goto invalid;
     }
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_3_IP6_FORMAT, LAYER_3_IP6_CONTENT);
+    su = nd_filling_l1(ifn, 0, LAYER_3_IP6_FORMAT, LAYER_3_IP6_CONTENT);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, LAYER_3_IP6_VERSION, IP6_VERSION(ip6));
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_VERSION, IP6_VERSION(ip6));
+    ifn->idx -= 1;
 
     flow = GET_BE_U_4(ip6->ip6_flow);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
+    nd_filling_l2(ifn, su, 0, 4, 
         LAYER_3_IP6_TC_FL, (flow & 0x0ff00000) >> 20, flow & 0x000fffff);
-    index = index + 4;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-        LAYER_3_IP6_PAYLOAD_LEN, payload_len);
-    index = index + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP6_PAYLOAD_LEN, payload_len);
 
     ph = 255;
     nh = GET_U_1(ip6->ip6_nxt);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
+    nd_filling_l2(ifn, su, 0, 1, 
         LAYER_3_IP6_NEXT_HEADER, nh, tok2str(ipproto_values,"unknown",nh));
-    index = index + 1;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-        LAYER_3_IP6_HOP_LIMIT, GET_U_1(ip6->ip6_hlim));
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_HOP_LIMIT, GET_U_1(ip6->ip6_hlim));
     
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 16 - 1, 
-        LAYER_3_IP6_SOURCE_ADDRESS, GET_IP6ADDR_STRING(ip6->ip6_src));
-    index = index + 16;
+    nd_filling_l2(ifn, su, 0, 16, LAYER_3_IP6_SOURCE_ADDRESS, GET_IP6ADDR_STRING(ip6->ip6_src));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 16 - 1, 
-        LAYER_3_IP6_DESTINATION_ADDRESS, GET_IP6ADDR_STRING(ip6->ip6_dst));
-    index = index + 16;
+    nd_filling_l2(ifn, su, 0, 16, LAYER_3_IP6_DESTINATION_ADDRESS, GET_IP6ADDR_STRING(ip6->ip6_dst));
 
     snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", GET_IP6ADDR_STRING(ip6->ip6_src));
     snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", GET_IP6ADDR_STRING(ip6->ip6_dst));
@@ -397,7 +387,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                         "The Hop-by-Hop Options header don't follow the IPv6 header (invalid)");
                     goto invalid;
                 }
-                advance = hbhopt_process(ndo, infonode, su, &index, cp, &found_jumbo, &payload_len);
+                advance = hbhopt_process(ndo, infonode, su, cp, &found_jumbo, &payload_len);
                 if (payload_len == 0 && found_jumbo == 0)
                 {
                     snprintf(ifn->brief, INFONODE_BRIEF_LENGTH,
@@ -414,7 +404,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                 nh = GET_U_1(cp);
                 break;
             case IPPROTO_DSTOPTS:
-                advance = dstopt_process(ndo, infonode, su, &index, cp);
+                advance = dstopt_process(ndo, infonode, su, cp);
                 if (advance < 0)
                 {
                     nd_pop_packet_info(ndo);
@@ -424,7 +414,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                 nh = GET_U_1(cp);
                 break;
             case IPPROTO_FRAGMENT:
-                advance = frag6_print(ndo, infonode, su, &index, cp, (const char *)ip6);
+                advance = frag6_print(ndo, infonode, su, cp, (const char *)ip6);
                 // 将 下面的判断拆成两个
                 if (advance < 0 || ndo->ndo_snapend <= cp + advance) 
                 {
@@ -445,7 +435,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                  * which payload can be piggybacked atop a
                  * mobility header.
                  */
-                advance = mobility_print(ndo, infonode, su, &index, cp, (const char *)ip6);
+                advance = mobility_print(ndo, infonode, su, cp, (const char *)ip6);
                 if (advance < 0)
                 {
                     nd_pop_packet_info(ndo);
@@ -463,7 +453,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                              "Routing Header Truncate (invalid)");
                     goto invalid;
                 }
-                advance = rt6_print(ndo, infonode, su, &index, cp, (const char *)ip6);
+                advance = rt6_print(ndo, infonode, su, cp, (const char *)ip6);
                 if (advance < 0)
                 {
                     nd_pop_packet_info(ndo);
@@ -550,7 +540,7 @@ void ip6_print(ndo_t *ndo, u_int index, void *infonode,
                         len -= total_advance;
                     }
                 }
-                ip_demux_print(ndo, index, infonode, cp, len, 6, fragmented,
+                ip_demux_print(ndo, infonode, cp, len, 6, fragmented,
                                GET_U_1(ip6->ip6_hlim), nh, bp);
                 nd_pop_packet_info(ndo);
                 RVoid();

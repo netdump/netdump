@@ -18,45 +18,45 @@
 #define MPTCP_SUB_FCLOSE 0x7
 
 static int
-dummy_print(ndo_t *ndo _U_, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt _U_, u_int opt_len _U_, u_char flags _U_);
+dummy_print(ndo_t *ndo _U_, void *infonode, void *psu, const u_char *opt _U_, 
+            u_int opt_len _U_, u_char flags _U_);
 
 static int
-mp_capable_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags);
+mp_capable_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags);
 
 static int
-mp_join_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags);
+mp_join_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags);
 
 static int
-mp_dss_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags);
+mp_dss_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags);
 
 static int
-add_addr_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags _U_);
+add_addr_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags _U_);
 
 static int
-remove_addr_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags _U_);
+remove_addr_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags _U_);
 
 static int
-mp_prio_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags _U_);
+mp_prio_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags _U_);
 
 static int
-mp_fail_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags _U_);
+mp_fail_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags _U_);
 
 static int
-mp_fast_close_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt, u_int opt_len, u_char flags _U_);
+mp_fast_close_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags _U_);
 
 static const struct
 {
     const char *name;
-    int (*print)(ndo_t *, u_int *, void *, void *, const u_char *, u_int, u_char);
+    int (*print)(ndo_t *, void *, void *, const u_char *, u_int, u_char);
 } mptcp_options[] = {
     {"mptcp capable", mp_capable_print},
     {"mptcp join", mp_join_print},
@@ -212,24 +212,21 @@ struct mp_prio
 #define MP_PRIO_B 0x01
 
 static int
-dummy_print(ndo_t *ndo _U_, u_int *pidx, void *infonode, void *psu,
-            const u_char *opt _U_, u_int opt_len _U_, u_char flags _U_)
+dummy_print(ndo_t *ndo _U_, void *infonode, void *psu, const u_char *opt _U_, 
+            u_int opt_len _U_, u_char flags _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
     RInt(1);
 }
 
 static int
-mp_capable_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-                 const u_char *opt, u_int opt_len, u_char flags)
+mp_capable_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+            u_int opt_len, u_char flags)
 {
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -241,8 +238,7 @@ mp_capable_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
     }
 
     if (!((opt_len == 12 || opt_len == 4) && flags & TH_SYN) &&
-        !((opt_len == 20 || opt_len == 22) && (flags & (TH_SYN | TH_ACK)) ==
-                                                  TH_ACK)) {
+        !((opt_len == 20 || opt_len == 22) && (flags & (TH_SYN | TH_ACK)) == TH_ACK)) {
         RInt(0);
     }
     version = MP_CAPABLE_OPT_VERSION(GET_U_1(mpc->sub_ver));
@@ -253,39 +249,27 @@ mp_capable_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
 
     u_int subtype = (GET_U_1(mpc->sub_ver) >> 4) & 0xf;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-                mptcp_options[subtype].name, subtype);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "version: %u", version);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
+    ifn->idx -= 1;
+    nd_filling_l2(ifn, su, 0, 1, "version: %u", version);
+    nd_filling_l2(ifn, su, 0, 1, "flags: 0x%x", flags);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "flags: 0x%x", flags);
-    idx = idx + 1;
-
-    if (opt_len == 12 || opt_len >= 20)
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-            "sender key: 0x%" PRIx64, GET_BE_U_8(mpc->sender_key));
-        idx = idx + 8;
+    if (opt_len == 12 || opt_len >= 20) {
+        nd_filling_l2(ifn, su, 0, 8, "sender key: 0x%" PRIx64, GET_BE_U_8(mpc->sender_key));
         if (opt_len >= 20) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "receiver key: 0x%" PRIx64, GET_BE_U_8(mpc->receiver_key));
-            idx = idx + 8;
+            nd_filling_l2(ifn, su, 0, 8, "receiver key: 0x%" PRIx64, GET_BE_U_8(mpc->receiver_key));
         }
     }
-
-    *pidx = idx;
 
     RInt(1);
 }
 
 static int
-mp_join_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-              const u_char *opt, u_int opt_len, u_char flags)
+mp_join_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                u_int opt_len, u_char flags)
 {
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -302,44 +286,30 @@ mp_join_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
         RInt(0);
     }
 
-    if (opt_len != 24)
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-                mptcp_options[subtype].name, subtype);
+    if (opt_len != 24) {
+        nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
         
         if (GET_U_1(mpj->sub_b) & MP_JOIN_B) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                "flags: 0x%x (backup path: yes)", GET_U_1(mpj->sub_b) & 0xf);
+            ifn->idx -= 1;
+            nd_filling_l2(ifn, su, 0, 1, "flags: 0x%x (backup path: yes)", GET_U_1(mpj->sub_b) & 0xf);
         }
-        idx = idx + 1;
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                "address id: %u", GET_U_1(mpj->addr_id));
-        idx = idx + 1;
+
+        nd_filling_l2(ifn, su, 0, 1, "address id: %u", GET_U_1(mpj->addr_id));
     }
     else {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-                mptcp_options[subtype].name, subtype);
-        idx = idx + 1;
-        idx = idx + 1; // address id don't show 
+        nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
+        ifn->idx += 1; // address id don't show 
     }
 
     switch (opt_len)
     {
         case 12: /* SYN */
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-                "token: 0x%x", GET_BE_U_4(mpj->u.syn.token));
-            idx = idx + 4;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-                "nonce: 0x%x", GET_BE_U_4(mpj->u.syn.nonce));
-            idx = idx + 4;
+            nd_filling_l2(ifn, su, 0, 4, "token: 0x%x", GET_BE_U_4(mpj->u.syn.token));
+            nd_filling_l2(ifn, su, 0, 4, "nonce: 0x%x", GET_BE_U_4(mpj->u.syn.nonce));
             break;
         case 16: /* SYN/ACK */
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "hmac: 0x%" PRIx64, GET_BE_U_8(mpj->u.synack.mac));
-            idx = idx + 8;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-                "nonce: 0x%x", GET_BE_U_4(mpj->u.synack.nonce));
-            idx = idx + 4;
+            nd_filling_l2(ifn, su, 0, 8, "hmac: 0x%" PRIx64, GET_BE_U_8(mpj->u.synack.mac));
+            nd_filling_l2(ifn, su, 0, 4, "nonce: 0x%x", GET_BE_U_4(mpj->u.synack.nonce));
             break;
         case 24:
         { /* ACK */
@@ -349,28 +319,22 @@ mp_join_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
             for (i = 0; i < sizeof(mpj->u.ack.mac); ++i) {
                 snprintf(buffer + strlen((const char *)buffer), 64 - strlen((const char *)buffer), "%02x", mpj->u.ack.mac[i]);
             }
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 20 - 1, 
-                "%s", buffer);
-            idx = idx + 20;
+            nd_filling_l2(ifn, su, 0, 20, "%s", buffer);
         }
         default:
             break;
     }
 
-    *pidx = idx;
-
     RInt(1);
 }
 
 static int
-mp_dss_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-             const u_char *opt, u_int opt_len, u_char flags)
+mp_dss_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                u_int opt_len, u_char flags)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -447,44 +411,31 @@ mp_dss_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
         snprintf(buffer + strlen((const char *)buffer), 32 - strlen((const char *)buffer), "%s", "F ");
     }
 
-    
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-            mptcp_options[subtype].name, subtype);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "flags: 0x%x (%s set)",
-            mdss_flags, buffer);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "flags: 0x%x (%s set)", mdss_flags, buffer);
 
     opt += 4;
     opt_len -= 4;
 
-    if (mdss_flags & MP_DSS_A)
-    {
+    if (mdss_flags & MP_DSS_A) {
         /*
          * If the a flag is set, we have an 8-byte ack; if it's
          * clear, we have a 4-byte ack.
          */
-        if (mdss_flags & MP_DSS_a)
-        {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "data ack: %" PRIu64, GET_BE_U_8(opt));
-            idx = idx + 8;
+        if (mdss_flags & MP_DSS_a) {
+            nd_filling_l2(ifn, su, 0, 8, "data ack: %" PRIu64, GET_BE_U_8(opt));
             opt += 8;
             opt_len -= 8;
         }
-        else
-        {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-                "data ack: %u", GET_BE_U_4(opt));
-            idx = idx + 4;
+        else {
+            nd_filling_l2(ifn, su, 0, 4, "data ack: %u", GET_BE_U_4(opt));
             opt += 4;
             opt_len -= 4;
         }
     }
 
-    if (mdss_flags & MP_DSS_M)
-    {
+    if (mdss_flags & MP_DSS_M) {
         /*
          * Data Sequence Number (DSN), Subflow Sequence Number (SSN),
          * Data-Level Length present, and Checksum possibly present.
@@ -493,32 +444,22 @@ mp_dss_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
          * If the m flag is set, we have an 8-byte NDS; if it's clear,
          * we have a 4-byte DSN.
          */
-        if (mdss_flags & MP_DSS_m)
-        {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "dsn: %" PRIu64, GET_BE_U_8(opt));
-            idx = idx + 8;
+        if (mdss_flags & MP_DSS_m) {
+            nd_filling_l2(ifn, su, 0, 8, "dsn: %" PRIu64, GET_BE_U_8(opt));
             opt += 8;
             opt_len -= 8;
         }
-        else
-        {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-                "dsn: %u", GET_BE_U_4(opt));
-            idx = idx + 4;
+        else {
+            nd_filling_l2(ifn, su, 0, 4, "dsn: %u", GET_BE_U_4(opt));
             opt += 4;
             opt_len -= 4;
         }
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-            "subflow seq: %u", GET_BE_U_4(opt));
-        idx = idx + 4;
+        nd_filling_l2(ifn, su, 0, 4, "subflow seq: %u", GET_BE_U_4(opt));
         opt += 4;
         opt_len -= 4;
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-            "data-level length: %u", GET_BE_U_2(opt));
-        idx = idx + 2;
+        nd_filling_l2(ifn, su, 0, 2, "data-level length: %u", GET_BE_U_2(opt));
         opt += 2;
         opt_len -= 2;
 
@@ -527,29 +468,22 @@ mp_dss_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
          * If there are at least 2 bytes left, process the next 2
          * bytes as the Checksum.
          */
-        if (opt_len >= 2)
-        {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                "checksum: %u", GET_BE_U_2(opt));
-            idx = idx + 2;
+        if (opt_len >= 2) {
+            nd_filling_l2(ifn, su, 0, 2, "checksum: %u", GET_BE_U_2(opt));
             opt_len -= 2;
         }
     }
-
-    *pidx = idx;
 
     RInt(1);
 }
 
 static int
-add_addr_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-               const u_char *opt, u_int opt_len, u_char flags _U_)
+add_addr_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                u_int opt_len, u_char flags _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -567,74 +501,50 @@ add_addr_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
 
     u_int subtype = (GET_U_1(add_addr->sub_echo) >> 4) & 0xf;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u), flags: %s",
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u), flags: %s",
             mptcp_options[subtype].name, subtype, 
-            tok2str(mptcp_addr_subecho_bits, "[bad version/echo]", flag)
-    );
-    idx = idx + 1;
+            tok2str(mptcp_addr_subecho_bits, "[bad version/echo]", flag));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-            "address id: %u", GET_U_1(add_addr->addr_id));
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "address id: %u", GET_U_1(add_addr->addr_id));
 
-    if (opt_len == 8 || opt_len == 10 || opt_len == 16 || opt_len == 18)
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
-            "address (ipv4): %s", GET_IPADDR_STRING(add_addr->u.v4.addr));
-        idx = idx + 4;
+    if (opt_len == 8 || opt_len == 10 || opt_len == 16 || opt_len == 18) {
+        nd_filling_l2(ifn, su, 0, 4, "address (ipv4): %s", GET_IPADDR_STRING(add_addr->u.v4.addr));
+
         if (opt_len == 10 || opt_len == 18) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                "port (ipv4): %u", GET_BE_U_2(add_addr->u.v4.port));
-            idx = idx + 2;
+            nd_filling_l2(ifn, su, 0, 2, "port (ipv4): %u", GET_BE_U_2(add_addr->u.v4.port));
         }
         if (opt_len == 16) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "hardware id (ipv4): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v4np.mac));
-            idx = idx + 8;
+            nd_filling_l2(ifn, su, 0, 8, "hardware id (ipv4): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v4np.mac));
         }
         if (opt_len == 18) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "hardware id ipv4): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v4.mac));
-            idx = idx + 8;
+            nd_filling_l2(ifn, su, 0, 8, "hardware id ipv4): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v4.mac));
         }
     }
 
-    if (opt_len == 20 || opt_len == 22 || opt_len == 28 || opt_len == 30)
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 16 - 1, 
-            "address (ipv6): %s", GET_IP6ADDR_STRING(add_addr->u.v6.addr));
-        idx = idx + 16;
+    if (opt_len == 20 || opt_len == 22 || opt_len == 28 || opt_len == 30) {
+        nd_filling_l2(ifn, su, 0, 16, "address (ipv6): %s", GET_IP6ADDR_STRING(add_addr->u.v6.addr));
+
         if (opt_len == 22 || opt_len == 30) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                "port (ipv6): %u", GET_BE_U_2(add_addr->u.v6.port));
-            idx = idx + 2;
+            nd_filling_l2(ifn, su, 0, 2, "port (ipv6): %u", GET_BE_U_2(add_addr->u.v6.port));
         }
         if (opt_len == 28) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "hardware id (ipv6): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v6np.mac));
-            idx = idx + 8;
+            nd_filling_l2(ifn, su, 0, 8, "hardware id (ipv6): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v6np.mac));
         }
         if (opt_len == 30) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 8 - 1, 
-                "hardware id (ipv6): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v6.mac));
-            idx = idx + 8;
+            nd_filling_l2(ifn, su, 0, 8, "hardware id (ipv6): 0x%" PRIx64, GET_BE_U_8(add_addr->u.v6.mac));
         }
     }
-
-    *pidx = idx;
 
     RInt(1);
 }
 
 static int
-remove_addr_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-                  const u_char *opt, u_int opt_len, u_char flags _U_)
+remove_addr_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                    u_int opt_len, u_char flags _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -646,33 +556,25 @@ remove_addr_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
     }
 
     u_int subtype = (GET_U_1(remove_addr->sub) >> 4) & 0xf;
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-            mptcp_options[subtype].name, subtype);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
 
     opt_len -= 3;
     
     for (i = 0; i < opt_len; i++) {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "address id: %u",
-            GET_U_1(remove_addr->addrs_id[i]));
-        idx = idx + 1;
+        nd_filling_l2(ifn, su, 0, 1, "address id: %u", GET_U_1(remove_addr->addrs_id[i]));
     }
-
-    *pidx = idx;
 
     RInt(1);
 }
 
 static int
-mp_prio_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-              const u_char *opt, u_int opt_len, u_char flags _U_)
+mp_prio_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                u_int opt_len, u_char flags _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
     const struct mp_prio *mpp = (const struct mp_prio *)opt;
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -694,37 +596,26 @@ mp_prio_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
         }
     }
     
-
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-            mptcp_options[subtype].name, subtype);
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
+    ifn->idx -= 1;
 
     if (opt_len == 3) {
         if (flag == 0) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                "flags: backup path: false, dddress id present: false");
+            nd_filling_l2(ifn, su, 0, 1, "flags: backup path: false, dddress id present: false");
         }
         if (flag == 1) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                "flags: backup path: ture, dddress id present: false");
+            nd_filling_l2(ifn, su, 0, 1, "flags: backup path: ture, dddress id present: false");
         }
-        idx = idx + 1;
-        *pidx = idx;
         RInt(1);
     }
     else if(opt_len == 4) {
         if (flag == 2) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                "flags: backup path: false, dddress id present: true");
+            nd_filling_l2(ifn, su, 0, 1, "flags: backup path: false, dddress id present: true");
         }
         if (flag == 3) {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                "flags: backup path: ture, dddress id present: true");
+            nd_filling_l2(ifn, su, 0, 1, "flags: backup path: ture, dddress id present: true");
         }
-        idx = idx + 1;
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-            "address id: %u", GET_U_1(mpp->addr_id));
-        idx = idx + 1;
-        *pidx = idx;
+        nd_filling_l2(ifn, su, 0, 1, "address id: %u", GET_U_1(mpp->addr_id));
         RInt(1);
     }
 
@@ -732,52 +623,39 @@ mp_prio_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
 }
 
 static int
-mp_fail_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-              const u_char *opt, u_int opt_len, u_char flags _U_)
+mp_fail_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                u_int opt_len, u_char flags _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
     struct mp_fail *mpfail = (struct mp_fail *)opt;
 
-    if (opt_len != 12)
-    {
+    if (opt_len != 12) {
         RInt(0);
     }
 
     u_int subtype = (GET_U_1(mpfail->sub) >> 4) & 0xf;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-                mptcp_options[subtype].name, subtype);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "reserved: %u", 
-        GET_U_1(mpfail->resv));
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "reserved: %u", GET_U_1(mpfail->resv));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + opt_len - 4 - 1,
-            " seq %" PRIu64, GET_BE_U_8(opt + 4));
-    idx = idx + opt_len - 4;
-
-    *pidx = idx;
+    nd_filling_l2(ifn, su, 0, (opt_len - 4), "seq %" PRIu64, GET_BE_U_8(opt + 4));
 
     return 1;
 }
 
 static int
-mp_fast_close_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-                    const u_char *opt, u_int opt_len, u_char flags _U_)
+mp_fast_close_print(ndo_t *ndo, void *infonode, void *psu, const u_char *opt, 
+                    u_int opt_len, u_char flags _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx,
-       infonode, psu, opt, opt_len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, opt, opt_len, flags);
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -789,19 +667,11 @@ mp_fast_close_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
 
     u_int subtype = (GET_U_1(mpclose->sub) >> 4) & 0xf;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: %s (%u)",
-                mptcp_options[subtype].name, subtype);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "subtype: %s (%u)", mptcp_options[subtype].name, subtype);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "reserved: %u", 
-        GET_U_1(mpclose->rsv));
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, "reserved: %u", GET_U_1(mpclose->rsv));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + opt_len - 4 - 1,
-            "key 0x%" PRIx64, GET_BE_U_8(opt + 4));
-    idx = idx + opt_len - 4;
-
-    *pidx = idx;
+    nd_filling_l2(ifn, su, 0, (opt_len - 4), "key 0x%" PRIx64, GET_BE_U_8(opt + 4));
 
     RInt(1);
 }
@@ -824,17 +694,14 @@ static const struct
 };
 #endif
 
-int mptcp_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
-                const u_char *cp, u_int len, u_char flags)
+int mptcp_print(ndo_t *ndo, void *infonode, void *psu, const u_char *cp, u_int len, u_char flags)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %p, %u, %u)", __func__, ndo, pidx, *pidx, 
-        infonode, psu, cp, len, flags);
+    TC("Called { %s(%p, %p, %p, %p, %u, %u)", __func__, ndo, infonode, psu, cp, len, flags);
 
     const struct mptcp_option *opt;
     u_int subtype;
 
-    u_int idx = *pidx;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)psu;
 
@@ -848,19 +715,14 @@ int mptcp_print(ndo_t *ndo, u_int *pidx, void *infonode, void *psu,
 
     if (subtype < 0 || subtype > MPTCP_SUB_FCLOSE)
     {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, "subtype: unknown (%u)", 
-            subtype);
-        idx = idx + 1;
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + len - 3 - 1, 
-            "invaild value");
-        idx = idx + len - 3;
-        *pidx = idx;
+        nd_filling_l2(ifn, su, 0, 1, "subtype: unknown (%u)", subtype);
+        nd_filling_l2(ifn, su, 0, len - 3, "invaild value");
         RInt(1);
     }
 
     subtype = ND_MIN(subtype, MPTCP_SUB_FCLOSE + 1);
 
-    int ret = mptcp_options[subtype].print(ndo, pidx, infonode, psu, cp, len, flags);
+    int ret = mptcp_options[subtype].print(ndo, infonode, psu, cp, len, flags);
 
     RInt(ret);
 }

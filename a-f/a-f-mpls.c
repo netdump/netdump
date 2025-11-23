@@ -42,10 +42,9 @@ enum mpls_packet_type
  * RFC3032: MPLS label stack encoding
  */
 
-void mpls_print(ndo_t *ndo, u_int index, void *infonode,
-                const u_char *bp, u_int length)
+void mpls_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length)
 {
-    TC("Called { %s(%p, %p, %u, %p, %u)", __func__, ndo, infonode, index, bp, length);
+    TC("Called { %s(%p, %p, %p, %u)", __func__, ndo, infonode, bp, length);
 
     const u_char *p;
     uint32_t label_entry;
@@ -59,7 +58,7 @@ void mpls_print(ndo_t *ndo, u_int index, void *infonode,
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_3_MPLS_FORMAT, LAYER_3_MPLS_CONTENT);
+    su = nd_filling_l1(ifn, 0, LAYER_3_MPLS_FORMAT, LAYER_3_MPLS_CONTENT);
 
     do {
         if (length < sizeof(label_entry)) {
@@ -69,12 +68,11 @@ void mpls_print(ndo_t *ndo, u_int index, void *infonode,
 
         label_entry = GET_BE_U_4(p);
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
-            LAYER_3_MPLS_LSE, MPLS_LABEL(label_entry), 
+        nd_filling_l2(ifn, su, 0, 4, LAYER_3_MPLS_LSE, MPLS_LABEL(label_entry), 
             MPLS_LABEL(label_entry) < sizeof(mpls_labelname) / sizeof(mpls_labelname[0]) ? mpls_labelname[MPLS_LABEL(label_entry)] : "",
             MPLS_TC(label_entry), MPLS_TTL(label_entry)
         );
-        index = index + 4;
+
         p += sizeof(label_entry);
         length -= sizeof(label_entry);
     } while (!MPLS_STACK(label_entry));
@@ -144,11 +142,11 @@ void mpls_print(ndo_t *ndo, u_int index, void *infonode,
             break;
 
         case PT_IPV4:
-            ip_print(ndo, index, infonode, p, length);
+            ip_print(ndo, infonode, p, length);
             break;
 
         case PT_IPV6:
-            ip6_print(ndo, index, infonode, p, length);
+            ip6_print(ndo, infonode, p, length);
             break;
 
         case PT_OSI:

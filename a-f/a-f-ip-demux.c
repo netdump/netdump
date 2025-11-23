@@ -7,13 +7,12 @@
 #include "a-f-ipproto.h"
 #include "header.h"
 
-void ip_demux_print(ndo_t *ndo, u_int index, void *infonode,
-    const u_char *bp, u_int length, u_int ver, int fragmented, u_int ttl_hl,
-                    uint8_t nh, const u_char *iph)
+void ip_demux_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, 
+    u_int ver, int fragmented, u_int ttl_hl, uint8_t nh, const u_char *iph)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %u, %u, %d, %u, %u, %p)", __func__, ndo, 
-        infonode, index, bp, length, ver, fragmented, ttl_hl, nh, iph);
+    TC("Called { %s(%p, %p, %p, %u, %u, %d, %u, %u, %p)", __func__, ndo, 
+        infonode, bp, length, ver, fragmented, ttl_hl, nh, iph);
 
     infonode_t *ifn = (infonode_t *)infonode;
 
@@ -34,7 +33,7 @@ again:
                 break;
             }
             nh = GET_U_1(bp);
-            advance = ah_print(ndo, &index, infonode, bp);
+            advance = ah_print(ndo, infonode, bp);
             if (advance <= 0) {
                 snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%d", length);
                 snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", 
@@ -58,7 +57,7 @@ again:
         }
         case IPPROTO_IPCOMP: 
         {
-            ipcomp_print(ndo, &index, infonode, bp, length);
+            ipcomp_print(ndo, infonode, bp, length);
             /*
              * Either this has decompressed the payload and
              * printed it, in which case there's nothing more
@@ -77,15 +76,15 @@ again:
             break;
 
         case IPPROTO_TCP:
-            tcp_print(ndo, &index, infonode,bp, length, iph, fragmented);
+            tcp_print(ndo, infonode,bp, length, iph, fragmented);
             break;
 
         case IPPROTO_UDP:
-            udp_print(ndo, &index, infonode, bp, length, iph, fragmented, ttl_hl);
+            udp_print(ndo, infonode, bp, length, iph, fragmented, ttl_hl);
             break;
         case IPPROTO_ICMP:
             if (ver == 4) {
-                icmp_print(ndo, &index, infonode, bp, length, iph, fragmented);
+                icmp_print(ndo, infonode, bp, length, iph, fragmented);
             }
             else {
                 snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);

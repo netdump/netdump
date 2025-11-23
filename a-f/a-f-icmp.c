@@ -546,12 +546,11 @@ icmp_tstamp_print(u_int tstamp)
     return buf;
 }
 
-void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, 
-                u_int plen, const u_char *bp2, int fragmented)
+void icmp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int plen, 
+                const u_char *bp2, int fragmented)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %u, %p, %d)", __func__, ndo, infonode, 
-        *indexp, indexp, bp, plen, bp2, fragmented);
+    TC("Called { %s(%p, %p, %p, %u, %p, %d)", __func__, ndo, infonode, bp, plen, bp2, fragmented);
 
     char *cp;
     const struct icmp *dp;
@@ -576,49 +575,41 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
     ip = (const struct ip *)bp2;
     str = buf;
 
-    u_int idx = *indexp;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, "%s", LAYER_4_ICMPV4_CONTENT);
+    su = nd_filling_l1(ifn, 0, "%s", LAYER_4_ICMPV4_CONTENT);
 
     icmp_type = GET_U_1(dp->icmp_type);
     icmp_code = GET_U_1(dp->icmp_code);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_ICMPV4_TYPE, 
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_TYPE, 
             icmp_type, tok2str(icmp2str, "type-#%u", icmp_type));
-    idx = idx + 1;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, LAYER_4_ICMPV4_CODE, icmp_code);
-    idx = idx + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_CODE, icmp_code);
 
-    if (ndo->ndo_vflag && !fragmented)
-    { 
+    if (ndo->ndo_vflag && !fragmented) { 
         /* don't attempt checksumming if this is a frag */
-        if (ND_TTEST_LEN(bp, plen))
-        {
+        if (ND_TTEST_LEN(bp, plen)) {
             uint16_t sum;
 
             vec[0].ptr = (const uint8_t *)(const void *)dp;
             vec[0].len = plen;
             sum = in_cksum(vec, 1);
 
-            if (sum != 0)
-            {
+            if (sum != 0) {
                 uint16_t icmp_sum = GET_BE_U_2(dp->icmp_cksum);
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
+                nd_filling_l2(ifn, su, 0, 2, 
                     LAYER_4_ICMPV4_CHECKSUM"(incorrect -> 0x%04x)", 
                     GET_BE_U_2(dp->icmp_cksum), in_cksum_shouldbe(icmp_sum, sum));
-                idx = idx + 2;
             }
             else {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
+                nd_filling_l2(ifn, su, 0, 2, 
                     LAYER_4_ICMPV4_CHECKSUM, GET_BE_U_2(dp->icmp_cksum));
-                idx = idx + 2;
             }
         }
         else {
-            idx = idx + 2;
+            ifn->idx += 2; // Most likely won't go in, there may be a problem.
         }
     }
 
@@ -629,16 +620,12 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                            icmp_type == ICMP_ECHO ? "request" : "reply",
                            GET_BE_U_2(dp->icmp_id),
                            GET_BE_U_2(dp->icmp_seq));
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
-            idx = idx + 2;
-            TC("plen: %u, idx: %u, plen - 8: %u", plen, idx, (plen - 8));
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + plen - 8 - 1, 
-                LAYER_4_ICMPV4_ECHO_DATA);
-            idx = idx + plen - 8;
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
+
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
+
+            TC("plen: %u, ifn->idx: %u, plen - 8: %u", plen, ifn->idx, (plen - 8));
+            nd_filling_l2(ifn, su, 0, (plen - 8), LAYER_4_ICMPV4_ECHO_DATA);
             break;
         case ICMP_UNREACH:
             switch (icmp_code) {
@@ -765,33 +752,31 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             }
             if (icmp_code == ICMP_UNREACH_NEEDFRAG)
             {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
+                nd_filling_l2(ifn, su, 0, 2,
                             LAYER_4_ICMPV4_UNREACH_UNUSED, GET_BE_U_2(dp->icmp_id));
-                idx = idx + 2;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
+                nd_filling_l2(ifn, su, 0, 2, 
                             LAYER_4_ICMPV4_UNREACH_NHMTU, GET_BE_U_2(dp->icmp_seq));
-                idx = idx + 2;
             }
             else 
             {
                 if (GET_U_1(dp->icmp_rfc4884_length))
                 {
                     // RFC 4884
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
+                    nd_filling_l2(ifn, su, 0, 1,
                                 LAYER_4_ICMPV4_RFC4884_UNUSED_1BYTE, GET_U_1(dp->icmp_rfc4884_1byte_unused));
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
+
+                    nd_filling_l2(ifn, su, 0, 1,
                                 LAYER_4_ICMPV4_RFC4884_LENGTH, GET_U_1(dp->icmp_rfc4884_length),
                             (GET_U_1(dp->icmp_rfc4884_length) * 4));
-                    idx = idx + 1;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
+
+                    nd_filling_l2(ifn, su, 0, 2,
                                 LAYER_4_ICMPV4_RFC4884_UNUSED_2BYTE, GET_BE_U_2(dp->icmp_rfc4884_2byte_unused));
-                    idx = idx + 2;
+
                 }
                 else {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
+                    nd_filling_l2(ifn, su, 0, 4,
                                 LAYER_4_ICMPV4_UNREACH_UNUSED, GET_BE_U_4(dp->icmp_void));
-                    idx = idx + 4;
+
                 }
             }
             break;
@@ -828,10 +813,10 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                             GET_IPADDR_STRING(dp->icmp_gwaddr));
                     break;
             }
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1, 
+            nd_filling_l2(ifn, su, 0, 4, 
                         LAYER_4_ICMPV4_REDIRECT_GWADDR, 
                         GET_IPADDR_STRING(dp->icmp_gwaddr));
-            idx = idx + 4;
+
             break;
         case ICMP_ROUTERADVERT:
             {
@@ -867,15 +852,12 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                     (void)snprintf(cp, sizeof(buf) - (cp - buf), " [size %u]", size);
                     break;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                    LAYER_4_ICMPV4_ROUTERADVERT_NUMS, num);
-                idx = idx + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx, 
-                    LAYER_4_ICMPV4_ROUTERADVERT_AES, size);
-                idx = idx + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                    LAYER_4_ICMPV4_ROUTERADVERT_LIFETIME, lifetime);
-                idx = idx + 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_ROUTERADVERT_NUMS, num);
+
+                nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_ROUTERADVERT_AES, size);
+
+                nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ROUTERADVERT_LIFETIME, lifetime);
+
                 idp = (const struct id_rdiscovery *)&dp->icmp_data;
                 int i = 0;
                 while (num > 0)
@@ -887,14 +869,14 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                     cp = buf + strlen(buf);
                     ++idp;
                     num--;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
+                    nd_filling_l2(ifn, su, 0, 4,
                             LAYER_4_ICMPV4_ROUTERADVERT_ROUTER_ADDR, i, 
                         GET_IPADDR_STRING(idp->ird_addr));
-                    idx = idx + 4;
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
+
+                    nd_filling_l2(ifn, su, 0, 4,
                             LAYER_4_ICMPV4_ROUTERADVERT_PL, i, 
                         GET_BE_U_4(idp->ird_pref));
-                    idx = idx + 4;
+
                     i++;
                 }
             }
@@ -914,21 +896,20 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             }
             if (GET_U_1(dp->icmp_rfc4884_length)) {
                 // RFC 4884
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
+                nd_filling_l2(ifn, su, 0, 1,
                         LAYER_4_ICMPV4_RFC4884_UNUSED_1BYTE, GET_U_1(dp->icmp_rfc4884_1byte_unused));
-                idx = idx + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
+                
+                nd_filling_l2(ifn, su, 0, 1,
                         LAYER_4_ICMPV4_RFC4884_LENGTH, GET_U_1(dp->icmp_rfc4884_length),
                         (GET_U_1(dp->icmp_rfc4884_length) * 4));
-                idx = idx + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
+                
+                nd_filling_l2(ifn, su, 0, 2,
                         LAYER_4_ICMPV4_RFC4884_UNUSED_2BYTE, GET_BE_U_2(dp->icmp_rfc4884_2byte_unused));
-                idx = idx + 2;
+                
             }
             else {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
+                nd_filling_l2(ifn, su, 0, 4,
                         LAYER_4_ICMPV4_UNREACH_UNUSED, GET_BE_U_4(dp->icmp_void));
-                idx = idx + 4;
             }
             break;
         case ICMP_PARAMPROB:
@@ -938,62 +919,52 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             else {
                 (void)snprintf(buf, sizeof(buf), "parameter problem - octet %u", GET_U_1(dp->icmp_pptr));
             }
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
+            nd_filling_l2(ifn, su, 0, 1,
                     LAYER_4_ICMPV4_PARAMPROB_POINTER, GET_U_1(dp->icmp_pptr));
-            idx = idx + 1;
+            
             if (GET_U_1(dp->icmp_rfc4884_length))
             {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
+                nd_filling_l2(ifn, su, 0, 1,
                         LAYER_4_ICMPV4_RFC4884_LENGTH, GET_U_1(dp->icmp_rfc4884_length),
                         (GET_U_1(dp->icmp_rfc4884_length) * 4));
-                idx = idx + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
+                
+                nd_filling_l2(ifn, su, 0, 2,
                         LAYER_4_ICMPV4_RFC4884_UNUSED_2BYTE, GET_BE_U_2(dp->icmp_rfc4884_2byte_unused));
-                idx = idx + 2;
+                
             }
             else 
             {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 3 - 1,
+                nd_filling_l2(ifn, su, 0, 3,
                         "unused: %d", GET_BE_U_3((dp->icmp_pptr + 1)));
-                idx = idx + 3;
             }
             break;
         case ICMP_MASKREPLY:
             (void)snprintf(buf, sizeof(buf), "address mask is 0x%08x",
                         GET_BE_U_4(dp->icmp_mask));
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                        LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                        LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_MASK_REPLY, GET_BE_U_4(dp->icmp_mask));
-            idx = idx + 4;
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
+            
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_MASK_REPLY, GET_BE_U_4(dp->icmp_mask));
+            
             break;
         case ICMP_TSTAMP:
             (void)snprintf(buf, sizeof(buf),
                         "time stamp query id %u seq %u",
                         GET_BE_U_2(dp->icmp_id),
                         GET_BE_U_2(dp->icmp_seq));
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                        LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                        LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_O_TIMESTAMP, 
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
+            
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_O_TIMESTAMP, 
                         icmp_tstamp_print(GET_BE_U_4(dp->icmp_otime)));
-            idx = idx + 4;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_R_TIMESTAMP, 
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_R_TIMESTAMP, 
                         icmp_tstamp_print(GET_BE_U_4(dp->icmp_rtime)));
-            idx = idx + 4;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_T_TIMESTAMP, 
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_T_TIMESTAMP, 
                         icmp_tstamp_print(GET_BE_U_4(dp->icmp_ttime)));
-            idx = idx + 4;
             
             break;
         case ICMP_TSTAMPREPLY:
@@ -1007,24 +978,20 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                            icmp_tstamp_print(GET_BE_U_4(dp->icmp_rtime)));
             (void)snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ", xmit %s",
                            icmp_tstamp_print(GET_BE_U_4(dp->icmp_ttime)));
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                        LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                        LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
-            idx = idx + 2;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_O_TIMESTAMP, 
+
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_ID, GET_BE_U_2(dp->icmp_id));
+            
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_ECHO_SEQ, GET_BE_U_2(dp->icmp_seq));
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_O_TIMESTAMP, 
                         icmp_tstamp_print(GET_BE_U_4(dp->icmp_otime)));
-            idx = idx + 4;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_R_TIMESTAMP, 
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_R_TIMESTAMP, 
                         icmp_tstamp_print(GET_BE_U_4(dp->icmp_rtime)));
-            idx = idx + 4;
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 4 - 1,
-                        LAYER_4_ICMPV4_T_TIMESTAMP, 
+            
+            nd_filling_l2(ifn, su, 0, 4, LAYER_4_ICMPV4_T_TIMESTAMP, 
                         icmp_tstamp_print(GET_BE_U_4(dp->icmp_ttime)));
-            idx = idx + 4;
+            
             break;
         default:
             str = tok2str(icmp2str, "type-#%u", icmp_type);
@@ -1053,17 +1020,13 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
         {
             if (GET_U_1(dp->icmp_rfc4884_length))
             {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, 
-                    idx + (GET_U_1(dp->icmp_rfc4884_length) * 4) - 1,
+                nd_filling_l2(ifn, su, 0, (GET_U_1(dp->icmp_rfc4884_length) * 4),
                         LAYER_4_ICMPV4_ORIGINAL_DATAGRAM);
-                idx = idx + (GET_U_1(dp->icmp_rfc4884_length) * 4);
             }
         }
         else 
         {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, 
-                    idx + plen - 8 - 1, LAYER_4_ICMPV4_ORIGINAL_DATAGRAM);
-            idx = idx + plen - 8;
+            nd_filling_l2(ifn, su, 0, plen - 8, LAYER_4_ICMPV4_ORIGINAL_DATAGRAM);
         }
 
         ndo->ndo_snapend = snapend_save;
@@ -1103,13 +1066,11 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             }
         }
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
-                LAYER_4_ICMPV4_MUTIL_PART_EXTENSION,
+        nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_MUTIL_PART_EXTENSION,
                 ICMP_EXT_EXTRACT_VERSION(*(ext_dp->icmp_ext_version_res)),
                 (ICMP_EXT_EXTRACT_VERSION(*(ext_dp->icmp_ext_version_res)) != ICMP_EXT_VERSION) 
                 ? "(packet not supported)" : ""
-            );
-        idx = idx + 1;
+        );
 
         /*
          * Sanity checking of the header.
@@ -1119,11 +1080,8 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             RVoid();
         }
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
-                LAYER_4_ICMPV4_MUTIL_PART_RESERVED,
-                ext_dp->icmp_ext_version_res[1]
-            );
-        idx = idx + 1;
+        nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_MUTIL_PART_RESERVED,
+                ext_dp->icmp_ext_version_res[1]);
 
         hlen = plen - ICMP_EXTD_MINLEN;
         if (ND_TTEST_LEN(ext_dp->icmp_ext_version_res, hlen))
@@ -1131,12 +1089,8 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             vec[0].ptr = (const uint8_t *)(const void *)&ext_dp->icmp_ext_version_res;
             vec[0].len = hlen;
 
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                LAYER_4_ICMPV4_MUTIL_PART_CHEKSUM,
-                GET_BE_U_2(ext_dp->icmp_ext_checksum),
-                in_cksum(vec, 1) ? "in" : ""
-            );
-            idx = idx + 2;
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_MUTIL_PART_CHEKSUM,
+                GET_BE_U_2(ext_dp->icmp_ext_checksum), in_cksum(vec, 1) ? "in" : "");
         }
 
         hlen -= 4; /* subtract common header size */
@@ -1160,22 +1114,15 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             obj_ctype = GET_U_1(icmp_multipart_ext_object_header->ctype);
             obj_tptr += sizeof(struct icmp_multipart_ext_object_header_t);
 
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                LAYER_4_ICMPV4_MUTIL_PART_OBJ_LEN, obj_tlen
-            );
-            idx = idx + 2;
+            nd_filling_l2(ifn, su, 0, 2, LAYER_4_ICMPV4_MUTIL_PART_OBJ_LEN, obj_tlen);
 
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
-                LAYER_4_ICMPV4_MUTIL_PART_OBJ_CLASS_NUM, 
+            nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_MUTIL_PART_OBJ_CLASS_NUM, 
                 tok2str(icmp_multipart_ext_obj_values,"unknown",obj_class_num),
                 obj_class_num
             );
-            idx = idx + 1;
 
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx,
-                LAYER_4_ICMPV4_MUTIL_PART_OBJ_CTYPE, obj_ctype
-            );
-            idx = idx + 1;
+            nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV4_MUTIL_PART_OBJ_CTYPE, obj_ctype);
+
             /* length field includes tlv header */
             hlen -= sizeof(struct icmp_multipart_ext_object_header_t);
 
@@ -1186,10 +1133,7 @@ void icmp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
             }
             obj_tlen -= sizeof(struct icmp_multipart_ext_object_header_t);
 
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + obj_tlen - 1,
-                LAYER_4_ICMPV4_MUTIL_PART_OBJ_CONTENT
-            );
-            idx = idx + obj_tlen;
+            nd_filling_l2(ifn, su, 0, obj_tlen, LAYER_4_ICMPV4_MUTIL_PART_OBJ_CONTENT);
 
             if (hlen < obj_tlen)
                 break;

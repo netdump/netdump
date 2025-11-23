@@ -55,7 +55,6 @@ typedef struct w5_node_s
     char content[W5NODE_CONTENT_LENGTH];
 } w5_node_t;
 
-
 /**
  * @brief
  *  This structure is a storage interface for all the information displayed.
@@ -71,6 +70,8 @@ typedef struct w5_node_s
  *  four-layer head type
  * @memberof typel5
  *  five-layer head type
+ * @memberof idx
+ *  so far, the index of the next byte
  * @memberof timestamp
  *  Storing timestamp strings
  * @memberof srcaddr
@@ -104,6 +105,8 @@ typedef struct infonode_s
     unsigned short typel3;
     unsigned short typel4;
     unsigned short typel5;
+
+    unsigned short idx;
 
     unsigned long g_store_index;
 

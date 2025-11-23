@@ -84,12 +84,12 @@ static void udpipaddr_print(ndo_t *ndo, void *infonode, const struct ip *ip, int
     RVoid();
 }
 
-void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp, 
+void udp_print(ndo_t *ndo, void *infonode, const u_char *bp, 
     u_int length, const u_char *bp2, int fragmented, u_int ttl_hl)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p, %u, %p, %d, %u)", __func__, ndo, infonode, 
-        *indexp, indexp, bp, length, bp2, fragmented, ttl_hl);
+    TC("Called { %s(%p, %p,%p, %u, %p, %d, %u)", __func__, ndo, infonode, 
+        bp, length, bp2, fragmented, ttl_hl);
 
     const struct udphdr *up;
     const struct ip *ip;
@@ -103,7 +103,6 @@ void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
     up = (const struct udphdr *)bp;
     ip = (const struct ip *)bp2;
 
-    u_int idx = *indexp;
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
 
@@ -166,17 +165,13 @@ void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
         goto trunc;
     }
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, "%s", LAYER_4_UDP_CONTENT);
+    su = nd_filling_l1(ifn, 0, "%s", LAYER_4_UDP_CONTENT);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_UDP_SPORT, sport);
-    idx = idx + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_UDP_SPORT, sport);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_UDP_DPORT, dport);
-    idx = idx + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_UDP_DPORT, dport);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, LAYER_4_UDP_ULEN, 
-        GET_BE_U_2(up->uh_ulen));
-    idx = idx + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_4_UDP_ULEN, GET_BE_U_2(up->uh_ulen));
 
     #if 0
     // Not supported yet
@@ -208,22 +203,16 @@ void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
         if (IP_V(ip) == 4 && (ndo->ndo_vflag > 1)) {
             udp_sum = GET_BE_U_2(up->uh_sum);
             if (udp_sum == 0) {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1, 
-                    LAYER_4_UDP_NO_CHECKSUM, udp_sum);
-                idx = idx + 2;
+                nd_filling_l2(ifn, su, 0, 2, LAYER_4_UDP_NO_CHECKSUM, udp_sum);
             }
-            else if (ND_TTEST_LEN(cp, length))
-            {
+            else if (ND_TTEST_LEN(cp, length)) {
                 sum = udp_cksum(ndo, ip, up, length + sizeof(struct udphdr));
                 if (sum != 0) {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
+                    nd_filling_l2(ifn, su, 0, 2,
                             LAYER_4_UDP_BAD_CHECKSUM, udp_sum, in_cksum_shouldbe(udp_sum, sum));
-                    idx = idx + 2;
                 }
                 else {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                            LAYER_4_UDP_CHECKSUM, udp_sum);
-                    idx = idx + 2;
+                    nd_filling_l2(ifn, su, 0, 2, LAYER_4_UDP_CHECKSUM, udp_sum);
                 }
             }
         }else if (IP_V(ip) == 6) {
@@ -233,16 +222,12 @@ void udp_print(ndo_t *ndo, u_int *indexp, void *infonode, const u_char *bp,
                 sum = udp6_cksum(ndo, ip6, up, length + sizeof(struct udphdr));
                 udp_sum = GET_BE_U_2(up->uh_sum);
 
-                if (sum != 0)
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
+                if (sum != 0) {
+                    nd_filling_l2(ifn, su, 0, 2,
                             LAYER_4_UDP_BAD_CHECKSUM, udp_sum, in_cksum_shouldbe(udp_sum, sum));
-                    idx = idx + 2;
                 }
                 else {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, idx, idx + 2 - 1,
-                            LAYER_4_UDP_CHECKSUM, udp_sum);
-                    idx = idx + 2;
+                    nd_filling_l2(ifn, su, 0, 2, LAYER_4_UDP_CHECKSUM, udp_sum);
                 }
             }
         }

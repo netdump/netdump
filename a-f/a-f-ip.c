@@ -265,48 +265,36 @@ char * ipopt_ts_flag (u_int flag)
    If truncated return -1, else 0.
  */
 static int
-ip_optprint(ndo_t *ndo, infonode_t *ifn, l1l2_node_t *su, int index, 
-            const u_char *cp, u_int length)
+ip_optprint(ndo_t *ndo, infonode_t *ifn, l1l2_node_t *su, const u_char *cp, u_int length)
 {
 
     u_int option_len = 0;
 
     u_int hoplen, ptr, oflw, flag, len;
 
-    int bak = index;
-
-    for (; length > 0; 
-        cp += option_len, length -= option_len, bak += option_len, index = bak) 
+    for (; length > 0; cp += option_len, length -= option_len) 
     {
         u_int option_code = 0;
 
         option_code = GET_U_1(cp);
+        nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_TYPE,
+            tok2str(ip_option_values, "unknown", option_code), option_code);
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, LAYER_3_IP_OPTION_TYPE,
-                tok2str(ip_option_values, "unknown", option_code), option_code);
-        index = index + 1;
-
-        if (option_code == IPOPT_EOL || option_code == IPOPT_NOP)
-        {
+        if (option_code == IPOPT_EOL || option_code == IPOPT_NOP) {
             option_len = 1;
         }
-        else 
-        {
+        else {
             option_len = GET_U_1(cp + 1);
-            if (option_len < 2) 
-            {
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                    LAYER_3_IP_OPTION_LENGTH_ERR, option_len, option_len, "<", 2);
-                index = index + 1;
+            if (option_len < 2) {
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH_ERR, 
+                    option_len, option_len, "<", 2);
                 return 0;
             }
         }
 
-        if (option_len > length)
-        {
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                    LAYER_3_IP_OPTION_LENGTH_ERR, option_len, option_len, ">", length);
-            index = index + 1;
+        if (option_len > length) {
+            nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH_ERR, 
+                option_len, option_len, ">", length);
             return 0;
         }
 
@@ -319,54 +307,36 @@ ip_optprint(ndo_t *ndo, infonode_t *ifn, l1l2_node_t *su, int index,
                 return 0;
 
             case IPOPT_TS:
-                if (option_len < 4) 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                        LAYER_3_IP_OPTION_LENGTH_ERR, option_len, option_len, "<", 4);
-                    index = index + 1;
-                    index = index + option_len - 2;
+                if (option_len < 4) {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH_ERR, 
+                        option_len, option_len, "<", 4);
+                    ifn->idx += (option_len - 2);
                     break;
                 }
 
                 hoplen = ((GET_U_1(cp + 3) & 0xF) != IPOPT_TS_TSONLY) ? 8 : 4;
-                if ((option_len - 4) & (hoplen - 1))
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                        LAYER_3_IP_OPTION_LENGTH_ERR1, option_len, option_len, "%%", hoplen);
-                    index = index + 1;
+                if ((option_len - 4) & (hoplen - 1)) {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH_ERR1, 
+                        option_len, option_len, "%%", hoplen);
                 }
-                else 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_LENGTH, option_len);
-                    index = index + 1;
+                else {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH, option_len);
                 }
 
                 ptr = GET_U_1(cp + 2) - 1;
-                if (ptr < 4 || ((ptr - 4) & (hoplen - 1)) || ptr > option_len + 1) 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_POINTER_ERR, ptr + 1);
-                    index = index + 1;
+                if (ptr < 4 || ((ptr - 4) & (hoplen - 1)) || ptr > option_len + 1) {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_POINTER_ERR, ptr + 1);
                 }
-                else 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_POINTER, ptr + 1);
-                    index = index + 1;
+                else {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_POINTER, ptr + 1);
                 }
 
                 oflw = GET_U_1(cp + 3) & 0xF;
                 flag = GET_U_1(cp + 3) >> 4;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_OFLWFL, flag, oflw, 
-                            ipopt_ts_flag(oflw)
-                );
-                index = index + 1;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_OFLWFL, flag, oflw, ipopt_ts_flag(oflw));
 
-                if (oflw != IPOPT_TS_TSONLY && oflw != IPOPT_TS_TSANDADDR && oflw != IPOPT_TS_PRESPEC)
-                {
-                    index = index + option_len - 4;
+                if (oflw != IPOPT_TS_TSONLY && oflw != IPOPT_TS_TSANDADDR && oflw != IPOPT_TS_PRESPEC) {
+                    ifn->idx += (option_len - 4);
                     break;
                 }
 
@@ -375,108 +345,72 @@ ip_optprint(ndo_t *ndo, infonode_t *ifn, l1l2_node_t *su, int index,
                     if (!ND_TTEST_LEN(cp + len, hoplen))
                         goto trunc;
                     
-                    if (hoplen == 8) 
-                    {
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
-                            LAYER_3_IP_OPTION_ADDR, GET_IPADDR_STRING(cp + len)
-                        );
-                        index = index + 4;
+                    if (hoplen == 8) {
+                        nd_filling_l2(ifn, su, 0, 4, LAYER_3_IP_OPTION_ADDR, GET_IPADDR_STRING(cp + len));
                     }
 
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
-                            LAYER_3_IP_OPTION_TS, GET_BE_U_4(cp + len + hoplen - 4)
-                    );
-                    index = index + 4;
+                    nd_filling_l2(ifn, su, 0, 4, LAYER_3_IP_OPTION_TS, GET_BE_U_4(cp + len + hoplen - 4));
                 }
 
                 break;
             case IPOPT_RR:
             case IPOPT_SSRR:
             case IPOPT_LSRR:
-                if (option_len < 3) 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                        LAYER_3_IP_OPTION_LENGTH_ERR, option_len, option_len, "<", 3);
-                    index = index + 1;
-                    index = index + option_len - 2;
+                if (option_len < 3) {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH_ERR, option_len, option_len, "<", 3);
+                    ifn->idx += (option_len - 2);
                     break;
                 }
 
-                if ((option_len + 1) & 3)
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
+                if ((option_len + 1) & 3) {
+                    nd_filling_l2(ifn, su, 0, 1, 
                         LAYER_3_IP_OPTION_LENGTH_ERR1, option_len, option_len + 1, "%%", 4);
-                    index = index + 1;
                 }
-                else 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_LENGTH, option_len);
-                    index = index + 1;
+                else {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH, option_len);
                 }
 
                 ptr = GET_U_1(cp + 2) - 1;
-                if (ptr < 3 || ((ptr + 1) & 3) || ptr > length + 1)
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_POINTER_ERR, ptr + 1);
-                    index = index + 1;
+                if (ptr < 3 || ((ptr + 1) & 3) || ptr > length + 1) {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_POINTER_ERR, ptr + 1);
                 }
-                else 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                            LAYER_3_IP_OPTION_POINTER, ptr + 1);
-                    index = index + 1;
+                else {
+                    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_POINTER, ptr + 1);
                 }
 
-                for (len = 3; len < option_len; len += 4) 
-                {
+                for (len = 3; len < option_len; len += 4) {
                     if (!ND_TTEST_LEN(cp + len, 4))
                         goto trunc;
 
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
-                            LAYER_3_IP_OPTION_ADDR, GET_IPADDR_STRING(cp + len)
-                    );
-                    index = index + 4;
+                    nd_filling_l2(ifn, su, 0, 4, LAYER_3_IP_OPTION_ADDR, GET_IPADDR_STRING(cp + len));
                 }
 
                 break;
 
             case IPOPT_RA:
-                if (option_len < 4) 
-                {
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
+                if (option_len < 4) {
+                    nd_filling_l2(ifn, su, 0, 1, 
                         LAYER_3_IP_OPTION_LENGTH_ERR, option_len, option_len, "<", 4);
-                    index = index + 1;
-                    index = index + option_len - 2;
+                    ifn->idx += (option_len - 2);
                     break;
                 }
 
                 if (!ND_TTEST_LEN(cp + 3, 1))
                     goto trunc;
 
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                    LAYER_3_IP_OPTION_LENGTH, option_len);
-                index = index + 1;
-
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                    LAYER_3_IP_OPTION_VALUE_04HEX, GET_BE_U_2(cp + 2));
-                index = index + 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH, option_len);
+                nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_OPTION_VALUE_04HEX, GET_BE_U_2(cp + 2));
                 break;
 
             case IPOPT_SECURITY:
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-                    LAYER_3_IP_OPTION_LENGTH, option_len);
-                index = index + 1;
-                index = index + option_len - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_OPTION_LENGTH, option_len);
+                ifn->idx += (option_len - 2);
                 break;
 
             case IPOPT_NOP:
             default:
                 break;
         }
-
-        
     }
 
     return 0;
@@ -497,10 +431,10 @@ static const struct tok ip_frag_values[] = {
 /*
  * print an IP datagram.
  */
-void ip_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, const u_int length)
+void ip_print(ndo_t *ndo, void *infonode, const u_char *bp, const u_int length)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %u)", __func__, ndo, infonode, index, bp, length);
+    TC("Called { %s(%p, %p, %p, %u)", __func__, ndo, infonode, bp, length);
 
     const struct ip *ip;
 
@@ -579,105 +513,84 @@ void ip_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, const u
         goto invalid;
     }
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_3_IP_FORMAT, LAYER_3_IP_CONTENT);
+    su = nd_filling_l1(ifn, 0, LAYER_3_IP_FORMAT, LAYER_3_IP_CONTENT);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, LAYER_3_IP_VERSION, IP_V(ip));
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, LAYER_3_IP_HDRLEN, hlen);
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_VERSION, IP_V(ip));
+    ifn->idx -= 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_HDRLEN, hlen);
 
     ip_tos = GET_U_1(ip->ip_tos);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, LAYER_3_IP_TOS, 
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_TOS, 
         ip_tos, dscp_name(ip_tos >> 2), ecn_name(ip_tos & 0x03));
-    index = index + 1;
 
-    if (presumed_tso) 
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-            LAYER_3_IP_TOTAL_LENGTH_TSO, length);
+    if (presumed_tso) {
+        nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_TOTAL_LENGTH_TSO, length);
     }
-    else 
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-            LAYER_3_IP_TOTAL_LENGTH, len);
+    else {
+        nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_TOTAL_LENGTH, len);
     }
-    index = index + 2;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-        LAYER_3_IP_IDENTIFICATION, GET_BE_U_2(ip->ip_id));
-    index = index + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_IDENTIFICATION, GET_BE_U_2(ip->ip_id));
 
     off = GET_BE_U_2(ip->ip_off);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, LAYER_3_IP_FLAGS, 
-        ((off & (IP_RES|IP_DF|IP_MF)) >> 13), 
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_FLAGS, 
+        ((off & (IP_RES | IP_DF | IP_MF)) >> 13), 
         bittok2str(ip_frag_values, "none", off & (IP_RES|IP_DF|IP_MF))
     );
-
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-        LAYER_3_IP_FRAGMENT_OFFSET, (off & IP_OFFMASK) * 8);
-    index = index + 2;
+    ifn->idx -= 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_FRAGMENT_OFFSET, (off & IP_OFFMASK) * 8);
 
     ip_ttl = GET_U_1(ip->ip_ttl);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-        LAYER_3_IP_TIME_TO_LIVE, ip_ttl);
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_TIME_TO_LIVE, ip_ttl);
 
     ip_proto = GET_U_1(ip->ip_p);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, LAYER_3_IP_PROTOCOL, 
-        ip_proto, tok2str(ipproto_values, "unknown", ip_proto));
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP_PROTOCOL, ip_proto, 
+        tok2str(ipproto_values, "unknown", ip_proto));
 
     vec[0].ptr = (const uint8_t *)(const void *)ip;
     vec[0].len = hlen;
     sum = in_cksum(vec, 1);
     ip_sum = GET_BE_U_2(ip->ip_sum);
-    if (sum != 0) 
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-            LAYER_3_IP_BAD_HEADER_CHECKSUM, ip_sum, in_cksum_shouldbe(ip_sum, sum));
+    if (sum != 0) {
+        nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_BAD_HEADER_CHECKSUM,
+            ip_sum, in_cksum_shouldbe(ip_sum, sum));
     }
-    else 
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1, 
-            LAYER_3_IP_HEADER_CHECKSUM, ip_sum);
+    else {
+        nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP_HEADER_CHECKSUM, ip_sum);
     }
-    index = index + 2;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
-        LAYER_3_IP_SOURCE_ADDRESS, GET_IPADDR_STRING(ip->ip_src));
-    index = index + 4;
-
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 4 - 1, 
-        LAYER_3_IP_DESTINATION_ADDRESS, GET_IPADDR_STRING(ip->ip_dst));
-    index = index + 4;
+    nd_filling_l2(ifn, su, 0, 4, LAYER_3_IP_SOURCE_ADDRESS, GET_IPADDR_STRING(ip->ip_src));
+    nd_filling_l2(ifn, su, 0, 4, LAYER_3_IP_DESTINATION_ADDRESS, GET_IPADDR_STRING(ip->ip_dst));
 
     snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", GET_IPADDR_STRING(ip->ip_src));
     snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", GET_IPADDR_STRING(ip->ip_dst));
 
     len -= hlen;
-    
+
+    int bak_idx = ifn->idx;
+
     if ((hlen - sizeof(struct ip)) > 0) 
     {
-        if (ip_optprint(ndo, ifn, su, index, (const u_char *)(ip + 1), hlen - sizeof(struct ip)) == -1) 
+        if (ip_optprint(ndo, ifn, su, (const u_char *)(ip + 1), hlen - sizeof(struct ip)) == -1) 
         {
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "truncated option (invalid)");
             nd_pop_packet_info(ndo);
             goto invalid;
         }
     }
-    
-    if ((off & IP_OFFMASK) == 0)
-    {
+
+    if ((off & IP_OFFMASK) == 0) {
         uint8_t nh = GET_U_1(ip->ip_p);
-        if (!ND_TTEST_LEN((const u_char *)ip, hlen))
-        {
+        if (!ND_TTEST_LEN((const u_char *)ip, hlen)) {
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, 
                 "remaining caplen(%u) < header length(%u) (invalid)", 
                 ND_BYTES_AVAILABLE_AFTER((const u_char *)ip), hlen
             );
             nd_trunc_longjmp(ndo);
         }
-        index = index + hlen - sizeof(struct ip);
-        ip_demux_print(ndo, index, infonode, (const u_char *)ip + hlen, len, 4,
+        //index = index + hlen - sizeof(struct ip);
+        ifn->idx = bak_idx + hlen - sizeof(struct ip);
+        ip_demux_print(ndo, infonode, (const u_char *)ip + hlen, len, 4,
                        off & IP_MF, GET_U_1(ip->ip_ttl), nh, bp);
     }
     else 

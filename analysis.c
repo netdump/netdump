@@ -253,7 +253,7 @@ int analysis_loop (void) {
                 G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
                 Gindex = 0;
             }
-            nd_delay_microsecond(0, 2000000);
+            nd_delay_microsecond(0, 1000000);
         }
     }
 
@@ -286,7 +286,7 @@ void analysis_no_manual_mode (void)
             Gindex = 0;
         }
         else {
-            nd_delay_microsecond(0, 2000000);
+            nd_delay_microsecond(0, 1000000);
         }
         return ;
     }
@@ -400,9 +400,9 @@ void analysis_manual_mode (void)
             node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
 
             infonode = container_of(node, infonode_t, listnode);
-            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
             analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
             analysis_recover_l1l2node(
                 &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
                 &(infonode->l1head), &(infonode->l1tail)
@@ -488,9 +488,9 @@ void analysis_manual_mode (void)
         node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
 
         infonode = container_of(node, infonode_t, listnode);
-        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
         analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
         analysis_recover_l1l2node(
             &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
@@ -513,7 +513,7 @@ void analysis_manual_mode (void)
         return ;
     }
 
-    nd_delay_microsecond(0, 2000000);
+    //nd_delay_microsecond(0, 2000000);
     return ;
 }
 
@@ -777,7 +777,6 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
             (ndo->ndo_if_printer)(ndo, infonode, h, sp);
             break;
         case ND_TRUNCATED:
-            //nd_print_trunc(ndo);
             ndo->ndo_ll_hdr_len = 0;
             TE("Packet truncated");
             break;
@@ -802,6 +801,8 @@ infonode_t *analysis_get_infonode (void)
     nd_dll_t * tmp = nd_dll_takeout_from_head_s(&(G_dtoainfo->idlelist));
 
     infonode_t * infonode = container_of(tmp, infonode_t, listnode);
+
+    infonode->idx = 0;
 
     RVoidPtr(infonode);
 }
@@ -900,9 +901,9 @@ int analysis_put_node_into_display_dll (void)
 
             infonode_t * infonode = container_of(node, infonode_t, listnode);
 
-            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
             analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-            analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
 
             analysis_recover_l1l2node(
                 &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),

@@ -154,21 +154,13 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
     dst.addr = ehp->ether_dhost;
     dst.addr_string = etheraddr_string;
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_2_FORMAT, LAYER_2_CONTENT);
+    su = nd_filling_l1(ifn, 0, LAYER_2_FORMAT, LAYER_2_CONTENT);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + MAC_ADDR_LEN - 1), 
-        LAYER_2_DESTINATION_MAC_FORMAT, 
-        get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost)
-    );
+    nd_filling_l2(ifn, su, 0, MAC_ADDR_LEN, LAYER_2_DESTINATION_MAC_FORMAT, 
+        get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost));
 
-    index += MAC_ADDR_LEN;
-
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + MAC_ADDR_LEN - 1), 
-        LAYER_2_SOURCE_MAC_FORMAT, 
-        get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost)
-    );
-
-    index += MAC_ADDR_LEN;
+    nd_filling_l2(ifn, su, 0, MAC_ADDR_LEN, LAYER_2_SOURCE_MAC_FORMAT,
+        get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost));
 
     length -= 2 * MAC_ADDR_LEN;
     caplen -= 2 * MAC_ADDR_LEN;
@@ -202,20 +194,27 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
 
     memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
     fill_ether_type(length_type, buffer);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_FORMAT, buffer);
 
-    index += 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_2_ETHERTYPE_FORMAT, buffer);
+
+    index += 14;    // ntg_Nothing_need_delete
 
     /*
      * Process 802.1AE MACsec headers.
      */
     if (length_type == ETHERTYPE_MACSEC)
     {
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost));
+        snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost));
+        snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "not support");
+        RUInt(hdrlen);
+        #if 0
         /*
          * MACsec, aka IEEE 802.1AE-2006
          * Print the header, and try to print the payload if it's not encrypted
          */
-        int ret = macsec_print(ndo, &p, infonode, su, &index, &length, &caplen, &hdrlen);
+        int ret = macsec_print(ndo, &p, infonode, su, &length, &caplen, &hdrlen);
         if (ret == 0) {
             /* Payload is encrypted; print it as raw data. */
             snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
@@ -250,13 +249,13 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
             length_type = GET_BE_U_2(p);
             memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
             fill_ether_type(length_type, buffer);
-            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_FORMAT, buffer);
+            nd_filling_l2(ifn, su, 0, 2, LAYER_2_ETHERTYPE_FORMAT, buffer);
             length -= 2;
             caplen -= 2;
             p += 2;
             hdrlen += 2;
-            index += 2;
         }
+        #endif
     }
 
     while (
@@ -287,14 +286,14 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         }
 
         uint16_t tag = GET_BE_U_2(p);
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_IEEE8021Q_FMT, 
+        
+        nd_filling_l2(ifn, su, 0, 2, LAYER_2_ETHERTYPE_IEEE8021Q_FMT, 
             ((tag >> 13) & 0x07), ((tag >> 12) & 0x01), (tag & 0x0FFF));
-        index += 2;
 
         length_type = GET_BE_U_2((p + 2));
         memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
         fill_ether_type(length_type, buffer);
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), LAYER_2_ETHERTYPE_FORMAT, buffer);
+        nd_filling_l2(ifn, su, 0, 2, LAYER_2_ETHERTYPE_FORMAT, buffer);
 
         p += 4;
         length -= 4;
@@ -315,7 +314,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         goto invalid;
     }
 
-    if (ethertype_print(ndo, index, infonode, length_type, p, length, caplen, &src, &dst) == 0)
+    if (ethertype_print(ndo, infonode, length_type, p, length, caplen, &src, &dst) == 0)
     {
         memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
         fill_ether_type(length_type, buffer);
@@ -413,8 +412,8 @@ void netanalyzer_transparent_if_print(ndo_t *ndo, void *infonode,
  * Returns non-zero if it can do so, zero if the ethertype is unknown.
  */
 
-int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
-        u_short ether_type, const u_char *p, u_int length, u_int caplen,
+int ethertype_print(ndo_t *ndo, void *infonode, u_short ether_type, 
+        const u_char *p, u_int length, u_int caplen,
         const struct lladdr_info *src, const struct lladdr_info *dst
     )
 {
@@ -424,18 +423,18 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
     switch (ether_type)
     {
         case ETHERTYPE_IP:
-            ip_print(ndo, index, infonode, p, length);
+            ip_print(ndo, infonode, p, length);
             return (1);
 
         case ETHERTYPE_IPV6:
-            ip6_print(ndo, index, infonode, p, length);
+            ip6_print(ndo, infonode, p, length);
             return (1);
 
         case ETHERTYPE_ARP:
         case ETHERTYPE_REVARP:
             snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", src->addr_string(ndo, (const uint8_t *)src->addr));
             snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", dst->addr_string(ndo, (const uint8_t *)dst->addr));
-            arp_print(ndo, index, infonode, p, length, caplen);
+            arp_print(ndo, infonode, p, length, caplen);
             return (1);
         
         case ETHERTYPE_PPPOED:
@@ -446,7 +445,7 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
         case ETHERTYPE_EAPOL:
             snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", src->addr_string(ndo, (const uint8_t *)src->addr));
             snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", dst->addr_string(ndo, (const uint8_t *)dst->addr));
-            eapol_print(ndo, index, infonode, p, length);
+            eapol_print(ndo, infonode, p, length);
             return (1);
 
         case ETHERTYPE_SLOW:
@@ -459,11 +458,11 @@ int ethertype_print(ndo_t *ndo, u_int index, void *infonode,
 
         case ETHERTYPE_MPLS:
         case ETHERTYPE_MPLS_MULTI:
-            mpls_print(ndo, index, infonode, p, length);
+            mpls_print(ndo, infonode, p, length);
             return (1);
 
         case ETHERTYPE_PTP:
-            ptp_print(ndo, index, infonode, p, length);
+            ptp_print(ndo, infonode, p, length);
             return (1);
 
         case ETHERTYPE_LAT:

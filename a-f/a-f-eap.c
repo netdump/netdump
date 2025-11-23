@@ -133,11 +133,9 @@ static const struct tok eap_aka_subtype_values[] = {
 };
 #endif
 
-int eap_print(ndo_t *ndo, u_int index, void *infonode, l1l2_node_t *su, 
-    const u_char *cp, u_int length)
+int eap_print(ndo_t *ndo, void *infonode, l1l2_node_t *su, const u_char *cp, u_int length)
 {
-    TC("Called { %s(%p, %p, %p, %u, %p, %u)", __func__, ndo, infonode, 
-        su, index, cp, length);
+    TC("Called { %s(%p, %p, %p, %p, %u)", __func__, ndo, infonode, su, cp, length);
 
     u_int type, subtype, len;
     //u_int count;
@@ -149,19 +147,12 @@ int eap_print(ndo_t *ndo, u_int index, void *infonode, l1l2_node_t *su,
 
     infonode_t *ifn = (infonode_t *)infonode;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 1 - 1,
-                                     LAYER_3_EAP_H_CODE,
-                                     tok2str(eap_code_values, "unknown", type),
-                                     type);
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_EAP_H_CODE,
+            tok2str(eap_code_values, "unknown", type), type);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 1 - 1,
-                                     LAYER_3_EAP_H_ID, GET_U_1((cp + 1)));
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_EAP_H_ID, GET_U_1((cp + 1)));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1,
-                                     LAYER_3_EAP_H_LENGTH, len);
-    index = index + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_EAP_H_LENGTH, len);
 
     if (!ND_TTEST_LEN(cp, len))
     {
@@ -176,15 +167,10 @@ int eap_print(ndo_t *ndo, u_int index, void *infonode, l1l2_node_t *su,
             goto trunc;
         }
         subtype = GET_U_1(cp + 4);
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 1 - 1,
-                                         LAYER_3_EAP_DATA_TYPE,
-                                         tok2str(eap_type_values, "unknown", subtype),
-                                         subtype);
-        index = index + 1;
+        nd_filling_l2(ifn, su, 0, 1, LAYER_3_EAP_DATA_TYPE,
+                tok2str(eap_type_values, "unknown", subtype), subtype);
 
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + len - 1,
-                                         LAYER_3_EAP_DATA);
-        index = index + len;
+        nd_filling_l2(ifn, su, 0, len, LAYER_3_EAP_DATA);
     }
 
     snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", len);
@@ -194,10 +180,10 @@ trunc:
     RInt(1);
 }
 
-void eapol_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, u_int length)
+void eapol_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %u)", __func__, ndo, infonode, index, bp, length);
+    TC("Called { %s(%p, %p, %p, %u)", __func__, ndo, infonode, bp, length);
 
     const struct eap_frame_t *eap;
     u_int eap_type, eap_len;
@@ -214,22 +200,16 @@ void eapol_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, u_in
     }
 
     l1l2_node_t *su = NULL;
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_3_EAPOL_FORMAT, LAYER_3_EAPOL_CONTENT);
+    su = nd_filling_l1(ifn, 0, LAYER_3_EAPOL_FORMAT, LAYER_3_EAPOL_CONTENT);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 1 - 1,
-                                     LAYER_3_EAPOL_H_VERSION, GET_U_1(eap->version));
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_EAPOL_H_VERSION, GET_U_1(eap->version));
 
     eap_type = GET_U_1(eap->type);
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 1 - 1,
-                                     LAYER_3_EAPOL_H_TYPE,
-                                     tok2str(eap_frame_type_values, "unknown", eap_type),
-                                     eap_type);
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_EAPOL_H_TYPE,
+            tok2str(eap_frame_type_values, "unknown", eap_type),
+            eap_type);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index + 2 - 1,
-                                     LAYER_3_EAPOL_H_LENGTH, GET_BE_U_2(eap->length));
-    index = index + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_EAPOL_H_LENGTH, GET_BE_U_2(eap->length));
 
     bp += sizeof(struct eap_frame_t);
     eap_len = GET_BE_U_2(eap->length);
@@ -252,7 +232,7 @@ void eapol_print(ndo_t *ndo, u_int index, void *infonode, const u_char *bp, u_in
                 snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "too short for EAP header (invalid)");
                 goto trunc;
             }
-            if (eap_print(ndo, index, infonode, su, bp, eap_len))
+            if (eap_print(ndo, infonode, su, bp, eap_len))
             {
                 goto trunc;
             }

@@ -151,12 +151,10 @@ static const struct tok arphrd_values[] = {
     {0, NULL}
 };
 
-void arp_print(ndo_t *ndo, u_int index, void *infonode,
-               const u_char *bp, u_int length, u_int caplen)
+void arp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, u_int caplen)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %u, %u)",
-             __func__, ndo, infonode, index, bp, length, caplen);
+    TC("Called { %s(%p, %p, %p, %u, %u)", __func__, ndo, infonode, bp, length, caplen);
 
     const struct arp_pkthdr *ap;
     u_short pro, hrd, op;
@@ -220,51 +218,39 @@ void arp_print(ndo_t *ndo, u_int index, void *infonode,
         RVoid();
     }
 
-    su = nd_get_fill_put_l1l2_node_level1(ifn, 0, 0, 0, LAYER_3_ARP_FORMAT, LAYER_3_ARP_CONTENT);
+    su = nd_filling_l1(ifn, 0, LAYER_3_ARP_FORMAT, LAYER_3_ARP_CONTENT);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), 
+    nd_filling_l2(ifn, su, 0, 2, 
         LAYER_3_ARP_HARDWARETYPE, tok2str(arphrd_values, "Unknown Hardware", hrd), hrd);
-    index = index + 2;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), 
+    nd_filling_l2(ifn, su, 0, 2, 
         LAYER_3_ARP_PROTOCOLTYPE, tok2str(ethertype_values, "Unknown Protocol", pro), pro);
-    index = index + 2;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-        LAYER_3_ARP_HARDWARESIZE, HRD_LEN(ap));
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_ARP_HARDWARESIZE, HRD_LEN(ap));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, index, 
-        LAYER_3_ARP_PROTOCOLSIZE, PROTO_LEN(ap));
-    index = index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_ARP_PROTOCOLSIZE, PROTO_LEN(ap));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 2 - 1), 
+    nd_filling_l2(ifn, su, 0, 2, 
         LAYER_3_ARP_OPCODE, tok2str(arpop_values, "Unknown", op), op);
-    index = index + 2;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 6 - 1), 
+    nd_filling_l2(ifn, su, 0, 6, 
         LAYER_3_ARP_S_MAC, 
         isnonzero(ndo, (const u_char *)SHA(ap), HRD_LEN(ap)) ? 
         get_etheraddr_string(ndo, (const u_char *)SHA(ap)) :
         "00:00:00:00:00:00"
     );
-    index = index + 6;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 4 - 1), 
-        LAYER_3_ARP_S_IP, GET_IPADDR_STRING(SPA(ap)));
-    index = index + 4;
+    nd_filling_l2(ifn, su, 0, 4, LAYER_3_ARP_S_IP, GET_IPADDR_STRING(SPA(ap)));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 6 - 1), 
+    nd_filling_l2(ifn, su, 0, 6, 
         LAYER_3_ARP_T_MAC, 
         isnonzero(ndo, (const u_char *)THA(ap), HRD_LEN(ap)) ?
         get_etheraddr_string(ndo, (const u_char *)THA(ap)) :
         "00:00:00:00:00:00"
     );
-    index = index + 6;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, index, (index + 4 - 1), 
+    nd_filling_l2(ifn, su, 0, 4, 
         LAYER_3_ARP_T_IP, GET_IPADDR_STRING(TPA(ap)));
-    index = index + 4;
 
     char sip[32] = {0}, tip[32] = {0};
     char smac[32] = {0}, tmac[32] = {0};

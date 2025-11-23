@@ -23,8 +23,8 @@ const char * ip6_opt_type_str(unsigned int type)
 }
 
 static int
-ip6_sopt_print(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *index,
-               const char *nhinfo, const u_char *bp, int len)
+ip6_sopt_print(ndo_t *ndo, void *infonode, l1l2_node_t *su, const char *nhinfo, 
+            const u_char *bp, int len)
 {
     int i;
     int optlen;
@@ -64,11 +64,8 @@ ip6_sopt_print(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *index,
         switch (GET_U_1(bp + i))
         {
             case IP6OPT_PAD1:
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
                 break;
             case IP6OPT_PADN:
                 if (len - i < IP6OPT_MINLEN)
@@ -79,21 +76,15 @@ ip6_sopt_print(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *index,
                     );
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                        LAYER_3_IP6_OPT_PADN_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + optlen - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_PADN_VAL, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
                 break;
             default:
                 if (len - i < IP6OPT_MINLEN)
@@ -103,21 +94,15 @@ ip6_sopt_print(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *index,
                              ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i));
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                    LAYER_3_IP6_OPT_OTHER_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                    GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + optlen - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_OTHER_VAL, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
                 break;
         }
     }
@@ -129,8 +114,8 @@ trunc:
 
 // Options Type Length Value [TLV]
 
-static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *index, 
-    const char * nhinfo, const u_char *bp, int len, int *found_jumbop, uint32_t *payload_len)
+static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, const char * nhinfo, 
+            const u_char *bp, int len, int *found_jumbop, uint32_t *payload_len)
 {
 
     int i;
@@ -176,11 +161,9 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
         switch (GET_U_1(bp + i)) 
         {
             case IP6OPT_PAD1:
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo
                 );
-                *index = *index + 1;
                 break;
             case IP6OPT_PADN:
                 if (len - i < IP6OPT_MINLEN)
@@ -191,20 +174,15 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                     );
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                        LAYER_3_IP6_OPT_PADN_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo);
-                *index = *index + optlen - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)),  GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+
+                nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_PADN_VAL, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
                 break;
             case IP6OPT_ROUTER_ALERT:
                 if (len - i < IP6OPT_RTALERT_LEN)
@@ -222,21 +200,15 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                              ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i));
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                        LAYER_3_IP6_OPT_VALUE_HEX, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_BE_U_2(bp + i + 2), nhinfo
-                );
-                *index = *index + optlen - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+
+                nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_VALUE_HEX, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_BE_U_2(bp + i + 2), nhinfo);
+                
                 break;
             case IP6OPT_JUMBO:
                 if (len - i < IP6OPT_JUMBO_LEN)
@@ -253,25 +225,19 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                              ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i));
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+                
                 jumbolen = GET_BE_U_4(bp + i + 2);
                 if (found_jumbo)
                 {
                     /* More than one Jumbo Payload option */
-                    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                        LAYER_3_IP6_OPT_JUMBO_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), jumbolen, "- already seen", nhinfo
-                    );
-                    *index = *index + optlen - 2;
+                    nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_JUMBO_VAL, 
+                        ip6_opt_type_str(GET_U_1(bp + i)),
+                        GET_U_1(bp + i), jumbolen, "- already seen", nhinfo);
                 }
                 else 
                 {
@@ -279,20 +245,16 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                     if (payload_len == NULL)
                     {
                         /* Not a hop-by-hop option - not valid */
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                            LAYER_3_IP6_OPT_JUMBO_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                            GET_U_1(bp + i), jumbolen, "- not a hop-by-hop option", nhinfo
-                        );
-                        *index = *index + optlen - 2;
+                        nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_JUMBO_VAL, 
+                            ip6_opt_type_str(GET_U_1(bp + i)),
+                            GET_U_1(bp + i), jumbolen, "- not a hop-by-hop option", nhinfo);
                     }
                     else if (*payload_len != 0)
                     {
                         /* Payload length was non-zero - not valid */
-                        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                            LAYER_3_IP6_OPT_JUMBO_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                            GET_U_1(bp + i), jumbolen, "- payload len != 0", nhinfo
-                        );
-                        *index = *index + optlen - 2;
+                        nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_JUMBO_VAL, 
+                            ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), 
+                            jumbolen, "- payload len != 0", nhinfo);
                     }
                     else 
                     {
@@ -302,22 +264,16 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                              * This is a hop-by-hop option, and Payload length
                              * was zero in the IPv6 header.
                              */
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                                LAYER_3_IP6_OPT_JUMBO_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                                GET_U_1(bp + i), jumbolen, "- < 65536", nhinfo
-                            );
-                            *index = *index + optlen - 2;
+                            nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_JUMBO_VAL, 
+                                ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), jumbolen, "- < 65536", nhinfo);
                         }
                         else 
                         {
                             /* OK, this is valid */
                             *found_jumbop = 1;
                             *payload_len = jumbolen;
-                            nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                                LAYER_3_IP6_OPT_JUMBO_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                                GET_U_1(bp + i), jumbolen, "", nhinfo
-                            );
-                            *index = *index + optlen - 2;
+                            nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_JUMBO_VAL, 
+                                ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), jumbolen, "", nhinfo);
                         }
                     }
                 }
@@ -337,25 +293,20 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                              ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i));
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                    LAYER_3_IP6_OPT_HA_VAL_STR, ip6_opt_type_str(GET_U_1(bp + i)), 
-                    GET_U_1(bp + i), GET_IP6ADDR_STRING(bp + i + 2), nhinfo
-                );
-                *index = *index + optlen - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_HA_VAL_STR, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), 
+                    GET_U_1(bp + i), GET_IP6ADDR_STRING(bp + i + 2), nhinfo);
+                
                 if (GET_U_1(bp + i + 1) > IP6OPT_HOMEADDR_MINLEN - 2)
                 {
-                    if (ip6_sopt_print(ndo, infonode, su, index, nhinfo, 
-                        bp + i + IP6OPT_HOMEADDR_MINLEN, (optlen - IP6OPT_HOMEADDR_MINLEN)) == -1)
+                    if (ip6_sopt_print(ndo, infonode, su, nhinfo, 
+                            bp + i + IP6OPT_HOMEADDR_MINLEN, (optlen - IP6OPT_HOMEADDR_MINLEN)) == -1)
                     {
                         goto trunc;
                     }
@@ -369,21 +320,15 @@ static int ip6_opt_process(ndo_t *ndo, void *infonode, l1l2_node_t *su, u_int *i
                              ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i));
                     goto trunc;
                 }
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_TYPE, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-                        LAYER_3_IP6_OPT_LENGTH, ip6_opt_type_str(GET_U_1(bp + i)), 
-                        GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo
-                );
-                *index = *index + 1;
-                nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + optlen - 2 - 1,
-                    LAYER_3_IP6_OPT_OTHER_VAL, ip6_opt_type_str(GET_U_1(bp + i)), 
-                    GET_U_1(bp + i), nhinfo
-                );
-                *index = *index + optlen - 2;
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_TYPE, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_OPT_LENGTH, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), GET_U_1(bp + i + 1), nhinfo);
+                
+                nd_filling_l2(ifn, su, 0, optlen - 2, LAYER_3_IP6_OPT_OTHER_VAL, 
+                    ip6_opt_type_str(GET_U_1(bp + i)), GET_U_1(bp + i), nhinfo);
+                
                 break;
         }
     }
@@ -394,11 +339,11 @@ trunc:
     return -1;
 }
 
-int hbhopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                   const u_char *bp, int *found_jumbo, uint32_t *jumbolen)
+int hbhopt_process(ndo_t *ndo, void *infonode, void *_su, const u_char *bp, 
+                    int *found_jumbo, uint32_t *jumbolen)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p)", __func__, ndo, infonode, *index, found_jumbo, jumbolen);
+    TC("Called { %s(%p, %p, %p, %p)", __func__, ndo, infonode, found_jumbo, jumbolen);
 
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = (l1l2_node_t *)_su;
@@ -415,18 +360,13 @@ int hbhopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
         goto trunc;
     }
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_HOP_BY_HOP_NXT_HEARDER, 
-        GET_U_1(dp->ip6h_nxt), 
-        tok2str(ipproto_values, "unknown", GET_U_1(dp->ip6h_nxt)));
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_HOP_BY_HOP_NXT_HEARDER, 
+        GET_U_1(dp->ip6h_nxt), tok2str(ipproto_values, "unknown", GET_U_1(dp->ip6h_nxt)));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_HOP_BY_HOP_LENGTH, GET_U_1(dp->ip6h_len));
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_HOP_BY_HOP_LENGTH, GET_U_1(dp->ip6h_len));
 
     if (ip6_opt_process(
-        ndo, infonode, su, index, "Hop-By-Hop",
+        ndo, infonode, su, "Hop-By-Hop",
         (const u_char *)dp + sizeof(*dp), 
         hbhlen - sizeof(*dp), found_jumbo, jumbolen) == -1)
     {
@@ -440,11 +380,10 @@ trunc:
     RInt(-1);
 }
 
-int dstopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                   const u_char *bp)
+int dstopt_process(ndo_t *ndo, void *infonode, void *_su, const u_char *bp)
 {
 
-    TC("Called { %s(%p, %p, %u)", __func__, ndo, infonode, *index);
+    TC("Called { %s(%p, %p, %p)", __func__, ndo, infonode, _su);
 
     const struct ip6_dest *dp = (const struct ip6_dest *)bp;
     u_int dstoptlen = 0;
@@ -460,19 +399,13 @@ int dstopt_process(ndo_t *ndo, void *infonode, void *_su, u_int *index,
         goto trunc;
     }
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_DEST_NXT_HEARDER, 
-        GET_U_1(dp->ip6d_nxt), 
-        tok2str(ipproto_values, "unknown", GET_U_1(dp->ip6d_nxt)));
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_DEST_NXT_HEARDER, 
+        GET_U_1(dp->ip6d_nxt), tok2str(ipproto_values, "unknown", GET_U_1(dp->ip6d_nxt)));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_DEST_LENGTH, GET_U_1(dp->ip6d_len));
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_DEST_LENGTH, GET_U_1(dp->ip6d_len));
 
     if (ip6_opt_process(
-            ndo, infonode, su, index, "Destination",
-            (const u_char *)dp + sizeof(*dp),
+            ndo, infonode, su, "Destination", (const u_char *)dp + sizeof(*dp),
             dstoptlen - sizeof(*dp), NULL, NULL) == -1)
     {
         goto trunc;

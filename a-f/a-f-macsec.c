@@ -68,8 +68,8 @@ static const struct tok macsec_flag_values[] = {
 #define LAYER_2_MACSEC_ICV_FORMAT               "macsec icv: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x"
 
 /* returns < 0 iff the packet can be decoded completely */
-int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
-    u_int * index, u_int *lengthp, u_int *caplenp, u_int *hdrlenp)
+int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void *su,
+                 u_int *lengthp, u_int *caplenp, u_int *hdrlenp)
 {
     const char *save_protocol;
     const u_char *p = *bp;
@@ -86,8 +86,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
     ndo->ndo_protocol = "macsec";
 
     /* we need the full MACsec header in the capture */
-    if (caplen < MACSEC_SECTAG_LEN_NOSCI)
-    {
+    if (caplen < MACSEC_SECTAG_LEN_NOSCI) {
         TW(" [|%s]", ndo->ndo_protocol);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "[remaining caplen %u < %u]((invalid))",
                  caplen, MACSEC_SECTAG_LEN_NOSCI);
@@ -96,8 +95,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
         return hdrlen + caplen;
     }
 
-    if (length < MACSEC_SECTAG_LEN_NOSCI)
-    {
+    if (length < MACSEC_SECTAG_LEN_NOSCI) {
         TW(" [|%s]", ndo->ndo_protocol);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "[remaining length %u < %u]((invalid))",
                  caplen, MACSEC_SECTAG_LEN_NOSCI);
@@ -106,11 +104,9 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
         return hdrlen + caplen;
     }
 
-    if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC)
-    {
+    if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) {
         sectag_len = MACSEC_SECTAG_LEN_SCI;
-        if (caplen < MACSEC_SECTAG_LEN_SCI)
-        {
+        if (caplen < MACSEC_SECTAG_LEN_SCI) {
             TW(" [|%s]", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "[remaining caplen %u < %u]((invalid))",
                      caplen, MACSEC_SECTAG_LEN_SCI);
@@ -118,8 +114,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
             ndo->ndo_protocol = save_protocol;
             return hdrlen + caplen;
         }
-        if (length < MACSEC_SECTAG_LEN_SCI)
-        {
+        if (length < MACSEC_SECTAG_LEN_SCI) {
             TW(" [|%s]", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "[remaining length %u < %u]((invalid))",
                      caplen, MACSEC_SECTAG_LEN_SCI);
@@ -132,8 +127,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
         sectag_len = MACSEC_SECTAG_LEN_NOSCI;
 
     if ((GET_U_1(sectag->short_length) & ~MACSEC_SL_MASK) != 0 ||
-        GET_U_1(sectag->tci_an) & MACSEC_TCI_VERSION)
-    {
+        GET_U_1(sectag->tci_an) & MACSEC_TCI_VERSION) {
         TW("((invalid))");
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "((invalid))");
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
@@ -141,37 +135,26 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
         return hdrlen + caplen;
     }
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, LAYER_2_MACSEC_TCI_FORMAT, 
+    nd_filling_l2(ifn, su, 0, 1, LAYER_2_MACSEC_TCI_FORMAT, 
         (GET_U_1(sectag->tci_an) & MACSEC_TCI_FLAGS),
-        bittok2str_nosep(macsec_flag_values, "none", GET_U_1(sectag->tci_an) & MACSEC_TCI_FLAGS)
-    );
+        bittok2str_nosep(macsec_flag_values, "none", GET_U_1(sectag->tci_an) & MACSEC_TCI_FLAGS));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-        LAYER_2_MACSEC_AN_FORMAT, GET_U_1(sectag->tci_an) & MACSEC_AN_MASK);
+    ifn->idx -= 1;
 
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_2_MACSEC_AN_FORMAT, GET_U_1(sectag->tci_an) & MACSEC_AN_MASK);
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index,
-        LAYER_2_MACSEC_SL_FORMAT, GET_U_1(sectag->short_length) & MACSEC_SL_MASK);
+    nd_filling_l2(ifn, su, 0, 1, LAYER_2_MACSEC_SL_FORMAT, GET_U_1(sectag->short_length) & MACSEC_SL_MASK);
 
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 4, LAYER_2_MACSEC_PN_FORMAT, GET_BE_U_4(sectag->packet_number));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + sizeof(nd_uint32_t) - 1,
-        LAYER_2_MACSEC_PN_FORMAT, GET_BE_U_4(sectag->packet_number));
-
-    *index = *index + sizeof(nd_uint32_t);
-
-    if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) 
-    {
-        nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + sizeof(sectag->secure_channel_id) - 1,
+    if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) {
+        nd_filling_l2(ifn, su, 0, sizeof(sectag->secure_channel_id),
                 LAYER_2_MACSEC_SCI_FORMAT, 
                 *(sectag->secure_channel_id[0]), *(sectag->secure_channel_id[1]),
                 *(sectag->secure_channel_id[2]), *(sectag->secure_channel_id[3]),
                 *(sectag->secure_channel_id[4]), *(sectag->secure_channel_id[5]),
                 ntohs(((uint16_t)(*(sectag->secure_channel_id[6]) << 8)) | (uint16_t)(*(sectag->secure_channel_id[7])))
         );
-
-        *index = *index + sizeof(sectag->secure_channel_id);
     }
 
     /* Skip the MACsec header. */
@@ -182,8 +165,7 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
     *lengthp -= sectag_len;
     *caplenp -= sectag_len;
 
-    if ((GET_U_1(sectag->tci_an) & MACSEC_TCI_CONFID))
-    {
+    if ((GET_U_1(sectag->tci_an) & MACSEC_TCI_CONFID)) {
         /*
          * The payload is encrypted.  Print link-layer
          * information, if it hasn't already been printed.
@@ -196,12 +178,14 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
             GET_U_1(sectag->short_length) & MACSEC_SL_MASK
         );
 
-        if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) 
-        {
+        if (GET_U_1(sectag->tci_an) & MACSEC_TCI_SC) {
             snprintf(ifn->brief + strlen(ifn->brief), INFONODE_BRIEF_LENGTH - strlen(ifn->brief), 
                 SCI_FMT, GET_BE_U_8(sectag->secure_channel_id)
             );
         }
+
+        // 需要展示加密的 payload 
+        // 需要展示 ICV
 
         /*
          * Tell our caller it can't be dissected.
@@ -283,14 +267,19 @@ int macsec_print(ndo_t *ndo, const u_char **bp, void *infonode, void * su,
 
     ndo->ndo_protocol = save_protocol;
 
+    #if 0
+    // 需要展示加密的 payload 
+    // 需要展示 ICV
     const u_char *icv = p + sectag_len + *lengthp;
-
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, 
-        *index + *lengthp, *index + *lengthp + MACSEC_DEFAULT_ICV_LEN - 1,
+    ifn->idx += *lengthp;
+    nd_filling_l2(ifn, su, 0, MACSEC_DEFAULT_ICV_LEN,
         LAYER_2_MACSEC_ICV_FORMAT, 
         icv[0], icv[1], icv[2], icv[3], icv[4], icv[5], icv[6], icv[7],
         icv[8], icv[9], icv[10], icv[11], icv[12], icv[13], icv[14], icv[15]
     );
+    #endif
+
+    // 需要重新梳理
 
     return -1;
 }

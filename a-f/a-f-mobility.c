@@ -82,11 +82,10 @@ static const unsigned ip6m_hdrlen[IP6M_MAX + 1] = {
     IP6M_MINLEN + 16, /* IP6M_BINDING_ERROR    */
 };
 
-int mobility_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
-                   const u_char *bp, const char *bp2 _U_)
+int mobility_print(ndo_t *ndo, void *infonode, void *_su, const u_char *bp, const char *bp2 _U_)
 {
 
-    TC("Called { %s(%p, %p, %u, %p, %p)", __func__, ndo, infonode, *index, bp, bp2);
+    TC("Called { %s(%p, %p, %p, %p)", __func__, ndo, infonode, bp, bp2);
 
     const struct ip6_mobility *mh;
     const u_char *ep;
@@ -129,31 +128,20 @@ int mobility_print(ndo_t *ndo, void *infonode, void *_su, u_int *index,
         goto trunc;
     }
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_MOBILITY_NEXT_HEADER, 
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_MOBILITY_NEXT_HEADER, 
         GET_U_1(mh->ip6m_pproto), 
         tok2str(ipproto_values, "unknown", GET_U_1(mh->ip6m_pproto)));
-    *index = *index + 1;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_MOBILITY_LENGTH, GET_U_1(mh->ip6m_len));
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_MOBILITY_LENGTH, GET_U_1(mh->ip6m_len));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
+    nd_filling_l2(ifn, su, 0, 1, 
         LAYER_3_IP6_MOBILITY_MSG_TYPE, type, tok2str(ip6m_str, "type-#%u", type));
-    *index = *index + 1;
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index, 
-        LAYER_3_IP6_MOBILITY_RESERVED, GET_U_1(mh->reserved));
-    *index = *index + 1;
+    nd_filling_l2(ifn, su, 0, 1, LAYER_3_IP6_MOBILITY_RESERVED, GET_U_1(mh->reserved));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + 2 - 1, 
-        LAYER_3_IP6_MOBILITY_RESERVED, GET_BE_U_2(mh->ip6m_cksum));
-    *index = *index + 2;
+    nd_filling_l2(ifn, su, 0, 2, LAYER_3_IP6_MOBILITY_RESERVED, GET_BE_U_2(mh->ip6m_cksum));
 
-    nd_get_fill_put_l1l2_node_level2(ifn, su, 0, *index, *index + mhlen - 1, 
-        LAYER_3_IP6_MOBILITY_MESSAGE_DATA);
-    *index = *index + mhlen;
+    nd_filling_l2(ifn, su, 0, mhlen, LAYER_3_IP6_MOBILITY_MESSAGE_DATA);
     
     RInt(mhlen);
     
