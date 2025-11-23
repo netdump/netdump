@@ -62,14 +62,14 @@ struct tcp_seq_hash6
 //static struct tcp_seq_hash6 tcp_seq_hash6[TSEQ_HASHSIZE];
 
 static const struct tok tcp_flag_values[] = {
-    {TH_FIN, "F"},
-    {TH_SYN, "S"},
-    {TH_RST, "R"},
-    {TH_PUSH, "P"},
-    {TH_ACK, "."},
-    {TH_URG, "U"},
-    {TH_ECNECHO, "E"},
-    {TH_CWR, "W"},
+    {TH_FIN, "FIN"},
+    {TH_SYN, "SYN"},
+    {TH_RST, "RST"},
+    {TH_PUSH, "PUSH"},
+    {TH_ACK, "ACK"},
+    {TH_URG, "URG"},
+    {TH_ECNECHO, "ECN-Echo"},
+    {TH_CWR, "CWR"},
     {0, NULL}
 };
 
@@ -198,6 +198,7 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
     //int rev;
     const struct ip6_hdr *ip6;
     u_int header_len; /* Header length in bytes */
+    char icollect[256] = {0};
 
     ndo->ndo_protocol = "tcp";
     tp = (const struct tcphdr *)bp;
@@ -224,6 +225,7 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
 
     sport = GET_BE_U_2(tp->th_sport);
     dport = GET_BE_U_2(tp->th_dport);
+    snprintf(icollect, 256, "%hu > %hu ", sport, dport);
 
     snprintf((ifn->srcaddr) + strlen((ifn->srcaddr)),
              INFONODE_ADDR_LENGTH - strlen((ifn->srcaddr)), ".%d", sport);
@@ -273,15 +275,21 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
             nd_filling_l2(ifn, su, 0, 4, LAYER_4_TCP_SEQ ":(length %u)", seq, seq + length - hlen);
         }
     }
-    
+
+    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "[%s] ", bittok2str(tcp_flag_values, "none", flags));
+    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "seq=%u ", seq);
+
     nd_filling_l2(ifn, su, 0, 4, LAYER_4_TCP_ACK, ack);
+
+    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "ack=%u ", ack);
 
     nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OFFX2, TH_OFF(tp), hlen, TH_RESV(tp));
 
     flags = GET_U_1(tp->th_flags);
-    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_FLAGS, bittok2str_nosep(tcp_flag_values, "none", flags), flags);
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_FLAGS, bittok2str(tcp_flag_values, "none", flags), flags);
 
     nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_WIN, win);
+    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "win=%hu ", win);
 
     if (ndo->ndo_vflag && !ndo->ndo_Kflag && !fragmented) {
         /* Check the checksum, if possible. */
@@ -320,6 +328,9 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
     nd_filling_l2(ifn, su, 0, 2, LAYER_4_TCP_URP, urp);
 
     length -= hlen;
+
+    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "Len=%hu ", length);
+
     /*
      * Handle any options.
      */
@@ -358,6 +369,7 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
                         tok2str(tcp_option_long_values, "unknown-%u", opt), opt);
                     nd_filling_l2(ifn, su, 0, 1, LAYER_4_TCP_OPTION_LEN, len);
                     nd_filling_l2(ifn, su, 0, 2, "mss value: %u", GET_BE_U_2(cp));
+                    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "MSS=%hu ", GET_BE_U_2(cp));
                     break;
                 case TCPOPT_WSCALE:
                     datalen = 1;
@@ -607,8 +619,11 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
 
     if (length == 0) {
         snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        #if 0
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "sport %u -> dport %u, %s, win %u",
-            sport, dport, bittok2str_nosep(tcp_flag_values, "none", flags), win);
+            sport, dport, bittok2str(tcp_flag_values, "none", flags), win);
+        #endif
+        snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", icollect);
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
         RVoid();
     }
@@ -636,8 +651,11 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
         char buffer[80] = {0};
         print_tcp_rst_data(ndo, bp, length, buffer);
         snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        #if 0
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "sport %u -> dport %u, %s, win %u, %s",
-            sport, dport, bittok2str_nosep(tcp_flag_values, "none", flags), win, buffer);
+            sport, dport, bittok2str(tcp_flag_values, "none", flags), win, buffer);
+        #endif
+        snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", icollect);
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
         RVoid();
     }
@@ -675,8 +693,11 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
 
     // add else
     snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+    #if 0
     snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "sport %u -> dport %u, %s, win %u",
-             sport, dport, bittok2str_nosep(tcp_flag_values, "none", flags), win);
+             sport, dport, bittok2str(tcp_flag_values, "none", flags), win);
+    #endif
+    snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", icollect);
     snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
 
     RVoid();

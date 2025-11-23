@@ -105,6 +105,7 @@ void udp_print(ndo_t *ndo, void *infonode, const u_char *bp,
 
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;
+    char icollect[256] = {0};
 
     if (IP_V(ip) == 6) {
         ip6 = (const struct ip6_hdr *)bp2;
@@ -122,6 +123,8 @@ void udp_print(ndo_t *ndo, void *infonode, const u_char *bp,
 
     sport = GET_BE_U_2(up->uh_sport);
     dport = GET_BE_U_2(up->uh_dport);
+
+    snprintf(icollect, 256, "%hu > %hu ", sport, dport);
 
     if (length < sizeof(struct udphdr)) 
     {
@@ -156,6 +159,8 @@ void udp_print(ndo_t *ndo, void *infonode, const u_char *bp,
     length -= sizeof(struct udphdr);
     if (ulen < length)
         length = ulen;
+
+    snprintf(icollect + strlen(icollect), 256 - strlen(icollect), "Len=%hu ", length);
 
     cp = (const u_char *)(up + 1);
     if (cp > ndo->ndo_snapend)
@@ -245,10 +250,7 @@ void udp_print(ndo_t *ndo, void *infonode, const u_char *bp,
         else {
             snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
             snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
-            snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, 
-                "sport: %hu, dport: %hu, length: %hu, check sum: %hu",
-                sport, dport, length, GET_BE_U_2(up->uh_sum)
-            );
+            snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", icollect);
         }
     }
 
