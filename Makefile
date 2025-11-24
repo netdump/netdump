@@ -14,8 +14,12 @@ PCAP_PATH = ./Third/pcap
 CFLAGS = -O0 -g
 CFLAGS += -Wall
 CFLAGS += -Wno-unused-function
+
+# -DTRACE -DTOPTRACE 
+# the log switch needs to be turned on or off simultaneously.
 CFLAGS += -DTRACE
 CFLAGS += -DTOPTRACE
+
 CFLAGS += -I ./
 CFLAGS += -I ${NCURSESW_PATH}/include
 CFLAGS += -I ${PCAP_PATH}/include
