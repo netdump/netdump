@@ -12,7 +12,7 @@
  */
 
 #include "capture.h"
-#include "msgcomm.h"
+#include "d2c_comm.h"
 
 
 /**
@@ -107,18 +107,6 @@ static pcap_t *pd = NULL;
  *  for "pcap_compile()", "pcap_setfilter()"
  */
 struct bpf_program fcode;
-
-/**
- * @brief
- *  Pointer to memory used for communication
- */
-static char * space = NULL;
-
-/**
- * @brief
- *  Instruction-specific memory
- */
-static char * cmdmem = NULL;
 
 /*
  * Long options.
@@ -269,10 +257,6 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 
     TC("Called { %s(%u, %s, %p)", __func__, COREID, pname, param);
 
-    space = msgcomm_G_sapce;
-
-    cmdmem = msgcomm_G_cmdmem;
-
     if (unlikely((prctl(PR_SET_NAME, pname, 0, 0, 0)) != 0)) {
         TE("Prctl set name(%s) failed", pname);
         goto label1;
@@ -282,8 +266,6 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
         TE("Register signal handle failed");
         goto label1;
     }
-
-    //ctoacomm_memory_load();
 
     if (unlikely((capture_loop()) == ND_ERR)) {
         TE("Analysis loop startup failed");
@@ -313,31 +295,27 @@ int capture_loop (void) {
 
     while (1) {
 
-        //ctoacomm_memory_load();
+        c2a_shm_write_addr = C2A_COMM_SHM_BASEADDR;
 
-        G_ctoa_shm_mem_wp = CTOACOMM_SHM_BASEADDR;
-
-        memset(cmdmem, 0, MSGCOMM_CMDMEM_SIZE);
-        message_t *message = (message_t *)(cmdmem);
-
-        if (unlikely((capture_cmd_from_display (message)) == ND_ERR)) {
+        desc_comm_msg_t message;
+        if (unlikely((capture_cmd_from_display (&message)) == ND_ERR)) {
             T(erromsg, "capture cmd from display failed");
             exit(1);
         }
 
         TI("     ");
-        TI("message->dir: %u", message->dir);
-        TI("message->msgtype: %u", message->msgtype);
-        TI("message->length: %u", message->length);
-        TI("message->msg: %s", message->msg);
+        TI("message.direction: %u", message.direction);
+        TI("message.msgtype: %u", message.msgtype);
+        TI("message.length: %u", message.length);
+        TI("message.content: %s", message.content);
 
         #if 0
         // 还未实现
-        G_ctos_shm_mem_cursor = G_ctoa_shm_mem;
+        G_ctos_shm_mem_cursor = c2a_shm_addr;
         memset((void *)G_cp_aa_shared_addr_info, 0, MSGCOMM_PKTPTRARR_SIZE);
         #endif
 
-        capture_parsing_cmd_and_exec_capture((char *)(cmdmem + sizeof(message_t)));
+        capture_parsing_cmd_and_exec_capture((char *)(message.content));
     }
 
     RInt(ND_OK);
@@ -353,7 +331,7 @@ int capture_loop (void) {
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int capture_cmd_from_display (message_t * message) {
+int capture_cmd_from_display(desc_comm_msg_t *message) {
 
     TC("Called { %s(%p)", __func__, message);
 
@@ -362,14 +340,13 @@ int capture_cmd_from_display (message_t * message) {
         RInt(ND_ERR);
     }
 
-    if (unlikely((msgcomm_message_recv(MSGCOMM_DIR_0TO1, message)) == ND_ERR)) {
+    if (unlikely((d2c_comm_recv_msg_from_display(message)) == ND_ERR)) {
         TE("msgcomm message recv failed");
         RInt(ND_ERR);
     }
 
     RInt(ND_OK);
 }
-
 
 /**
  * @brief 
@@ -382,7 +359,7 @@ int capture_cmd_from_display (message_t * message) {
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int capture_reply_to_display (unsigned int msgtype, const char * reply) {
+int capture_reply_to_display (unsigned int msgtype, char * reply) {
 
     TC("Called { %s(%u, %p)", __func__, msgtype, reply);
 
@@ -391,10 +368,7 @@ int capture_reply_to_display (unsigned int msgtype, const char * reply) {
 		RInt(ND_ERR);
 	}
 
-	if ( unlikely(
-		((msgcomm_message_send(MSGCOMM_DIR_1TO0, msgtype, reply, strlen(reply))) == ND_ERR)
-	))
-	{
+    if (unlikely(((d2c_comm_send_msg_2_display(msgtype, reply)) == ND_ERR))) {
 		TE("msgcomm message send failed");
 		RInt(ND_ERR);
 	}
@@ -459,17 +433,19 @@ static void capture_usage(void)
 
     TC("Called { %s(void)", __func__);
 
-    memset(space, 0, MSGCOMM_SPACE_SIZE);
-    char * sp = space;
-    int len = MSGCOMM_SPACE_SIZE;
+    memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
 
+    int len = COMM_SHM_ZONE_SIZE;
+    char *sp = d2c_comm.store_response_info;
+    char *space = d2c_comm.store_response_info;
+    
     CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tUsage: \n\t[-b" D_FLAG "E:hi:" I_FLAG Q_FLAG "Lpr:y:]\n");
 
     CAPTURE_SHORTEN_CODE(space, sp, len, "\t[ -E algo:secret ] [ -i interface]" Q_FLAG_USAGE "\n");
 
     CAPTURE_SHORTEN_CODE(space, sp, len, "\t[ -r file ] [ -y datalinktype ]\n");
 
-    if (unlikely(((capture_reply_to_display(MSGCOMM_HLP, space)) == ND_ERR)))
+    if (unlikely(((capture_reply_to_display(D2C_COMM_HLP, space)) == ND_ERR)))
     {
         TE("capture reply to display failed");
         exit(1);
@@ -618,12 +594,15 @@ void capture_show_devices_to_display (void) {
 
     if (pcap_findalldevs(&devlist, ebuf) < 0) {
         TE("%s", ebuf);
-        capture_send_errmsg(MSGCOMM_ERR, "%s", ebuf);
+        capture_send_errmsg(D2C_COMM_ERR, "%s", ebuf);
+        RVoid();
     }
 
-    memset(space, 0, MSGCOMM_SPACE_SIZE);
-    char *sp = space;
-    int len = MSGCOMM_SPACE_SIZE;
+    memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
+
+    int len = COMM_SHM_ZONE_SIZE;
+    char *sp = d2c_comm.store_response_info;
+    char *space = d2c_comm.store_response_info;
 
     int i = 0;
     for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next)
@@ -693,7 +672,7 @@ void capture_show_devices_to_display (void) {
 
     TI("%s", space);
 
-    if (unlikely(((capture_reply_to_display(MSGCOMM_FAD, space)) == ND_ERR)))
+    if (unlikely(((capture_reply_to_display(D2C_COMM_FAD, space)) == ND_ERR)))
     {
         TE("capture reply to display failed");
         exit(1);
@@ -785,7 +764,8 @@ static char * capture_copy_argv(char **argv)
     }
 
     p = argv;
-    dst = msgcomm_G_cmdbuf;
+    dst = d2c_comm.store_compile_argv;
+
     while ((src = *p++) != NULL)
     {
         while ((*dst++ = *src++) != '\0')
@@ -794,7 +774,7 @@ static char * capture_copy_argv(char **argv)
     }
     dst[-1] = '\0';
 
-    RVoidPtr(msgcomm_G_cmdbuf);
+    RVoidPtr(d2c_comm.store_compile_argv);
 }
 
 
@@ -1118,19 +1098,21 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
     if (n_dlts < 0)
     {
         TE("%s", pcap_geterr(pc));
-        capture_send_errmsg(MSGCOMM_ERR, "%s", pcap_geterr(pc));
+        capture_send_errmsg(D2C_COMM_ERR, "%s", pcap_geterr(pc));
         RVoid();
     }
     else if (n_dlts == 0 || !dlts)
     {
         TE("No data link types.");
-        capture_send_errmsg(MSGCOMM_ERR, "No data link types.");
+        capture_send_errmsg(D2C_COMM_ERR, "No data link types.");
         RVoid();
     }
 
-    memset(space, 0, MSGCOMM_SPACE_SIZE);
-    char * sp = space;
-    int len = MSGCOMM_SPACE_SIZE;
+    memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
+
+    int len = COMM_SHM_ZONE_SIZE;
+    char *sp = d2c_comm.store_response_info;
+    char *space = d2c_comm.store_response_info;
 
     CAPTURE_SHORTEN_CODE(space, sp, len, "\n\tData link types for ");
     if (supports_monitor_mode) {
@@ -1162,7 +1144,7 @@ static void capture_show_datalinktype(pcap_t *pc, const char *device)
 
     TI("%s", space);
 
-    if (unlikely(((capture_reply_to_display(MSGCOMM_DLT, space)) == ND_ERR)))
+    if (unlikely(((capture_reply_to_display(D2C_COMM_DLT, space)) == ND_ERR)))
     {
         TE("capture reply to display failed");
         exit(1);
@@ -1466,15 +1448,15 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
  * @param sp
  *  Pointer to data
  */
-static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
+static void  capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
 {
 
     //TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
     unsigned int tmp = 0;
     int invalid_header = 0;
-    msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
-    if (MSGCOMM_ST_PAUSE == tmp)
+    msgcomm_receive_status_value(&(d2c_run_flag.d2c_run_flag_val), tmp);
+    if (C2D_RUN_FLAG_PAUSE == tmp)
         return ;
 
     if (h->caplen == 0)
@@ -1541,20 +1523,20 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         TE("h->len: %d != h->caplen: %d", h->len, h->caplen);
     }
 
-    G_ctoa_shm_mem_wp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp);
+    c2a_shm_write_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_write_addr);
 
-    datastore_t * ds = (datastore_t *)(G_ctoa_shm_mem_wp);
+    datastore_t * ds = (datastore_t *)(c2a_shm_write_addr);
 
     ds->pkthdr = *h;
     
     memcpy(ds->data, sp, h->caplen);
     
-    G_ctoa_shm_mem_wp += (sizeof(struct pcap_pkthdr) + h->caplen);
+    c2a_shm_write_addr += (sizeof(struct pcap_pkthdr) + h->caplen);
 
-    __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_wp), 1, 3);
+    __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_write_addr), 1, 3);
 
-    msgcomm_increase_data_value(msgcomm_st_NOpackages, 1);
-    msgcomm_increase_data_value(msgcomm_st_NObytes, h->caplen);
+    msgcomm_increase_data_value(&(d2c_statistical_count.packages), 1);
+    msgcomm_increase_data_value(&(d2c_statistical_count.bytes), h->caplen);
 
     return ;
 }
@@ -1573,14 +1555,14 @@ void capture_send_errmsg(int msgtype, const char *format, ...)
     
     TC("Called { %s(%d, %s)", __func__, msgtype, format);
 
-    memset(space, 0, MSGCOMM_SPACE_SIZE);
+    memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
 
     va_list args;
     va_start(args, format);
-    vsnprintf(space, MSGCOMM_SPACE_SIZE, format, args);
+    vsnprintf(d2c_comm.store_response_info, COMM_SHM_ZONE_SIZE, format, args);
     va_end(args);
 
-    if (unlikely(((capture_reply_to_display(msgtype, space)) == ND_ERR)))
+    if (unlikely(((capture_reply_to_display(msgtype, d2c_comm.store_response_info)) == ND_ERR)))
     {
         TE("capture reply to display failed");
         exit(1);
@@ -1667,9 +1649,9 @@ int capture_convert_command_to_argv(char * command)
 
     int tmp = strlen(command), nums = 0, i = 0;
 
-    memset(msgcomm_G_argv, 0, MSGCOMM_ARGV_SIZE);
+    memset(d2c_comm.store_convert_argv, 0, COMM_SHM_ZONE_SIZE);
 
-    char **argv = (char **)msgcomm_G_argv, *tmpp = NULL;
+    char **argv = (char **)d2c_comm.store_convert_argv, *tmpp = NULL;
 
     for (i = 0; i < tmp; i++)
     {
@@ -1732,9 +1714,11 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     ndo_t *ndo = &Gndo;
 
     memset(ebuf, 0, sizeof(ebuf));
-
-    char * sp = space;
-    int len = MSGCOMM_SPACE_SIZE;
+    #if 0
+    int len = COMM_SHM_ZONE_SIZE;
+    char *sp = d2c_comm.store_response_info;
+    memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
+    #endif
 
     Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
 
@@ -1753,7 +1737,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         RInt(ND_OK);
     }
 
-    char **argv = (char **)msgcomm_G_argv;
+    char **argv = (char **)(d2c_comm.store_convert_argv);
 
     optind = 1;
     while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
@@ -1805,7 +1789,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 }
                 else {
                     TI("%s", optarg);
-                    capture_send_errmsg(MSGCOMM_ERR, "-Q in/out/inout;", optarg);
+                    capture_send_errmsg(D2C_COMM_ERR, "-Q in/out/inout;", optarg);
                     RInt(ND_ERR);
                 }
                 break;
@@ -1818,7 +1802,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
                 yflag_dlt_name = optarg;
                 yflag_dlt = pcap_datalink_name_to_val(yflag_dlt_name);
                 if (yflag_dlt < 0) {
-                    capture_send_errmsg(MSGCOMM_ERR, "-y invalid data link type %s", yflag_dlt_name);
+                    capture_send_errmsg(D2C_COMM_ERR, "-y invalid data link type %s", yflag_dlt_name);
                     TE("-y invalid data link type %s", yflag_dlt_name);
                     RInt(ND_ERR);
                 }
@@ -1842,13 +1826,19 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
         if (pd == NULL) {
             TE("%s", ebuf);
-            capture_send_errmsg(MSGCOMM_ERR, "%s", ebuf);
+            capture_send_errmsg(D2C_COMM_ERR, "%s", ebuf);
             RInt(ND_ERR);
         }
 
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
-        memset(space, 0, MSGCOMM_SPACE_SIZE);
+
+        memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
+
+        int len = COMM_SHM_ZONE_SIZE;
+        char *sp = d2c_comm.store_response_info;
+        char *space = d2c_comm.store_response_info;
+
         CAPTURE_SHORTEN_CODE(space, sp, len, "reading from file %s", RFileName);
         if (dlt_name == NULL)
         {
@@ -1871,12 +1861,12 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         {
             if (pcap_findalldevs(&devlist, ebuf) == -1) {
                 TE("%s", ebuf);
-                capture_send_errmsg(MSGCOMM_ERR, "%s", ebuf);
+                capture_send_errmsg(D2C_COMM_ERR, "%s", ebuf);
                 RInt(ND_ERR);
             }
             if (devlist == NULL) {
                 TE("no interfaces available for capture");
-                capture_send_errmsg(MSGCOMM_ERR, "no interfaces available for capture");
+                capture_send_errmsg(D2C_COMM_ERR, "no interfaces available for capture");
                 RInt(ND_ERR);
             }
             device = strdup(devlist->name);
@@ -1890,7 +1880,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             if (devnum == -1)
             {
                 TE("%s", ebuf);
-                capture_send_errmsg(MSGCOMM_ERR, "%s", ebuf);
+                capture_send_errmsg(D2C_COMM_ERR, "%s", ebuf);
                 RInt(ND_ERR);
             }
 
@@ -1898,7 +1888,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             pd = capture_open_interface(device, ndo, ebuf);
             if (pd == NULL) {
                 TE("%s", ebuf);
-                capture_send_errmsg(MSGCOMM_ERR, "%s", ebuf);
+                capture_send_errmsg(D2C_COMM_ERR, "%s", ebuf);
                 RInt(ND_ERR);
             }
 
@@ -1915,7 +1905,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         {
             if (pcap_set_datalink(pd, yflag_dlt) < 0) {
                 TE("%s", pcap_geterr(pd));
-                capture_send_errmsg(MSGCOMM_ERR, "%s", pcap_geterr(pd));
+                capture_send_errmsg(D2C_COMM_ERR, "%s", pcap_geterr(pd));
                 pcap_close(pd);
                 pd = NULL;
                 RInt(ND_ERR);
@@ -1936,7 +1926,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     
     if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0) {
         TE("%s", pcap_geterr(pd));
-        capture_send_errmsg(MSGCOMM_ERR, "%s", pcap_geterr(pd));
+        capture_send_errmsg(D2C_COMM_ERR, "%s", pcap_geterr(pd));
         pcap_close(pd);
         pd = NULL;
         RInt(ND_ERR);
@@ -1944,7 +1934,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
 
     if (pcap_setfilter(pd, &fcode) < 0) {
         TE("%s", pcap_geterr(pd));
-        capture_send_errmsg(MSGCOMM_ERR, "%s", pcap_geterr(pd));
+        capture_send_errmsg(D2C_COMM_ERR, "%s", pcap_geterr(pd));
         pcap_close(pd);
         pd = NULL;
         RInt(ND_ERR);
@@ -1952,7 +1942,12 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     
     if (RFileName == NULL)
     {
-        memset(space, 0, MSGCOMM_SPACE_SIZE);
+        memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
+
+        int len = COMM_SHM_ZONE_SIZE;
+        char *sp = d2c_comm.store_response_info;
+        char *space = d2c_comm.store_response_info;
+
         CAPTURE_SHORTEN_CODE(space, sp, len, "%s: ", program_name);
         dlt = pcap_datalink(pd);
         dlt_name = pcap_datalink_val_to_name(dlt);
@@ -1969,21 +1964,17 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         CAPTURE_SHORTEN_CODE(space, sp, len, ", snapshot length %d bytes", pcap_snapshot(pd));
     }
 
-    if (unlikely(((capture_reply_to_display(MSGCOMM_SUC, space)) == ND_ERR)))
+    if (unlikely(((capture_reply_to_display(D2C_COMM_SUC, d2c_comm.store_response_info)) == ND_ERR)))
     {
         TE("capture reply to display failed");
         exit(1);
     }
 
     ndo->ndo_if_printer = get_if_printer(dlt);
-    *((ndo_t *)(msgcomm_G_ndo)) = Gndo;
+    d2c_comm.d2c_ndo = Gndo;
 
-    msgcomm_transfer_status_change(msgcomm_st_cppc, MSGCOMM_ST_CPPC);
+    __atomic_store_n(&(capture_notify_analysis), (0x01), __ATOMIC_SEQ_CST);
 
-    #if 0
-    struct pollfd fds;
-    int ret = 0;
-    #endif
     int fd;
     fd = pcap_get_selectable_fd(pd);
     if (fd == -1)
@@ -1992,14 +1983,16 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         pcap_close(pd);
         pd = NULL;
         pcap_freecode(&fcode);
-        msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_FD_ERR);
+        msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_FD_ERR);
         RInt(ND_ERR);
     }
     #if 0
+    struct pollfd fds;
+    int ret = 0;
     fds.fd = fd;
     fds.events = POLLIN;
+    fcntl(fd, F_SETFL, O_NONBLOCK);
     #endif
-    //fcntl(fd, F_SETFL, O_NONBLOCK);
     pcap_set_immediate_mode(pd, 1);
     pcap_setnonblock(pd, 1, NULL);
 
@@ -2007,30 +2000,30 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     {
 
         unsigned int tmp = 0;
-        msgcomm_receive_status_value(msgcomm_st_runflag, tmp);
+        msgcomm_receive_status_value(&(d2c_run_flag.d2c_run_flag_val), tmp);
 
-        if (MSGCOMM_ST_EXIT == tmp)
+        if (C2D_RUN_FLAG_EXIT == tmp)
             break;
 
-        if (MSGCOMM_ST_SAVE == tmp)
+        if (C2D_RUN_FLAG_SAVE == tmp)
             break;
         #if 0
-        ret = poll(&fds, 1, -1);
+        ret = poll(&fds, 1, 100);
 
         if (ret >= 0) 
         {
-            if (ret) {
-                status = pcap_dispatch(pd, -1, capture_copy_packet, NULL);
+            if (ret && (fds.revents & POLLIN)) {
+                status = pcap_dispatch(pd, 0, capture_copy_packet, NULL);
                 if (status == -2)
                 {
                     TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
-                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
+                    msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_BREAKLOOP_ERR);
                     break;
                 }
                 if (status == -1)
                 {
                     TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-                    msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
+                    msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_DISPATCH_ERR);
                     break;
                 }
             }
@@ -2038,7 +2031,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         else
         {
             TE("poll() error; errno: %d; errmsg: %s", errno, strerror(errno));
-            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_POLL_ERR);
+            msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_POLL_ERR);
             break;
         }
         #else
@@ -2051,13 +2044,13 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         else if (status == -2)
         {
             TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
-            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR);
+            msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_BREAKLOOP_ERR);
             break;
         }
         else if (status == -1)
         {
             TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-            msgcomm_transfer_status_change(msgcomm_st_runflag_c2d, MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR);
+            msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_DISPATCH_ERR);
             break;
         }
         #endif
@@ -2067,11 +2060,11 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     pd = NULL;
     pcap_freecode(&fcode);
 
-    msgcomm_zero_variable(msgcomm_st_NObytes);
-    msgcomm_zero_variable(msgcomm_st_NOpackages);
-    msgcomm_zero_variable(msgcomm_st_runflag);
-    msgcomm_zero_variable(msgcomm_st_runflag_c2d);
-    msgcomm_zero_variable(msgcomm_st_cppc);
+    msgcomm_zero_variable(&(d2c_statistical_count.bytes));
+    msgcomm_zero_variable(&(d2c_statistical_count.packages));
+    msgcomm_zero_variable(&(d2c_comm.d2c_msg_complate_flag));
+    msgcomm_zero_variable(&(d2c_comm.c2d_msg_complate_flag));
+    msgcomm_zero_variable(&capture_notify_analysis);
 
     RInt(ND_OK);
 }

@@ -43,9 +43,9 @@
 #include "common.h"
 #include "trace.h"
 #include "sigact.h"
-#include "ctoacomm.h"
-#include "msgcomm.h"
-#include "atodcomm.h"
+#include "c2a_comm.h"
+#include "d2c_comm.h"
+#include "a2d_comm.h"
 #include "infonode.h"
 #include "ndo.h"
 

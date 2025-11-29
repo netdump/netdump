@@ -76,6 +76,12 @@ typedef unsigned long long  uint64_t;
 
 #endif
 
+/** custom segment related information */
+extern char __netdump_shared_start[];
+extern char __netdump_shared_end[];
+#define netdump_shared_t 					__attribute__((section(".netdump_shared")))
+#define NETDUMP_FILENAME 					"/netdump_shm"
+#define NETDUMP_ZONESIZE					0x1000000000
 
 
 /**
@@ -95,7 +101,7 @@ enum {
 
 /**
  * @brief
- * 	Doubly Linked List
+ * 	doubly linked list
  */
 typedef struct nd_dll_s
 {
@@ -301,234 +307,6 @@ typedef struct {
  */
 int nd_check_fpath (char * fname);
 
-
-/** =========================================================================================== */
-/**
- * @brief The code between the dividing lines is about hugepage.
- */
-
-
-#include <sys/mount.h>
-
-
-/**
- * @brief
- *  Set the file for transparent large pages
- */
-#define ND_THP_DISABLE_PATH 												"/sys/kernel/mm/transparent_hugepage/enabled"
-
-
-/**
- * @brief
- *  Disable command strings for transparent large pages
- */
-#define ND_THP_DISABLE_CMD_STRING 											"never"
-
-
-/**
- * @brief
- *  Multi-size large page support
- */
-enum hugepage_size
-{
-	HUGEPAGE_2MB = 2048,
-	HUGEPAGE_1GB = 1048576
-};
-
-
-/**
- * @brief
- *  Sets the file path format for large page memory
- */
-#define ND_HUGEPAGE_SYS_PATH_FORMAT 										"/sys/kernel/mm/hugepages/hugepages-%dkB/nr_hugepages"
-
-
-/**
- * @brief
- *  The old way of setting up large page memory
- */
-#define ND_HUGEPAGE_OLD_WAY_SETUP 											"/proc/sys/vm/nr_hugepages"
-
-
-/**
- * @brief
- *  Large page mount point
- */
-#define ND_HUGETLB_MOUNT_POINT 												"/mnt/huge"
-
-
-/**
- * @brief
- *  A file that obtains file system mount information
- */
-#define ND_SYS_PROC_MOUNT_INFO 												"/proc/mounts"
-
-
-/**
- * @brief Global storage mount point space
- */
-#define nd_G_store_mountpoint_space         								128
-
-
-/**
- * @brief
- *  A file that contains system-level memory information
- */
-#define ND_SYS_PROC_MEMORY_INFO 											"/proc/meminfo"
-
-
-/**
- * @brief
- *  Set the status of transparent pages to Forbidden state
- * @return
- *  0 is returned for success
- *  -1 is returned for failure
- */
-int nd_disable_transparent_hugepages(void);
-
-
-/**
- * @brief
- *  Restore the system's transparent large page settings
- * @return
- *  0 is returned for success
- *  -1 is returned for failure
- */
-int nd_recover_transparent_hugepages(void);
-
-
-/**
- * @brief
- *  Compatible with the old kernel's large page count setting
- * @param pages
- *  The value that needs to be set
- * @return
- *  0 is returned for success
- *  -1 is returned for failure
- */
-int nd_set_hugepages_legacy(int pages);
-
-
-/**
- * @brief
- *  Compatible with large page count reads from older kernels
- * @return
- *  The amount of the original large page memory successfully returned
- *  Failure returns -1
- */
-int nd_get_current_hugepages_legacy(void);
-
-
-/**
- * @brief
- *  Use the sysfs type interface to set the large page memory
- * @param delta_pages
- *  The incremental value of the large page memory
- * @param sys_path
- *  Use the sysfs type interface to set the file path used by large page memory
- * @return
- *  Failure returns 0x7FFFFFFF
- *  When the value of parameter delta_pages is returned, it indicates complete success
- *  If the returned value is a different value, it indicates that a part of the increment has been added
- */
-int nd_set_hugepages_use_sysfs_interface(int delta_pages, char *sys_path);
-
-
-/**
- * @brief
- *  Set the large page memory increment
- * @param delta_pages
- *  The incremental value of the large page memory
- * @param size
- *  The size of the large page memory
- * @return
- *  0 is returned for success
- *  -1 is returned for failure
- */
-int nd_set_hugepages_incremental(int delta_pages, enum hugepage_size size);
-
-
-/**
- * @brief
- *  Check if the directory exists
- * @param path
- *  The path that needs to be detected
- * @return
- *  1 is returned for success
- *  0 is returned for failure
- */
-int nd_dir_exists(const char *path);
-
-
-/**
- * @brief
- *  Create a directory (recursively, similar to mkdir -p)
- * @param path
- *  A directory that needs to be created
- * @return
- *  Returns 0 for success
- *  Returns -1 for failure
- */
-int nd_mkdir_p(const char *path);
-
-
-/**
- * @brief
- *  Check if hugetlbfs is mounted to the target path
- * @return
- *  Function execution failure returns -1
- *  Returns 0 if not mounted
- *  Mount returns 1
- */
-int nd_is_hugetlbfs_mounted(void);
-
-
-/**
- * @brief
- *  Mounting Hugetlbfs (Requires Root Privilege)
- * @return
- *  Returns 0 for success
- *  Returns -1 for failure
- */
-int nd_mount_hugetlbfs(void);
-
-
-/**
- * @brief
- *  Read the /proc/meminfo file to verify that the large page memory is set
- * @param Rtotal
- *  The total number of hugepages is stored.
- * @param Rfree
- *  Stores the total number of HugePage idle.
- * @return
- *  Returns 0 for success
- *  Returns -1 for failure
- */
-int nd_validate_hugepage_distribution(int *Rtotal, int *Rfree);
-
-
-/**
- * @brief
- *  Sets large page memory globally
- * @return
- *  If successful, it returns ND_OK;
- *  if failed, it returns ND_ERR
- */
-int nd_Global_set_hugepage_memory(void);
-
-
-/**
- * @brief
- *  Global fallback settings for large page memory
- * @return
- *  If successful, it returns ND_OK;
- *  if failed, it returns ND_ERR
- */
-int nd_fallback_hugepage_setting (void);
-
-
-/** =========================================================================================== */
-
 /**
  * @brief
  *  Call the mmap function to open up memory space
@@ -706,5 +484,17 @@ int nd_dll_insert_into_tail(nd_dll_t ** head, nd_dll_t ** tail, nd_dll_t * node)
  *  if failed, it returns ND_ERR
  */
 int nd_dll_insert_into_head_multiple(nd_dll_t ** head, nd_dll_t * nodehead, nd_dll_t * nodetail);
+
+/**
+ * @brief
+ *  create shared memory for custom segments for inter-process communication
+ */
+int comm_zone_startup(void);
+
+/**
+ * @brief
+ *  inter-process communication resource destruction operation
+ */
+void comm_zone_ending(void);
 
 #endif 

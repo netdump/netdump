@@ -1,6 +1,6 @@
 
 
-CC = gcc
+CC ?= gcc
 RM = rm -rf
 ECHO = @echo
 IF = if
@@ -14,6 +14,7 @@ PCAP_PATH = ./Third/pcap
 CFLAGS = -O0 -g
 CFLAGS += -Wall
 CFLAGS += -Wno-unused-function
+#CFLAGS += -fsanitize=address -g
 
 # -DTRACE -DTOPTRACE 
 # the log switch needs to be turned on or off simultaneously.
@@ -43,9 +44,9 @@ DYNAMIC = -Wl,-Bdynamic
 
 DYNAMIC_LIB = -lrt
 
-
 LDFLAGS += $(STATIC) $(STATIC_LIB_PATH) $(STATIC_LIB) $(DYNAMIC) $(DYNAMIC_LIB)
 
+LINK_SCRIPT := link.ld
 
 SRCS = $(wildcard *.c)
 SRCS += $(wildcard ./a-f/*.c)
@@ -61,8 +62,8 @@ all: ${TARGET}
 
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $@ $(LDFLAGS)
-	$(RM) $(OBJS)
+	@$(CC) $(OBJS) -o $@ $(LDFLAGS) -T $(LINK_SCRIPT)
+	@$(RM) $(OBJS)
 
 
 %.o: %.c
@@ -70,7 +71,7 @@ $(TARGET): $(OBJS)
 
 
 clean:
-	$(RM) $(OBJS) $(TARGET)
+	@$(RM) $(OBJS) $(TARGET) 
 	$(IF) [ -n "$(LOG_FILES)" ]; then \
 		$(RM) $(LOG_FILES); \
 	$(FI)

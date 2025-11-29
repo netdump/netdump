@@ -24,10 +24,9 @@
 #include "sigact.h"
 #include "common.h"
 #include "trace.h"
-#include "msgcomm.h"
+#include "d2c_comm.h"
 #include "capture.h"
-#include "atodcomm.h"
-#include "ctoacomm.h"
+#include "c2a_comm.h"
 
 /**
  * Common signals that cause process crashes
@@ -197,9 +196,8 @@ void sigact_handle_crash (int signum) {
 
 	if (GCOREID_DP == lCOREID) {
 		display_exit_resource_destruction();
-		atodcomm_ending();
-		ctoacomm_ending();
-		msgcomm_ending();
+		c2a_comm_ending();
+		comm_zone_ending();
 	}
 	else if (GCOREID_CP == lCOREID)
 	{
@@ -230,9 +228,8 @@ void sigact_handle_quit (int signum) {
 
 	if (GCOREID_DP == lCOREID) {
 		display_exit_resource_destruction();
-		atodcomm_ending();
-		ctoacomm_ending();
-		msgcomm_ending();
+		c2a_comm_ending();
+		comm_zone_ending();
 	}
 	else if (GCOREID_CP == lCOREID)
 	{

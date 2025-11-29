@@ -38,8 +38,8 @@
 #include "common.h"
 #include "trace.h"
 #include "sigact.h"
-#include "msgcomm.h"
-#include "ctoacomm.h"
+#include "d2c_comm.h"
+#include "c2a_comm.h"
 #include "ndo.h"
 
 
@@ -456,8 +456,7 @@ int capture_loop (void);
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int capture_cmd_from_display (message_t * message);
-
+int capture_cmd_from_display(desc_comm_msg_t *message);
 
 /**
  * @brief 
@@ -470,7 +469,7 @@ int capture_cmd_from_display (message_t * message);
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int capture_reply_to_display (unsigned int msgtype, const char * reply);
+int capture_reply_to_display (unsigned int msgtype, char * reply);
 
 
 /**

@@ -49,11 +49,15 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
-    __builtin_prefetch((void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp), 0, 3);
+    comm_zone_startup();
+
+    __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr), 0, 3);
+
+    TC("a2d_info.w3_displayed_max_lines: %d", a2d_info.w3_displayed_max_lines);
 
     for (;;) 
     {
-        if (!ATOD_DISPLAY_MAX_LINES)
+        if (!a2d_info.w3_displayed_max_lines)
         {
             nd_delay_microsecond(0, 1000000);
             continue;
@@ -211,8 +215,8 @@ void packet_handler(infonode_t * infonode, const struct pcap_pkthdr *header, con
  *  Store captured network frame pointers in order
  */
 #define ARRAY_LENGTH        1048576
-datastore_t * G_frame_ptr_array[ARRAY_LENGTH] = {NULL};
-static unsigned long Gindex = 0;
+datastore_t * strore_frame_addr_array[ARRAY_LENGTH] = {NULL};
+static unsigned long strore_frame_addr_array_index = 0;
 
 
 /**
@@ -230,28 +234,24 @@ int analysis_loop (void) {
 
     for (;;) 
     {
-        msgcomm_receive_status_value(msgcomm_st_cppc, flag);
+        flag = __atomic_load_n(&(capture_notify_analysis), __ATOMIC_ACQUIRE);
         if (flag)
         {
-            if (DTOA_ISOR_MANUAL_VAR_FLAG)
+            if (a2d_info.is_manual_flag)
                 analysis_manual_mode();
             else
                 analysis_no_manual_mode();
         }
         else 
         {
-            if (Gindex)
+            if (strore_frame_addr_array_index)
             {
-                memset(G_frame_ptr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
-                unsigned short tmp_nlines = ATOD_DISPLAY_MAX_LINES;
-                memset(ATODCOMM_SHM_BASEADDR, 0, ATODCOMM_SHM_FILESIZE);
-                ATOD_DISPLAY_MAX_LINES = tmp_nlines;
-                atodcomm_init_dtoainfo_to_zero();
-                atodcomm_init_infonode_list();
-                atodcomm_init_l1l2node_list();
-                atodcomm_init_w5node_list();
-                G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
-                Gindex = 0;
+                memset(strore_frame_addr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
+                unsigned short tmp_nlines = a2d_info.w3_displayed_max_lines;
+                a2d_info.w3_displayed_max_lines = tmp_nlines;
+                a2d_comm_startup();
+                c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
+                strore_frame_addr_array_index = 0;
             }
             nd_delay_microsecond(0, 1000000);
         }
@@ -267,23 +267,18 @@ int analysis_loop (void) {
  */
 void analysis_no_manual_mode (void) 
 {
-    // unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
-    unsigned long tmp = 0;
-    msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
-    if (tmp == Gindex || tmp == 0 || Gindex > tmp)
+    unsigned long tmp = __atomic_load_n(&(d2c_statistical_count.packages), __ATOMIC_ACQUIRE);
+
+    if (tmp == strore_frame_addr_array_index || tmp == 0 || strore_frame_addr_array_index > tmp)
     {
-        if (Gindex > tmp)
+        if (strore_frame_addr_array_index > tmp)
         {
-            memset(G_frame_ptr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
-            unsigned short tmp_nlines = ATOD_DISPLAY_MAX_LINES;
-            memset(ATODCOMM_SHM_BASEADDR, 0, ATODCOMM_SHM_FILESIZE);
-            ATOD_DISPLAY_MAX_LINES = tmp_nlines;
-            atodcomm_init_dtoainfo_to_zero();
-            atodcomm_init_infonode_list();
-            atodcomm_init_l1l2node_list();
-            atodcomm_init_w5node_list();
-            G_ctoa_shm_mem_rp = CTOACOMM_SHM_BASEADDR;
-            Gindex = 0;
+            memset(strore_frame_addr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
+            unsigned short tmp_nlines = a2d_info.w3_displayed_max_lines;
+            a2d_info.w3_displayed_max_lines = tmp_nlines;
+            a2d_comm_startup();
+            c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
+            strore_frame_addr_array_index = 0;
         }
         else {
             nd_delay_microsecond(0, 1000000);
@@ -294,40 +289,40 @@ void analysis_no_manual_mode (void)
     infonode_t * infonode = analysis_get_infonode();
     if (infonode)
     {
-        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
-        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
+        analysis_recover_w5node(&(a2d_info.w5_node_idle_list), &(infonode->w5head), &(infonode->w5tail));
+        //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
         analysis_recover_l1l2node(
-            &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail), 
+            &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail), 
             &(infonode->l1head), &(infonode->l1tail)
         );
 
-        G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
+        c2a_shm_read_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr);
 
-        datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
+        datastore_t *ds = (datastore_t *)c2a_shm_read_addr;
 
-        G_frame_ptr_array[Gindex] = ds;
+        strore_frame_addr_array[strore_frame_addr_array_index] = ds;
 
-        infonode->g_store_index = Gindex;
+        infonode->g_store_index = strore_frame_addr_array_index;
 
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
-        G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+        c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
-        Gindex++;
+        strore_frame_addr_array_index++;
 
         analysis_putin_infonode(infonode);
 
-        ATOD_FINISH_DLL_NUMS++;
+        a2d_info.analysis_finished_node_nums++;
     }
 
-    ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
+    a2d_info.analysis_status_flag = A2D_ANALYSISING;
 
-    if (DTOA_DISPLAY_VAR_FLAG == DTOA_DISPLAYED)
+    if (a2d_info.displayed_status_flag == A2D_DISPLAYED)
         analysis_put_node_into_display_dll();
 
-    ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
+    a2d_info.analysis_status_flag = A2D_ALALYSISED;
 
     return ;
 }
@@ -346,97 +341,97 @@ void analysis_manual_mode (void)
     datastore_t *ds = NULL;
     unsigned long index = 0;
 
-    if (ATOD_DISPLAY_MAX_LINES > ATOD_DISPLAY_DLL_NUMS)
+    if (a2d_info.w3_displayed_max_lines > a2d_info.w3_displayed_cur_node_nums)
     {
-        infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
-        //unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        infonode = container_of(a2d_info.w3_displayed_list_tail, infonode_t, listnode);
+
         unsigned long tmp = 0;
-        msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
+        msgcomm_receive_status_value(&(d2c_statistical_count.packages), tmp);
         if (infonode->g_store_index < (tmp - 1))
         {
             infonode = analysis_get_infonode();
             if (infonode)
             {
-                analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
-                analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-                analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+                //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
+                analysis_recover_w5node(&(a2d_info.w5_node_idle_list), &(infonode->w5head), &(infonode->w5tail));
+                //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
                 analysis_recover_l1l2node(
-                    &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+                    &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail),
                     &(infonode->l1head), &(infonode->l1tail)
                 );
 
-                G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
+                c2a_shm_read_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr);
 
-                datastore_t *ds = (datastore_t *)G_ctoa_shm_mem_rp;
+                datastore_t *ds = (datastore_t *)c2a_shm_read_addr;
 
-                G_frame_ptr_array[Gindex] = ds;
+                strore_frame_addr_array[strore_frame_addr_array_index] = ds;
 
-                infonode->g_store_index = Gindex;
+                infonode->g_store_index = strore_frame_addr_array_index;
 
                 // packet_handler(infonode, &(ds->pkthdr), ds->data);
                 analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
-                G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+                c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
-                Gindex++;
+                strore_frame_addr_array_index++;
 
                 analysis_putin_infonode(infonode);
 
-                ATOD_FINISH_DLL_NUMS++;
+                a2d_info.analysis_finished_node_nums++;
             }
 
-            ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
+            a2d_info.analysis_status_flag = A2D_ANALYSISING;
 
-            if (DTOA_DISPLAY_VAR_FLAG == DTOA_DISPLAYED)
+            if (a2d_info.displayed_status_flag == A2D_DISPLAYED)
                 analysis_put_node_into_display_dll();
 
-            ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
+            a2d_info.analysis_status_flag = A2D_ALALYSISED;
         }
     }
 
-    if (ATOD_FINISH_DLL_NUMS) {
-        for (i = 0; i < ATOD_FINISH_DLL_NUMS; i++)
+    if (a2d_info.analysis_finished_node_nums) {
+        for (i = 0; i < a2d_info.analysis_finished_node_nums; i++)
         {
-            node = nd_dll_takeout_from_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
+            node = nd_dll_takeout_from_tail(&(a2d_info.analysis_finished_list_head), &(a2d_info.analysis_finished_list_tail));
 
             infonode = container_of(node, infonode_t, listnode);
-            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
-            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
+            analysis_recover_w5node(&(a2d_info.w5_node_idle_list), &(infonode->w5head), &(infonode->w5tail));
+            //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
             analysis_recover_l1l2node(
-                &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+                &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail),
                 &(infonode->l1head), &(infonode->l1tail)
             );
 
-            nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
+            nd_dll_intsert_into_head_s(&(a2d_info.info_node_idle_list), node);
         }
-        ATOD_FINISH_DLL_NUMS = 0;
-        if (!ATOD_FINISH_DLL_TAIL) {
-            ATOD_FINISH_DLL_HEAD = NULL;
+        a2d_info.analysis_finished_node_nums = 0;
+        if (!a2d_info.analysis_finished_list_tail) {
+            a2d_info.analysis_finished_list_head = NULL;
         }
     }
 
-    if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_TOP)
+    if (a2d_info.is_manual_flag == A2D_MANUAL_TOP)
     {
-        infonode = container_of(ATOD_DISPLAY_DLL_HEAD, infonode_t, listnode);
+        infonode = container_of(a2d_info.w3_displayed_list_head, infonode_t, listnode);
         if ((infonode->g_store_index - 1) < 0) {
             TI("It's at the top now.");
             RVoid();
         }
 
         index = (infonode->g_store_index - 1);
-        ds = G_frame_ptr_array[index];
+        ds = strore_frame_addr_array[index];
 
-        ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
+        a2d_info.analysis_status_flag = A2D_ANALYSISING;
 
-        node = nd_dll_takeout_from_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
+        node = nd_dll_takeout_from_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail);
 
         infonode = container_of(node, infonode_t, listnode);
-        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
-        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-        analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
+        analysis_recover_w5node(&(a2d_info.w5_node_idle_list), &(infonode->w5head), &(infonode->w5tail));
+        //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
         analysis_recover_l1l2node(
-            &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+            &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
         );
 
@@ -448,51 +443,51 @@ void analysis_manual_mode (void)
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
-        nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+        nd_dll_intsert_into_head(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
 
-        ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
-        ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_HEAD;
-        ATOD_CUR_DISPLAY_INDEX = 0;
-        DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+        a2d_info.analysis_status_flag = A2D_ALALYSISED;
+        a2d_info.w3_displayed_cur_node = a2d_info.w3_displayed_list_head;
+        a2d_info.w3_displayed_cur_index = 0;
+        a2d_info.is_manual_flag = A2D_MANUAL;
         return ;
     }
-    else if (DTOA_ISOR_MANUAL_VAR_FLAG == DTOA_MANUAL_BOTTOM)
+    else if (a2d_info.is_manual_flag == A2D_MANUAL_BOTTOM)
     {
-        infonode = container_of(ATOD_DISPLAY_DLL_TAIL, infonode_t, listnode);
-        //unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+        infonode = container_of(a2d_info.w3_displayed_list_tail, infonode_t, listnode);
+
         unsigned long tmp = 0;
-        msgcomm_receive_status_value(msgcomm_st_NOpackages, tmp);
+        msgcomm_receive_status_value(&(d2c_statistical_count.packages), tmp);
         if (infonode->g_store_index == (tmp - 1)) {
             TI("It's at the bottom now.");
             RVoid();
         }
 
         index = (infonode->g_store_index + 1);
-        if (index == Gindex) 
+        if (index == strore_frame_addr_array_index) 
         {
-            G_ctoa_shm_mem_rp = (void *)CTOACOMM_ADDR_ALIGN(G_ctoa_shm_mem_rp);
-            ds = (datastore_t *)G_ctoa_shm_mem_rp;
-            G_frame_ptr_array[Gindex] = ds;
-            G_ctoa_shm_mem_rp += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
-            Gindex++;
+            c2a_shm_read_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr);
+            ds = (datastore_t *)c2a_shm_read_addr;
+            strore_frame_addr_array[strore_frame_addr_array_index] = ds;
+            c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+            strore_frame_addr_array_index++;
         }
         
-        ds = G_frame_ptr_array[index];
+        ds = strore_frame_addr_array[index];
         if (ds == NULL) 
         {
             TE("A fatal error occurred");
             exit(1);
         }
 
-        ATOD_ANALYSIS_VAR_FLAG = ATOD_ANALYSISING;
-        node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
+        a2d_info.analysis_status_flag = A2D_ANALYSISING;
+        node = nd_dll_takeout_from_head(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail);
 
         infonode = container_of(node, infonode_t, listnode);
-        //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
-        analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-        //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+        //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
+        analysis_recover_w5node(&(a2d_info.w5_node_idle_list), &(infonode->w5head), &(infonode->w5tail));
+        //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
         analysis_recover_l1l2node(
-            &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+            &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail),
             &(infonode->l1head), &(infonode->l1tail)
         );
 
@@ -504,12 +499,12 @@ void analysis_manual_mode (void)
         //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
-        nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+        nd_dll_insert_into_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
 
-        ATOD_ANALYSIS_VAR_FLAG = ATOD_ALALYSISED;
-        ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
-        ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
-        DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+        a2d_info.analysis_status_flag = A2D_ALALYSISED;
+        a2d_info.w3_displayed_cur_node = a2d_info.w3_displayed_list_tail;
+        a2d_info.w3_displayed_cur_index = a2d_info.w3_displayed_cur_node_nums - 1;
+        a2d_info.is_manual_flag = A2D_MANUAL;
         return ;
     }
 
@@ -544,9 +539,9 @@ void analysis_fill_basic_info(void *infonode, const struct pcap_pkthdr *h)
 
     for (i = 0; i < BASIC_INFO_TOTAL_NUMS; i++)
     {
-        node = nd_dll_takeout_from_head_s(&ATOD_L1L2IDLE_DLL);
+        node = nd_dll_takeout_from_head_s(&(a2d_info.l1l2_node_idle_list));
         if (!node) {
-            TE("fatal logic error; node: %p; ATOD_L1L2IDLE_DLL: %p", node, ATOD_L1L2IDLE_DLL);
+            TE("fatal logic error; node: %p; a2d_info.l1l2_node_idle_list: %p", node, a2d_info.l1l2_node_idle_list);
             exit(1);
         }
 
@@ -672,9 +667,9 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
         i++;
         if (i >= HEXDUMP_SHORTS_PER_LINE)
         {
-            node = nd_dll_takeout_from_head_s(&ATOD_DISPLAY_W5IDLE_DLL);
+            node = nd_dll_takeout_from_head_s(&(a2d_info.w5_node_idle_list));
             if (!node) {
-                TE("fatal logic error; node: %p; ATOD_DISPLAY_W5IDLE_DLL: %p", node, ATOD_DISPLAY_W5IDLE_DLL);
+                TE("fatal logic error; node: %p; a2d_info.w5_node_idle_list: %p", node, a2d_info.w5_node_idle_list);
                 abort();
             }
             w5 = container_of(node, w5_node_t, w5node);
@@ -711,9 +706,9 @@ void analysis_fill_w5_content(void *infonode, const u_char *sp, u_int caplen)
     }
     if (i > 0)
     {
-        node = nd_dll_takeout_from_head_s(&ATOD_DISPLAY_W5IDLE_DLL);
+        node = nd_dll_takeout_from_head_s(&(a2d_info.w5_node_idle_list));
         if (!node) {
-            TE("fatal logic error; node: %p; ATOD_DISPLAY_W5IDLE_DLL: %p", node, ATOD_DISPLAY_W5IDLE_DLL);
+            TE("fatal logic error; node: %p; a2d_info.w5_node_idle_list: %p", node, a2d_info.w5_node_idle_list);
             abort();
         }
         w5 = container_of(node, w5_node_t, w5node);
@@ -755,7 +750,7 @@ void analysis_network_frames(void *infonode, const struct pcap_pkthdr *h, const 
 
     TC("Called { %s(%p, %p)", __func__, h, sp);
 
-    ndo = ((ndo_t *)(msgcomm_G_ndo));
+    ndo = ((ndo_t *)(&(d2c_comm.d2c_ndo)));
 
     infonode_t * ifn = (infonode_t *)infonode;
 
@@ -798,7 +793,7 @@ infonode_t *analysis_get_infonode (void)
 
     TC("Called { %s (void)", __func__);
 
-    nd_dll_t * tmp = nd_dll_takeout_from_head_s(&(G_dtoainfo->idlelist));
+    nd_dll_t *tmp = nd_dll_takeout_from_head_s(&(a2d_info.info_node_idle_list));
 
     infonode_t * infonode = container_of(tmp, infonode_t, listnode);
 
@@ -819,14 +814,16 @@ void analysis_putin_infonode (infonode_t *infonode)
 
     TC("Called { %s (%p)", __func__, infonode);
 
-    if (!ATOD_FINISH_DLL_HEAD && !ATOD_FINISH_DLL_TAIL)
+    if (!a2d_info.analysis_finished_list_head && !a2d_info.analysis_finished_list_tail)
     {
-        nd_dll_intsert_into_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL, &(infonode->listnode));
-        ATOD_FINISH_DLL_TAIL = ATOD_FINISH_DLL_HEAD;
+        nd_dll_intsert_into_head(&(a2d_info.analysis_finished_list_head), 
+                    &(a2d_info.analysis_finished_list_tail), &(infonode->listnode));
+        a2d_info.analysis_finished_list_tail = a2d_info.analysis_finished_list_head;
         RVoid();
     }
 
-    nd_dll_insert_into_tail(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL, &(infonode->listnode));
+    nd_dll_insert_into_tail(&(a2d_info.analysis_finished_list_head), 
+                    &(a2d_info.analysis_finished_list_tail), &(infonode->listnode));
 
     RVoid();
 }
@@ -856,66 +853,66 @@ int analysis_put_node_into_display_dll (void)
     nd_dll_t * node = NULL;
     unsigned short ret = 0, min = 0;
 
-    if (!ATOD_FINISH_DLL_NUMS)
+    if (!a2d_info.analysis_finished_node_nums)
     {
         RInt(ret);
     }
 
-    if (ATOD_DISPLAY_DLL_NUMS == 0)
+    if (a2d_info.w3_displayed_cur_node_nums == 0)
     {
-        min = MINIMUM(ATOD_FINISH_DLL_NUMS, ATOD_DISPLAY_MAX_LINES);
+        min = MINIMUM(a2d_info.analysis_finished_node_nums, a2d_info.w3_displayed_max_lines);
         for (i = 0; i < min; i++) {
-            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
-            if (!ATOD_FINISH_DLL_HEAD) {
-                ATOD_FINISH_DLL_TAIL = NULL;
+            node = nd_dll_takeout_from_head(&(a2d_info.analysis_finished_list_head), &(a2d_info.analysis_finished_list_tail));
+            if (!a2d_info.analysis_finished_list_head) {
+                a2d_info.analysis_finished_list_tail = NULL;
             }
             if (i == 0) {
-                nd_dll_intsert_into_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
-                ATOD_DISPLAY_DLL_TAIL = ATOD_DISPLAY_DLL_HEAD;
+                nd_dll_intsert_into_head(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
+                a2d_info.w3_displayed_list_tail = a2d_info.w3_displayed_list_head;
             }
             else {
-                nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+                nd_dll_insert_into_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
             }
         }
-        ATOD_DISPLAY_DLL_NUMS += min;
+        a2d_info.w3_displayed_cur_node_nums += min;
     }
-    else if (ATOD_DISPLAY_DLL_NUMS < ATOD_DISPLAY_MAX_LINES)
+    else if (a2d_info.w3_displayed_cur_node_nums < a2d_info.w3_displayed_max_lines)
     {
-        min = MINIMUM(ATOD_FINISH_DLL_NUMS, (ATOD_DISPLAY_MAX_LINES - ATOD_DISPLAY_DLL_NUMS));
+        min = MINIMUM(a2d_info.analysis_finished_node_nums, (a2d_info.w3_displayed_max_lines - a2d_info.w3_displayed_cur_node_nums));
         
         for (i = 0; i < min; i++) {
-            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
-            if (!ATOD_FINISH_DLL_HEAD) {
-                ATOD_FINISH_DLL_TAIL = NULL;
+            node = nd_dll_takeout_from_head(&(a2d_info.analysis_finished_list_head), &(a2d_info.analysis_finished_list_tail));
+            if (!a2d_info.analysis_finished_list_head) {
+                a2d_info.analysis_finished_list_tail = NULL;
             }
-            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+            nd_dll_insert_into_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
         }
-        ATOD_DISPLAY_DLL_NUMS += min;
+        a2d_info.w3_displayed_cur_node_nums += min;
     }
-    else if (ATOD_DISPLAY_DLL_NUMS == ATOD_DISPLAY_MAX_LINES)
+    else if (a2d_info.w3_displayed_cur_node_nums == a2d_info.w3_displayed_max_lines)
     {
-        min = MINIMUM(ATOD_PUTIN_DISPLAY_DLL_MAX_NUMS, ATOD_FINISH_DLL_NUMS);
+        min = MINIMUM(A2D_PUTIN_DISPLAY_DLL_MAX_NUMS, a2d_info.analysis_finished_node_nums);
         for (i = 0; i < min; i++) 
         {
-            node = nd_dll_takeout_from_head(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL);
+            node = nd_dll_takeout_from_head(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail);
 
             infonode_t * infonode = container_of(node, infonode_t, listnode);
 
-            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
-            analysis_recover_w5node(&ATOD_DISPLAY_W5IDLE_DLL, &(infonode->w5head), &(infonode->w5tail));
-            //analysis_count_w5node_nums(ATOD_DISPLAY_W5IDLE_DLL);
+            //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
+            analysis_recover_w5node(&(a2d_info.w5_node_idle_list), &(infonode->w5head), &(infonode->w5tail));
+            //analysis_count_w5node_nums(a2d_info.w5_node_idle_list);
 
             analysis_recover_l1l2node(
-                &ATOD_L1L2IDLE_DLL, &(infonode->l1l2head), &(infonode->l1l2tail),
+                &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail),
                 &(infonode->l1head), &(infonode->l1tail)
             );
 
-            nd_dll_intsert_into_head_s(&ATOD_IDLE_DLL, node);
-            node = nd_dll_takeout_from_head(&ATOD_FINISH_DLL_HEAD, &ATOD_FINISH_DLL_TAIL);
-            if (!ATOD_FINISH_DLL_HEAD) {
-                ATOD_FINISH_DLL_TAIL = NULL;
+            nd_dll_intsert_into_head_s(&(a2d_info.info_node_idle_list), node);
+            node = nd_dll_takeout_from_head(&(a2d_info.analysis_finished_list_head), &(a2d_info.analysis_finished_list_tail));
+            if (!a2d_info.analysis_finished_list_head) {
+                a2d_info.analysis_finished_list_tail = NULL;
             }
-            nd_dll_insert_into_tail(&ATOD_DISPLAY_DLL_HEAD, &ATOD_DISPLAY_DLL_TAIL, node);
+            nd_dll_insert_into_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
         }
     }
     else{
@@ -923,9 +920,9 @@ int analysis_put_node_into_display_dll (void)
         exit(1);
     }
 
-    ATOD_FINISH_DLL_NUMS -= min;
-    ATOD_CUR_DISPLAY_LINE = ATOD_DISPLAY_DLL_TAIL;
-    ATOD_CUR_DISPLAY_INDEX = ATOD_DISPLAY_DLL_NUMS - 1;
+    a2d_info.analysis_finished_node_nums -= min;
+    a2d_info.w3_displayed_cur_node = a2d_info.w3_displayed_list_tail;
+    a2d_info.w3_displayed_cur_index = a2d_info.w3_displayed_cur_node_nums - 1;
 
     RInt(ret);
 }

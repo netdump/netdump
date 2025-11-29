@@ -22,13 +22,11 @@ int main(int argc, char ** argv) {
 
     setlocale(LC_ALL, "");
 
-    #if 1
     if (geteuid() != 0)
     {
         fprintf(stderr, "\n\tOperation not permitted!\n\n\tNeed root privileges to use!\n\n");
         return 1;
     }
-    #endif
 
     ND_CHECK_KERNEL_VERSION();
 
@@ -38,31 +36,26 @@ int main(int argc, char ** argv) {
 
     sigact_called_prctl_set_value();
 
-    if(unlikely((msgcomm_startup()) == ND_ERR)) 
+    if (unlikely((c2a_comm_startup()) == ND_ERR))
     {
-        TE("Msgcomm startup failed");
+        TE("ctoacomm startup failed");
         goto label1;
     }
 
-    if (unlikely((ctoacomm_startup()) == ND_ERR)) 
+    if (unlikely(comm_zone_startup()) == ND_ERR)
     {
-        TE("ctoacomm startup failed");
+        TE("comm zone startup failed");
         goto label2;
     }
 
-    if (unlikely((atodcomm_startup()) == ND_ERR))
-    {
-        TE("atodcomm startup failed");
-        goto label3;
-    }
-
-    msgcomm_infodump();
+    a2d_comm_startup();
+    d2c_comm_startup();
 
     fflush(trace_G_log);
 
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
         TE("Fork Capture failed");
-        goto label4;
+        goto label3;
     }
 
     if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
@@ -78,20 +71,18 @@ int main(int argc, char ** argv) {
 
     display_startup_TUI_showcase();
 
-    netdump_kill();
-
 label4:
 
-    atodcomm_ending();
+    netdump_kill();
 
 label3:
 
-    ctoacomm_ending();
+    comm_zone_ending();
 
 label2:
 
-    msgcomm_ending();
-    
+    c2a_comm_ending();
+
 label1:
 
     TRACE_DESTRUCTION();

@@ -24,11 +24,10 @@
 #include "sigact.h"
 #include "common.h"
 #include "trace.h"
-#include "msgcomm.h"
-
 #include "capture.h"
 #include "analysis.h"
-#include "atodcomm.h"
+#include "a2d_comm.h"
+#include "d2c_comm.h"
 
 
 /**

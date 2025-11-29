@@ -28,8 +28,7 @@
 #include "ncurses.h"
 
 #include "trace.h"
-#include "msgcomm.h"
-#include "atodcomm.h"
+#include "d2c_comm.h"
 #include "infonode.h"
 
 
@@ -37,22 +36,22 @@
  * @brief 
  *  The global flag of display tui, used to exit tui
  * @note
- * 	display_G_flag = 1; 
+ * 	display_exit_flag = 1; 
  * 	indicates an exception occurs and the system needs to exit
  */
-extern volatile unsigned char display_G_flag;
+extern volatile unsigned char display_exit_flag;
 
 /**
  * @brief
  * 	Whether the SIGWINCH signal is received
  * @note
  * 	The default initial value is 0
- * 	display_G_sigwinch_flag = 1;
- * 	After receiving the signal, display_G_sigwinch_flag is set to 1
- * 	display_G_sigwinch_flag = 0;
- * 	After redrawing the interface, display_G_sigwinch_flag is set to 0
+ * 	display_sigwinch_flag = 1;
+ * 	After receiving the signal, display_sigwinch_flag is set to 1
+ * 	display_sigwinch_flag = 0;
+ * 	After redrawing the interface, display_sigwinch_flag is set to 0
  */
-extern volatile unsigned char display_G_sigwinch_flag;
+extern volatile unsigned char display_sigwinch_flag;
 
 /**
  * @brief
@@ -71,17 +70,17 @@ extern volatile unsigned int display_old_cols;
  * @brief
  * 	The number of lines that can be displayed in window 3/4/5
  */
-extern volatile unsigned short display_G_win3_context_lines;
-extern volatile unsigned short display_G_win4_context_lines;
-extern volatile unsigned short display_G_win5_context_lines;
+extern volatile unsigned short display_win3_context_lines;
+extern volatile unsigned short display_win4_context_lines;
+extern volatile unsigned short display_win5_context_lines;
 
 /**
  * @brief
  * 	The number of cols that can be displayed in window 3/4/5
  */
-extern volatile unsigned short display_G_win3_context_cols;
-extern volatile unsigned short display_G_win4_context_cols;
-extern volatile unsigned short display_G_win5_context_cols;
+extern volatile unsigned short display_win3_context_cols;
+extern volatile unsigned short display_win4_context_cols;
+extern volatile unsigned short display_win5_context_cols;
 
 
 /**
@@ -101,7 +100,7 @@ extern volatile unsigned short display_G_win5_context_cols;
  * @brief 
  *  The number of windows and panels used globally
  */
-#define display_PW_number                       10
+#define display_pw_number                       10
 
 
 /**
@@ -164,14 +163,14 @@ extern volatile unsigned short display_G_win5_context_cols;
  */
 typedef struct {
 
-    WINDOW * wins[display_PW_number];
-    PANEL * panels[display_PW_number];
+    WINDOW * wins[display_pw_number];
+    PANEL * panels[display_pw_number];
 
 } display_t;
 
 
 /** For external use */
-extern display_t G_display;
+extern display_t display_resource;
 
 
 /**
@@ -183,7 +182,7 @@ extern display_t G_display;
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int display_cmd_to_capture (const char * command);
+int display_cmd_to_capture (char * command);
 
 
 /**
@@ -195,8 +194,7 @@ int display_cmd_to_capture (const char * command);
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int display_reply_from_capture (message_t * message);
-
+int display_reply_from_capture(desc_comm_msg_t *message);
 
 /**
  * @brief
@@ -290,7 +288,7 @@ void display_popup_message_notification(const char *msg);
     do {                                                                                                                                \
         if(!(initscr())) {                                                                                                              \
             TE("Can't initscr");                                                                                                        \
-            display_G_flag = 1;                                                                                                         \
+            display_exit_flag = 1;                                                                                                         \
         }                                                                                                                               \
         display_old_cols = COLS;                                                                                                        \
         display_old_lines = LINES;                                                                                                      \
@@ -307,7 +305,7 @@ void display_popup_message_notification(const char *msg);
     do {                                                                                                                                \
         if (!has_colors()) {                                                                                                            \
             TE("Don't support color attribute");                                                                                        \
-            display_G_flag = 1;                                                                                                         \
+            display_exit_flag = 1;                                                                                                         \
         }                                                                                                                               \
         start_color();                                                                                                                  \
     } while (0);                                                                                                                        \
@@ -341,35 +339,35 @@ void display_popup_message_notification(const char *msg);
         int ncols = DISPLAY_WINS_0_NCOLS;                                                                                               \
         int nybegin = DISPLAY_WINS_0_NYBEGIN;                                                                                           \
         int nxbegin = DISPLAY_WINS_0_NXBEGIN;                                                                                           \
-        G_display.wins[0] = newwin(nlines, ncols, nybegin, nxbegin);                                                                    \
+        display_resource.wins[0] = newwin(nlines, ncols, nybegin, nxbegin);                                                                    \
                                                                                                                                         \
         /* 2. Author info */                                                                                                            \
         int infonlines = DISPLAY_WINS_1_NLINES;                                                                                         \
         int infoncols = DISPLAY_WINS_1_NCOLS;                                                                                           \
         int infonybegin = DISPLAY_WINS_1_NYBEGIN;                                                                                       \
         int infonxbegin = DISPLAY_WINS_1_NXBEGIN;                                                                                       \
-        G_display.wins[1] = newwin(infonlines, infoncols, infonybegin, infonxbegin);                                                    \
+        display_resource.wins[1] = newwin(infonlines, infoncols, infonybegin, infonxbegin);                                                    \
                                                                                                                                         \
         /* 3. command input box */                                                                                                      \
         int cmdnlines = DISPLAY_WINS_2_NLINES;                                                                                          \
         int cmdncols = DISPLAY_WINS_2_NCOLS;                                                                                            \
         int cmdnybegin = DISPLAY_WINS_2_NYBEGIN;                                                                                        \
         int cmdnxbegin = DISPLAY_WINS_2_NXBEGIN;                                                                                        \
-        G_display.wins[2] = newwin(cmdnlines, cmdncols, cmdnybegin, cmdnxbegin);                                                        \
+        display_resource.wins[2] = newwin(cmdnlines, cmdncols, cmdnybegin, cmdnxbegin);                                                        \
                                                                                                                                         \
         /* 4. error message show */                                                                                                     \
         int errnlines = DISPLAY_WINS_6_NLINES;                                                                                          \
         int errncols = DISPLAY_WINS_6_NCOLS;                                                                                            \
         int errnybegin = DISPLAY_WINS_6_NYBEGIN;                                                                                        \
         int errnxbegin = DISPLAY_WINS_6_NXBEGIN;                                                                                        \
-        G_display.wins[6] = newwin(errnlines, errncols, errnybegin, errnxbegin);                                                        \
+        display_resource.wins[6] = newwin(errnlines, errncols, errnybegin, errnxbegin);                                                        \
                                                                                                                                         \
         /* 5. info message show */                                                                                                      \
         int helpnlines = DISPLAY_WINS_7_NLINES;                                                                                         \
         int helpncols = DISPLAY_WINS_7_NCOLS;                                                                                           \
         int helpnybegin = DISPLAY_WINS_7_NYBEGIN;                                                                                       \
         int helpnxbegin = DISPLAY_WINS_7_NXBEGIN;                                                                                       \
-        G_display.wins[7] = newwin(helpnlines, helpncols, helpnybegin, helpnxbegin);                                                    \
+        display_resource.wins[7] = newwin(helpnlines, helpncols, helpnybegin, helpnxbegin);                                                    \
     } while (0);                                                                                                                        \
 
 
@@ -379,11 +377,11 @@ void display_popup_message_notification(const char *msg);
  */
 #define display_apply_first_tui_panels_resources()                                                                                      \
     do {                                                                                                                                \
-        G_display.panels[0] = new_panel(G_display.wins[0]);                                                                             \
-        G_display.panels[1] = new_panel(G_display.wins[1]);                                                                             \
-        G_display.panels[2] = new_panel(G_display.wins[2]);                                                                             \
-        G_display.panels[6] = new_panel(G_display.wins[6]);                                                                             \
-        G_display.panels[7] = new_panel(G_display.wins[7]);                                                                             \
+        display_resource.panels[0] = new_panel(display_resource.wins[0]);                                                                             \
+        display_resource.panels[1] = new_panel(display_resource.wins[1]);                                                                             \
+        display_resource.panels[2] = new_panel(display_resource.wins[2]);                                                                             \
+        display_resource.panels[6] = new_panel(display_resource.wins[6]);                                                                             \
+        display_resource.panels[7] = new_panel(display_resource.wins[7]);                                                                             \
     } while (0);                                                                                                                        \
 
 
@@ -409,15 +407,15 @@ void display_popup_message_notification(const char *msg);
         int rwxbegin = DISPLAY_WINS_5_NXBEGIN;                                                                                          \
                                                                                                                                         \
         /* 3. Brief information display box*/                                                                                           \
-        G_display.wins[3] = newwin(twlines, twcols, twybegin, twxbegin);                                                                \
+        display_resource.wins[3] = newwin(twlines, twcols, twybegin, twxbegin);                                                                \
                                                                                                                                         \
         /* 4. Detailed information display box */                                                                                       \
-        G_display.wins[4] = newwin(lwlines, lwcols, lwybegin, lwxbegin);                                                                \
+        display_resource.wins[4] = newwin(lwlines, lwcols, lwybegin, lwxbegin);                                                                \
                                                                                                                                         \
         /* 5. Original hexadecimal information display box */                                                                           \
-        G_display.wins[5] = newwin(rwlines, rwcols, rwybegin, rwxbegin);                                                                \
+        display_resource.wins[5] = newwin(rwlines, rwcols, rwybegin, rwxbegin);                                                                \
                                                                                                                                         \
-        G_display.wins[8] = newwin(DISPLAY_WINS_8_NLINES, DISPLAY_WINS_8_NCOLS, DISPLAY_WINS_8_NYBEGIN, DISPLAY_WINS_8_NXBEGIN);        \
+        display_resource.wins[8] = newwin(DISPLAY_WINS_8_NLINES, DISPLAY_WINS_8_NCOLS, DISPLAY_WINS_8_NYBEGIN, DISPLAY_WINS_8_NXBEGIN);        \
     } while (0);                                                                                                                        \
 
 
@@ -427,10 +425,10 @@ void display_popup_message_notification(const char *msg);
  */
 #define display_apply_second_tui_panels_resources()                                                                                     \
     do {                                                                                                                                \
-        G_display.panels[3] = new_panel(G_display.wins[3]);                                                                             \
-        G_display.panels[4] = new_panel(G_display.wins[4]);                                                                             \
-        G_display.panels[5] = new_panel(G_display.wins[5]);                                                                             \
-        G_display.panels[8] = new_panel(G_display.wins[8]);                                                                             \
+        display_resource.panels[3] = new_panel(display_resource.wins[3]);                                                                             \
+        display_resource.panels[4] = new_panel(display_resource.wins[4]);                                                                             \
+        display_resource.panels[5] = new_panel(display_resource.wins[5]);                                                                             \
+        display_resource.panels[8] = new_panel(display_resource.wins[8]);                                                                             \
     } while (0);                                                                                                                        \
 
 
@@ -438,18 +436,18 @@ void display_popup_message_notification(const char *msg);
  * @brief 
  *  Check if a member of a global variable is NULL
  */
-#define display_check_G_display()                                                                                                       \
+#define display_check_display_resource()                                                                                                       \
     do {                                                                                                                                \
         int i = 0;                                                                                                                      \
-        for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
-            if (!(G_display.wins[i])) {                                                                                                 \
-                TE("G_display.wins[%d] is NULL", i);                                                                                    \
-                display_G_flag = 1;                                                                                                     \
+        for (i = 0; i < (display_pw_number - 1); i++) {                                                                                 \
+            if (!(display_resource.wins[i])) {                                                                                                 \
+                TE("display_resource.wins[%d] is NULL", i);                                                                                    \
+                display_exit_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
-            if (!(G_display.panels[i])) {                                                                                               \
-                TE("G_display.panels[%d] is NULL", i);                                                                                  \
-                display_G_flag = 1;                                                                                                     \
+            if (!(display_resource.panels[i])) {                                                                                               \
+                TE("display_resource.panels[%d] is NULL", i);                                                                                  \
+                display_exit_flag = 1;                                                                                                     \
                 break;                                                                                                                  \
             }                                                                                                                           \
         }                                                                                                                               \
@@ -462,16 +460,16 @@ void display_popup_message_notification(const char *msg);
  */
 #define display_draw_netdump_ASCII_world()                                                                                              \
     do {                                                                                                                                \
-        wattron(G_display.wins[0], COLOR_PAIR((1)));                                                                                    \
-        mvwprintw(G_display.wins[0], 1, 1," _   _          _     ____                              ");                                  \
-        mvwprintw(G_display.wins[0], 2, 1, "| \\ | |   ___  | |_  |  _ \\   _   _   _ __ ___    _ __  ");                               \
-        mvwprintw(G_display.wins[0], 3, 1, "|  \\| |  / _ \\ | __| | | | | | | | | | '_ ` _ \\  | '_ \\ ");                             \
-        mvwprintw(G_display.wins[0], 4, 1, "| |\\  | |  __/ | |_  | |_| | | |_| | | | | | | | | |_) |");                                \
-        mvwprintw(G_display.wins[0], 5, 1, "|_| \\_|  \\___|  \\__| |____/   \\__,_| |_| |_| |_| | .__/ ");                             \
-        mvwprintw(G_display.wins[0], 6, 1, "                                                 |_|    ");                                 \
-        wattroff(G_display.wins[0], COLOR_PAIR((1)));                                                                                   \
+        wattron(display_resource.wins[0], COLOR_PAIR((1)));                                                                                    \
+        mvwprintw(display_resource.wins[0], 1, 1," _   _          _     ____                              ");                                  \
+        mvwprintw(display_resource.wins[0], 2, 1, "| \\ | |   ___  | |_  |  _ \\   _   _   _ __ ___    _ __  ");                               \
+        mvwprintw(display_resource.wins[0], 3, 1, "|  \\| |  / _ \\ | __| | | | | | | | | | '_ ` _ \\  | '_ \\ ");                             \
+        mvwprintw(display_resource.wins[0], 4, 1, "| |\\  | |  __/ | |_  | |_| | | |_| | | | | | | | | |_) |");                                \
+        mvwprintw(display_resource.wins[0], 5, 1, "|_| \\_|  \\___|  \\__| |____/   \\__,_| |_| |_| |_| | .__/ ");                             \
+        mvwprintw(display_resource.wins[0], 6, 1, "                                                 |_|    ");                                 \
+        wattroff(display_resource.wins[0], COLOR_PAIR((1)));                                                                                   \
         refresh();                                                                                                                      \
-        wrefresh(G_display.wins[0]);                                                                                                    \
+        wrefresh(display_resource.wins[0]);                                                                                                    \
     } while (0);                                                                                                                        \
 
 
@@ -481,15 +479,15 @@ void display_popup_message_notification(const char *msg);
  */
 #define display_draw_author_information()                                                                                               \
     do {                                                                                                                                \
-        wmove(G_display.wins[1], 1, 1);                                                                                                 \
-        wattrset(G_display.wins[1], A_NORMAL);                                                                                          \
-        wclrtoeol(G_display.wins[1]);                                                                                                   \
-        wattrset(G_display.wins[1], A_BOLD);                                                                                            \
-        wattron(G_display.wins[1], COLOR_PAIR((2)));                                                                                    \
-        waddstr(G_display.wins[1], "Author: Nothing");                                                                                  \
-        wattroff(G_display.wins[1], COLOR_PAIR((2)));                                                                                   \
+        wmove(display_resource.wins[1], 1, 1);                                                                                                 \
+        wattrset(display_resource.wins[1], A_NORMAL);                                                                                          \
+        wclrtoeol(display_resource.wins[1]);                                                                                                   \
+        wattrset(display_resource.wins[1], A_BOLD);                                                                                            \
+        wattron(display_resource.wins[1], COLOR_PAIR((2)));                                                                                    \
+        waddstr(display_resource.wins[1], "Author: Nothing");                                                                                  \
+        wattroff(display_resource.wins[1], COLOR_PAIR((2)));                                                                                   \
         refresh();                                                                                                                      \
-        wrefresh(G_display.wins[1]);                                                                                                    \
+        wrefresh(display_resource.wins[1]);                                                                                                    \
     } while (0);                                                                                                                        \
 
 
@@ -499,18 +497,18 @@ void display_popup_message_notification(const char *msg);
  */
 #define display_draw_cmd_input_box()                                                                                                    \
     do {                                                                                                                                \
-        wmove(G_display.wins[2], 1, 1);                                                                                                 \
-        wattrset(G_display.wins[2], A_NORMAL);                                                                                          \
-        wclrtoeol(G_display.wins[2]);                                                                                                   \
-        wattrset(G_display.wins[2], A_BOLD);                                                                                            \
-        wattron(G_display.wins[2], COLOR_PAIR((3)));                                                                                    \
-        waddstr(G_display.wins[2], "Command: ");                                                                                        \
-        wattroff(G_display.wins[2], COLOR_PAIR((3)));                                                                                   \
-        wattron(G_display.wins[2], COLOR_PAIR((2)));                                                                                    \
-        box(G_display.wins[2], 0, 0);                                                                                                   \
-        wattroff(G_display.wins[2], COLOR_PAIR((2)));                                                                                   \
+        wmove(display_resource.wins[2], 1, 1);                                                                                                 \
+        wattrset(display_resource.wins[2], A_NORMAL);                                                                                          \
+        wclrtoeol(display_resource.wins[2]);                                                                                                   \
+        wattrset(display_resource.wins[2], A_BOLD);                                                                                            \
+        wattron(display_resource.wins[2], COLOR_PAIR((3)));                                                                                    \
+        waddstr(display_resource.wins[2], "Command: ");                                                                                        \
+        wattroff(display_resource.wins[2], COLOR_PAIR((3)));                                                                                   \
+        wattron(display_resource.wins[2], COLOR_PAIR((2)));                                                                                    \
+        box(display_resource.wins[2], 0, 0);                                                                                                   \
+        wattroff(display_resource.wins[2], COLOR_PAIR((2)));                                                                                   \
         refresh();                                                                                                                      \
-        wrefresh(G_display.wins[2]);                                                                                                    \
+        wrefresh(display_resource.wins[2]);                                                                                                    \
     } while (0);                                                                                                                        \
 
 
@@ -581,34 +579,34 @@ Time 16(Width)	SA.P 46(Width)	DA.P 46(Width)	PL 8(Width)	LH 6(Width)
 #define DISPLAY_WIN_3_CONTENT_CLEAR()                                                                               \
     do {                                                                                                            \
         int i = 0;                                                                                                  \
-        for (i = 0; i < display_G_win3_context_lines; i++)                                                          \
+        for (i = 0; i < display_win3_context_lines; i++)                                                          \
 	    {                                                                                                           \
-		    wmove(G_display.wins[3], (i + 3), 1);                                                                   \
-		    wprintw(G_display.wins[3], "%*s", (COLS - 2), "");                                                      \
+		    wmove(display_resource.wins[3], (i + 3), 1);                                                                   \
+		    wprintw(display_resource.wins[3], "%*s", (COLS - 2), "");                                                      \
 	    }                                                                                                           \
-	    wrefresh(G_display.wins[3]);                                                                                \
+	    wrefresh(display_resource.wins[3]);                                                                                \
     } while(0);
 
 #define DISPLAY_WIN_4_CONTENT_CLEAR()                                                                               \
     do {                                                                                                            \
         int i = 0;                                                                                                  \
-        for (i = 0; i < display_G_win4_context_lines; i++)                                                          \
+        for (i = 0; i < display_win4_context_lines; i++)                                                          \
         {                                                                                                           \
-            wmove(G_display.wins[4], (i + 1), 1);                                                                   \
-            wprintw(G_display.wins[4], "%*s", display_G_win4_context_cols, "");                                     \
+            wmove(display_resource.wins[4], (i + 1), 1);                                                                   \
+            wprintw(display_resource.wins[4], "%*s", display_win4_context_cols, "");                                     \
         }                                                                                                           \
-        wrefresh(G_display.wins[4]);                                                                                \
+        wrefresh(display_resource.wins[4]);                                                                                \
     } while(0);                                                                                                     \
 
 #define DISPLAY_WIN_5_CONTENT_CLEAR()                                                                               \
     do {                                                                                                            \
         int i = 0;                                                                                                  \
-        for (i = 0; i < display_G_win5_context_lines; i++)                                                          \
+        for (i = 0; i < display_win5_context_lines; i++)                                                          \
 	    {                                                                                                           \
-		    wmove(G_display.wins[5], (i + 1), 1);                                                                   \
-		    wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");                                     \
+		    wmove(display_resource.wins[5], (i + 1), 1);                                                                   \
+		    wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");                                     \
 	    }                                                                                                           \
-	    wrefresh(G_display.wins[5]);                                                                                \
+	    wrefresh(display_resource.wins[5]);                                                                                \
     } while(0);                                                                                                     \
 
 
@@ -660,7 +658,7 @@ int display_format_set_window_title(WINDOW *win, int starty, int startx, int wid
  *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel);
+int display_first_tui_handle_logic(char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel);
 
 
 /**
@@ -676,70 +674,70 @@ void display_second_tui_exec_logic(void);
 #define display_draw_brief_information_box()                                                                                       \
     do                                                                                                                             \
     {                                                                                                                              \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        box(G_display.wins[3], 0, 0);                                                                                              \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        box(display_resource.wins[3], 0, 0);                                                                                              \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
         int line0 = 0, line1 = 1, line2 = 2;                                                                                       \
         int starty = 1, startx = 1;                                                                                                \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFTIME, WINTITLETIME, COLOR_PAIR(4));             \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        mvwaddch(G_display.wins[3], line2, 0, ACS_LTEE);                                                                           \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFTIME, WINTITLETIME, COLOR_PAIR(4));             \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        mvwaddch(display_resource.wins[3], line2, 0, ACS_LTEE);                                                                           \
         /** (LENGTHOFTIME - 1) change (LENGTHOFTIME) because of mark */                                                            \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFTIME));                                                     \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFTIME));                                                     \
         startx += 1; /** In order for the mark to be displayed */                                                                  \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFTIME - 1)), ACS_VLINE);                                              \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFTIME - 1)), ACS_TTEE);                                               \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFTIME - 1)), ACS_BTEE);                                               \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFTIME - 1)), ACS_VLINE);                                              \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFTIME - 1)), ACS_TTEE);                                               \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFTIME - 1)), ACS_BTEE);                                               \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
                                                                                                                                    \
         startx += LENGTHOFTIME;                                                                                                    \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLESOURCE, COLOR_PAIR(4));        \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                              \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                            \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                           \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                            \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLESOURCE, COLOR_PAIR(4));        \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                              \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                            \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                           \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                            \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
                                                                                                                                    \
         startx += LENGTHOFADDRESS;                                                                                                 \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLEDESTINATION, COLOR_PAIR(4));   \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                              \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                            \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                           \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                            \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLEDESTINATION, COLOR_PAIR(4));   \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                              \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                            \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                           \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                            \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
                                                                                                                                    \
         startx += LENGTHOFADDRESS;                                                                                                 \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));     \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                             \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                           \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                          \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFPROTOCOL - 1)), ACS_TTEE);                                           \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));     \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                             \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                           \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                          \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFPROTOCOL - 1)), ACS_TTEE);                                           \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
                                                                                                                                    \
         startx += LENGTHOFPROTOCOL;                                                                                                \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFDATALENGTH, WINTITLEDATALENGTH, COLOR_PAIR(4)); \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFDATALENGTH - 1));                                           \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFDATALENGTH - 1)), ACS_BTEE);                                         \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFDATALENGTH - 1)), ACS_VLINE);                                        \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFDATALENGTH - 1)), ACS_TTEE);                                         \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFDATALENGTH, WINTITLEDATALENGTH, COLOR_PAIR(4)); \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFDATALENGTH - 1));                                           \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFDATALENGTH - 1)), ACS_BTEE);                                         \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFDATALENGTH - 1)), ACS_VLINE);                                        \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFDATALENGTH - 1)), ACS_TTEE);                                         \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
                                                                                                                                    \
         startx += LENGTHOFDATALENGTH;                                                                                              \
         int width = COLS - startx;                                                                                                 \
-        display_format_set_window_title(G_display.wins[3], starty, startx, width, WINTITLEINFORMATION, COLOR_PAIR(4));             \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                 \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (width - 1));                                                        \
-        mvwaddch(G_display.wins[3], line2, (COLS - 1), ACS_RTEE);                                                                  \
-        mvwaddch(G_display.wins[3], line1, (COLS - 1), ACS_VLINE);                                                                 \
-        mvwaddch(G_display.wins[3], line0, (COLS - 1), ACS_URCORNER);                                                              \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, width, WINTITLEINFORMATION, COLOR_PAIR(4));             \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                 \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (width - 1));                                                        \
+        mvwaddch(display_resource.wins[3], line2, (COLS - 1), ACS_RTEE);                                                                  \
+        mvwaddch(display_resource.wins[3], line1, (COLS - 1), ACS_VLINE);                                                                 \
+        mvwaddch(display_resource.wins[3], line0, (COLS - 1), ACS_URCORNER);                                                              \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                \
                                                                                                                                    \
         refresh();                                                                                                                 \
-        wrefresh(G_display.wins[3]);                                                                                               \
+        wrefresh(display_resource.wins[3]);                                                                                               \
     } while (0);
 
 #if 0
@@ -750,61 +748,61 @@ void display_second_tui_exec_logic(void);
  */
 #define display_draw_brief_information_box()                                                                                            \
     do {                                                                                                                                \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
-		box(G_display.wins[3], 0, 0);                                                                                                   \
-		wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                      \
+		box(display_resource.wins[3], 0, 0);                                                                                                   \
+		wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                     \
         int line0 = 0, line1 = 1, line2 = 2;                                                                                            \
         int starty = 1, startx = 1;                                                                                                     \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLESOURCE, COLOR_PAIR(4));             \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
-        mvwaddch(G_display.wins[3], line2, 0, ACS_LTEE);                                                                                \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLESOURCE, COLOR_PAIR(4));             \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwaddch(display_resource.wins[3], line2, 0, ACS_LTEE);                                                                                \
         /** (LENGTHOFADDRESS - 1) change (LENGTHOFADDRESS) because of mark */                                                           \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS));                                                       \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS));                                                       \
         startx += 1;    /** In order for the mark to be displayed */                                                                    \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                     \
                                                                                                                                         \
         startx += LENGTHOFADDRESS;                                                                                                      \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLEDESTINATION, COLOR_PAIR(4));        \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                                   \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFADDRESS, WINTITLEDESTINATION, COLOR_PAIR(4));        \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFADDRESS - 1));                                                   \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFADDRESS - 1)), ACS_BTEE);                                                 \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFADDRESS - 1)), ACS_VLINE);                                                \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFADDRESS - 1)), ACS_TTEE);                                                 \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                     \
                                                                                                                                         \
         startx += LENGTHOFADDRESS;                                                                                                      \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));          \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                                  \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                                \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                               \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFPROTOCOL - 1)), ACS_TTEE);                                                \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFPROTOCOL, WINTITLEPROTOCOL, COLOR_PAIR(4));          \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFPROTOCOL - 1));                                                  \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFPROTOCOL - 1)), ACS_BTEE);                                                \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFPROTOCOL - 1)), ACS_VLINE);                                               \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFPROTOCOL - 1)), ACS_TTEE);                                                \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                     \
                                                                                                                                         \
         startx += LENGTHOFPROTOCOL;                                                                                                     \
-        display_format_set_window_title(G_display.wins[3], starty, startx, LENGTHOFDATALENGTH, WINTITLEDATALENGTH, COLOR_PAIR(4));      \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (LENGTHOFDATALENGTH - 1));                                                \
-        mvwaddch(G_display.wins[3], line2, (startx + (LENGTHOFDATALENGTH - 1)), ACS_BTEE);                                              \
-        mvwaddch(G_display.wins[3], line1, (startx + (LENGTHOFDATALENGTH - 1)), ACS_VLINE);                                             \
-        mvwaddch(G_display.wins[3], line0, (startx + (LENGTHOFDATALENGTH - 1)), ACS_TTEE);                                              \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, LENGTHOFDATALENGTH, WINTITLEDATALENGTH, COLOR_PAIR(4));      \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (LENGTHOFDATALENGTH - 1));                                                \
+        mvwaddch(display_resource.wins[3], line2, (startx + (LENGTHOFDATALENGTH - 1)), ACS_BTEE);                                              \
+        mvwaddch(display_resource.wins[3], line1, (startx + (LENGTHOFDATALENGTH - 1)), ACS_VLINE);                                             \
+        mvwaddch(display_resource.wins[3], line0, (startx + (LENGTHOFDATALENGTH - 1)), ACS_TTEE);                                              \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                     \
                                                                                                                                         \
         startx += LENGTHOFDATALENGTH;                                                                                                   \
         int width = COLS - startx;                                                                                                      \
-        display_format_set_window_title(G_display.wins[3], starty, startx, width, WINTITLEINFORMATION, COLOR_PAIR(4));                  \
-        wattron(G_display.wins[3], COLOR_PAIR(4));                                                                                      \
-        mvwhline(G_display.wins[3], line2, startx, ACS_HLINE, (width - 1));                                                             \
-        mvwaddch(G_display.wins[3], line2, (COLS - 1), ACS_RTEE);                                                                       \
-        mvwaddch(G_display.wins[3], line1, (COLS - 1), ACS_VLINE);                                                                      \
-        mvwaddch(G_display.wins[3], line0, (COLS - 1), ACS_URCORNER);                                                                   \
-        wattroff(G_display.wins[3], COLOR_PAIR(4));                                                                                     \
+        display_format_set_window_title(display_resource.wins[3], starty, startx, width, WINTITLEINFORMATION, COLOR_PAIR(4));                  \
+        wattron(display_resource.wins[3], COLOR_PAIR(4));                                                                                      \
+        mvwhline(display_resource.wins[3], line2, startx, ACS_HLINE, (width - 1));                                                             \
+        mvwaddch(display_resource.wins[3], line2, (COLS - 1), ACS_RTEE);                                                                       \
+        mvwaddch(display_resource.wins[3], line1, (COLS - 1), ACS_VLINE);                                                                      \
+        mvwaddch(display_resource.wins[3], line0, (COLS - 1), ACS_URCORNER);                                                                   \
+        wattroff(display_resource.wins[3], COLOR_PAIR(4));                                                                                     \
                                                                                                                                         \
         refresh();                                                                                                                      \
-        wrefresh(G_display.wins[3]);                                                                                                    \
+        wrefresh(display_resource.wins[3]);                                                                                                    \
     } while (0);                                                                                                                        \
 
 #endif
@@ -815,11 +813,11 @@ void display_second_tui_exec_logic(void);
  */
 #define display_draw_more_information_box()                                                                                             \
     do {                                                                                                                                \
-        wattron(G_display.wins[4], COLOR_PAIR(5));                                                                                      \
-		box(G_display.wins[4], 0, 0);                                                                                                   \
-		wattroff(G_display.wins[4], COLOR_PAIR(5));                                                                                     \
+        wattron(display_resource.wins[4], COLOR_PAIR(5));                                                                                      \
+		box(display_resource.wins[4], 0, 0);                                                                                                   \
+		wattroff(display_resource.wins[4], COLOR_PAIR(5));                                                                                     \
 		refresh();                                                                                                                      \
-		wrefresh(G_display.wins[4]);                                                                                                    \
+		wrefresh(display_resource.wins[4]);                                                                                                    \
     } while (0);                                                                                                                        \
 
 
@@ -829,11 +827,11 @@ void display_second_tui_exec_logic(void);
  */
 #define display_draw_raw_information_box()                                                                                              \
     do {                                                                                                                                \
-        wattron(G_display.wins[5], COLOR_PAIR(6));                                                                                      \
-		box(G_display.wins[5], 0, 0);                                                                                                   \
-		wattroff(G_display.wins[5], COLOR_PAIR(6));                                                                                     \
+        wattron(display_resource.wins[5], COLOR_PAIR(6));                                                                                      \
+		box(display_resource.wins[5], 0, 0);                                                                                                   \
+		wattroff(display_resource.wins[5], COLOR_PAIR(6));                                                                                     \
 		refresh();                                                                                                                      \
-		wrefresh(G_display.wins[5]);                                                                                                    \
+		wrefresh(display_resource.wins[5]);                                                                                                    \
     } while (0);
 
 
@@ -841,27 +839,26 @@ void display_second_tui_exec_logic(void);
  * @brief
  *  Real-time display of captured packet information
  */
-#define display_draw_cpinfo_win()                                                                                                       \
-    do {                                                                                                                                \
-        wclear(G_display.wins[8]);                                                                                                      \
-        refresh();                                                                                                                      \
-	    wrefresh(G_display.wins[8]);                                                                                                    \
-        wmove(G_display.wins[8], 0, 1);                                                                                                 \
-	    wattrset(G_display.wins[8], A_NORMAL);                                                                                          \
-	    wclrtoeol(G_display.wins[8]);                                                                                                   \
-	    wattrset(G_display.wins[8], A_BOLD);                                                                                            \
-	    wattron(G_display.wins[8], COLOR_PAIR((4)));                                                                                    \
-        char tmpbuf[2048] = {0};                                                                                                        \
-        sprintf(tmpbuf, "%s."/*"%s. Capture Packages: %lu. Capture Bytes: %lu."*/, (char*)msgcomm_G_cpinfo/*, *msgcomm_st_NOpackages, *msgcomm_st_NObytes*/);\
-	    waddstr(G_display.wins[8], tmpbuf);                                                                                             \
-	    wattroff(G_display.wins[8], COLOR_PAIR((4)));                                                                                   \
-	    wattron(G_display.wins[8], COLOR_PAIR((4)));                                                                                    \
-	    wattroff(G_display.wins[8], COLOR_PAIR((4)));                                                                                   \
-	    refresh();                                                                                                                      \
-	    wrefresh(G_display.wins[8]);                                                                                                    \
-    } while (0);                                                                                                                        \
-
-
+#define display_draw_cpinfo_win()                                                                                                                                   \
+    do                                                                                                                                                              \
+    {                                                                                                                                                               \
+        wclear(display_resource.wins[8]);                                                                                                                                  \
+        refresh();                                                                                                                                                  \
+        wrefresh(display_resource.wins[8]);                                                                                                                                \
+        wmove(display_resource.wins[8], 0, 1);                                                                                                                             \
+        wattrset(display_resource.wins[8], A_NORMAL);                                                                                                                      \
+        wclrtoeol(display_resource.wins[8]);                                                                                                                               \
+        wattrset(display_resource.wins[8], A_BOLD);                                                                                                                        \
+        wattron(display_resource.wins[8], COLOR_PAIR((4)));                                                                                                                \
+        char tmpbuf[4096] = {0};                                                                                                                                    \
+        sprintf(tmpbuf, "%s." /*"%s. Capture Packages: %lu. Capture Bytes: %lu."*/, d2c_comm.store_capture_info /*, *msgcomm_st_NOpackages, *msgcomm_st_NObytes*/); \
+        waddstr(display_resource.wins[8], tmpbuf);                                                                                                                         \
+        wattroff(display_resource.wins[8], COLOR_PAIR((4)));                                                                                                               \
+        wattron(display_resource.wins[8], COLOR_PAIR((4)));                                                                                                                \
+        wattroff(display_resource.wins[8], COLOR_PAIR((4)));                                                                                                               \
+        refresh();                                                                                                                                                  \
+        wrefresh(display_resource.wins[8]);                                                                                                                                \
+    } while (0);
 
 /**
  * @brief 
@@ -870,8 +867,8 @@ void display_second_tui_exec_logic(void);
 #define display_hide_wins_all()                                                                                                         \
     do {                                                                                                                                \
         int i = 0;                                                                                                                      \
-        for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
-            hide_panel(G_display.panels[i]);                                                                                            \
+        for (i = 0; i < (display_pw_number - 1); i++) {                                                                                 \
+            hide_panel(display_resource.panels[i]);                                                                                            \
         }                                                                                                                               \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
@@ -886,7 +883,7 @@ void display_second_tui_exec_logic(void);
     do {                                                                                                                                \
         int i = 0;                                                                                                                      \
         for (i = 0; i < 3; i++) {                                                                                                       \
-            hide_panel(G_display.panels[i]);                                                                                            \
+            hide_panel(display_resource.panels[i]);                                                                                            \
         }                                                                                                                               \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
@@ -901,9 +898,9 @@ void display_second_tui_exec_logic(void);
     do {                                                                                                                                \
         int i = 3;                                                                                                                      \
         for (i = 3; i < 6; i++) {                                                                                                       \
-            hide_panel(G_display.panels[i]);                                                                                            \
+            hide_panel(display_resource.panels[i]);                                                                                            \
         }                                                                                                                               \
-        hide_panel(G_display.panels[8]);                                                                                                \
+        hide_panel(display_resource.panels[8]);                                                                                                \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
@@ -917,7 +914,7 @@ void display_second_tui_exec_logic(void);
     do {                                                                                                                                \
         int i = 0;                                                                                                                      \
         for (i = 0; i < 3; i++) {                                                                                                       \
-            show_panel(G_display.panels[i]);                                                                                            \
+            show_panel(display_resource.panels[i]);                                                                                            \
         }                                                                                                                               \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
@@ -932,9 +929,9 @@ void display_second_tui_exec_logic(void);
     do {                                                                                                                                \
         int i = 3;                                                                                                                      \
         for (i = 3; i < 6; i++) {                                                                                                       \
-            show_panel(G_display.panels[i]);                                                                                            \
+            show_panel(display_resource.panels[i]);                                                                                            \
         }                                                                                                                               \
-        show_panel(G_display.panels[8]);                                                                                                \
+        show_panel(display_resource.panels[8]);                                                                                                \
         update_panels();                                                                                                                \
         doupdate();                                                                                                                     \
     } while (0);                                                                                                                        \
@@ -946,9 +943,9 @@ void display_second_tui_exec_logic(void);
  */
 #define display_set_wins_3_4_5_property()                                                                                               \
     do {                                                                                                                                \
-        keypad(G_display.wins[3], TRUE);                                                                                                \
-        keypad(G_display.wins[4], TRUE);                                                                                                \
-        keypad(G_display.wins[5], TRUE);                                                                                                \
+        keypad(display_resource.wins[3], TRUE);                                                                                                \
+        keypad(display_resource.wins[4], TRUE);                                                                                                \
+        keypad(display_resource.wins[5], TRUE);                                                                                                \
         keypad(stdscr, TRUE);                                                                                                           \
     } while (0);                                                                                                                        \
 
@@ -1018,18 +1015,18 @@ void display_second_tui_exec_logic(void);
  * @brief 
  *  Release members in global variables
  */
-#define display_release_G_display_member()                                                                                              \
+#define display_release_display_resource_member()                                                                                              \
     do {                                                                                                                                \
         int i = 0;                                                                                                                      \
-        for (i = 0; i < (display_PW_number - 1); i++) {                                                                                 \
-            if (G_display.panels[i]) {                                                                                                  \
-                del_panel(G_display.panels[i]);                                                                                         \
+        for (i = 0; i < (display_pw_number - 1); i++) {                                                                                 \
+            if (display_resource.panels[i]) {                                                                                                  \
+                del_panel(display_resource.panels[i]);                                                                                         \
                 update_panels();                                                                                                        \
-                G_display.panels[i] = NULL;                                                                                             \
+                display_resource.panels[i] = NULL;                                                                                             \
             }                                                                                                                           \
-            if (G_display.wins[i]) {                                                                                                    \
-                delwin(G_display.wins[i]);                                                                                              \
-                G_display.wins[i] = NULL;                                                                                               \
+            if (display_resource.wins[i]) {                                                                                                    \
+                delwin(display_resource.wins[i]);                                                                                              \
+                display_resource.wins[i] = NULL;                                                                                               \
             }                                                                                                                           \
         }                                                                                                                               \
     } while (0);                                                                                                                        \
@@ -1051,7 +1048,7 @@ void display_second_tui_exec_logic(void);
  */
 #define display_exit_TUI_showcase()                                                                                                     \
     do {                                                                                                                                \
-        display_release_G_display_member();                                                                                             \
+        display_release_display_resource_member();                                                                                             \
         display_endwin();                                                                                                               \
     } while (0);                                                                                                                        \
 
@@ -1060,67 +1057,67 @@ void display_second_tui_exec_logic(void);
  * @brief 
  *  Handle TUI first page
  */
-#define display_handle_TUI_first_page()                                                                                                                     \
-    do                                                                                                                                                      \
-    {                                                                                                                                                       \
-        display_show_wins_0_1_2();                                                                                                                          \
-        while (1)                                                                                                                                           \
-        {                                                                                                                                                   \
-            wmove(G_display.wins[2], 1, 1);                                                                                                                 \
-            wattrset(G_display.wins[2], A_NORMAL);                                                                                                          \
-            wclrtoeol(G_display.wins[2]);                                                                                                                   \
-            wattrset(G_display.wins[2], A_BOLD);                                                                                                            \
-            wattron(G_display.wins[2], COLOR_PAIR((3)));                                                                                                    \
-            waddstr(G_display.wins[2], "Command: ");                                                                                                        \
-            wattroff(G_display.wins[2], COLOR_PAIR((3)));                                                                                                   \
-            wattron(G_display.wins[2], COLOR_PAIR((2)));                                                                                                    \
-            box(G_display.wins[2], 0, 0);                                                                                                                   \
-            wattroff(G_display.wins[2], COLOR_PAIR((2)));                                                                                                   \
-            refresh();                                                                                                                                      \
-            wrefresh(G_display.wins[2]);                                                                                                                    \
-            int code = OK;                                                                                                                                  \
-            memset(msgcomm_G_buffer, 0, MSGCOMM_BUFFER_SIZE);                                                                                               \
-            snprintf(msgcomm_G_buffer, MSGCOMM_BUFFER_SIZE, "%s%s", NETDUMP_NAME, COMMON_SPACE);                                                            \
-            code = wgetnstr(G_display.wins[2], (msgcomm_G_buffer + strlen(msgcomm_G_buffer)), (MSGCOMM_BUFFER_SIZE - strlen(msgcomm_G_buffer)));            \
-            TI("Code: %d; AND; Code: %x", code, code);                                                                                                      \
-            if (display_G_sigwinch_flag)                                                                                                                    \
-            {                                                                                                                                               \
-                display_handle_win_resize(1);                                                                                                               \
-                continue;                                                                                                                                   \
-            }                                                                                                                                               \
-            if (code == ERR)                                                                                                                                \
-            {                                                                                                                                               \
-                /* display_exit_TUI_showcase(); */                                                                                                          \
-                TE("Called wgetnstr error");                                                                                                                \
-                display_G_flag = 1;                                                                                                                         \
-                break;                                                                                                                                      \
-            }                                                                                                                                               \
-            snprintf((msgcomm_G_buffer + strlen(msgcomm_G_buffer)), (MSGCOMM_BUFFER_SIZE - strlen(msgcomm_G_buffer)), "%c", ' ');                           \
-            attroff(A_BOLD);                                                                                                                                \
-            refresh();                                                                                                                                      \
-            wrefresh(G_display.wins[2]);                                                                                                                    \
-            mvwprintw(stdscr, 0, 0, "%s\n", msgcomm_G_buffer);                                                                                              \
-            refresh();                                                                                                                                      \
-            wrefresh(stdscr);                                                                                                                               \
-            if (!strncmp("Quit", msgcomm_G_buffer + strlen(NETDUMP_NAME) + strlen(COMMON_SPACE), 4))                                                        \
-            {                                                                                                                                               \
-                /* display_exit_TUI_showcase(); */                                                                                                          \
-                TI("Recv Quit String also exit");                                                                                                           \
-                display_G_flag = 1;                                                                                                                         \
-                break;                                                                                                                                      \
-            }                                                                                                                                               \
-            else                                                                                                                                            \
-            {                                                                                                                                               \
-                if (unlikely(((display_first_tui_handle_logic((const char *)(msgcomm_G_buffer),                                                             \
-                                                              G_display.wins[6], G_display.panels[6], G_display.wins[7], G_display.panels[7])) == ND_ERR))) \
-                {                                                                                                                                           \
-                    TE("Command error; need to again");                                                                                                     \
-                    continue;                                                                                                                               \
-                }                                                                                                                                           \
-                break;                                                                                                                                      \
-            }                                                                                                                                               \
-        }                                                                                                                                                   \
-        display_hide_wins_0_1_2();                                                                                                                          \
+#define display_handle_TUI_first_page()                                                                                                                                    \
+    do                                                                                                                                                                     \
+    {                                                                                                                                                                      \
+        display_show_wins_0_1_2();                                                                                                                                         \
+        while (1)                                                                                                                                                          \
+        {                                                                                                                                                                  \
+            wmove(display_resource.wins[2], 1, 1);                                                                                                                                \
+            wattrset(display_resource.wins[2], A_NORMAL);                                                                                                                         \
+            wclrtoeol(display_resource.wins[2]);                                                                                                                                  \
+            wattrset(display_resource.wins[2], A_BOLD);                                                                                                                           \
+            wattron(display_resource.wins[2], COLOR_PAIR((3)));                                                                                                                   \
+            waddstr(display_resource.wins[2], "Command: ");                                                                                                                       \
+            wattroff(display_resource.wins[2], COLOR_PAIR((3)));                                                                                                                  \
+            wattron(display_resource.wins[2], COLOR_PAIR((2)));                                                                                                                   \
+            box(display_resource.wins[2], 0, 0);                                                                                                                                  \
+            wattroff(display_resource.wins[2], COLOR_PAIR((2)));                                                                                                                  \
+            refresh();                                                                                                                                                     \
+            wrefresh(display_resource.wins[2]);                                                                                                                                   \
+            int code = OK;                                                                                                                                                 \
+            memset(d2c_comm.store_user_input, 0, COMM_SHM_ZONE_SIZE);                                                                                                      \
+            snprintf(d2c_comm.store_user_input, COMM_SHM_ZONE_SIZE, "%s%s", NETDUMP_NAME, COMMON_SPACE);                                                                   \
+            code = wgetnstr(display_resource.wins[2], (d2c_comm.store_user_input + strlen(d2c_comm.store_user_input)), (COMM_SHM_ZONE_SIZE - strlen(d2c_comm.store_user_input))); \
+            TI("Code: %d; AND; Code: %x", code, code);                                                                                                                     \
+            if (display_sigwinch_flag)                                                                                                                                   \
+            {                                                                                                                                                              \
+                display_handle_win_resize(1);                                                                                                                              \
+                continue;                                                                                                                                                  \
+            }                                                                                                                                                              \
+            if (code == ERR)                                                                                                                                               \
+            {                                                                                                                                                              \
+                /* display_exit_TUI_showcase(); */                                                                                                                         \
+                TE("Called wgetnstr error");                                                                                                                               \
+                display_exit_flag = 1;                                                                                                                                        \
+                break;                                                                                                                                                     \
+            }                                                                                                                                                              \
+            snprintf((d2c_comm.store_user_input + strlen(d2c_comm.store_user_input)), (COMM_SHM_ZONE_SIZE - strlen(d2c_comm.store_user_input)), "%c", ' ');                \
+            attroff(A_BOLD);                                                                                                                                               \
+            refresh();                                                                                                                                                     \
+            wrefresh(display_resource.wins[2]);                                                                                                                                   \
+            mvwprintw(stdscr, 0, 0, "%s\n", d2c_comm.store_user_input);                                                                                                    \
+            refresh();                                                                                                                                                     \
+            wrefresh(stdscr);                                                                                                                                              \
+            if (!strncmp("Quit", d2c_comm.store_user_input + strlen(NETDUMP_NAME) + strlen(COMMON_SPACE), 4))                                                              \
+            {                                                                                                                                                              \
+                /* display_exit_TUI_showcase(); */                                                                                                                         \
+                TI("Recv Quit String also exit");                                                                                                                          \
+                display_exit_flag = 1;                                                                                                                                        \
+                break;                                                                                                                                                     \
+            }                                                                                                                                                              \
+            else                                                                                                                                                           \
+            {                                                                                                                                                              \
+                if (unlikely(((display_first_tui_handle_logic((char *)(d2c_comm.store_user_input),                                                                         \
+                                                              display_resource.wins[6], display_resource.panels[6], display_resource.wins[7], display_resource.panels[7])) == ND_ERR)))                \
+                {                                                                                                                                                          \
+                    TE("Command error; need to again");                                                                                                                    \
+                    continue;                                                                                                                                              \
+                }                                                                                                                                                          \
+                break;                                                                                                                                                     \
+            }                                                                                                                                                              \
+        }                                                                                                                                                                  \
+        display_hide_wins_0_1_2();                                                                                                                                         \
     } while (0);
 
 /**
@@ -1129,9 +1126,9 @@ void display_second_tui_exec_logic(void);
  */
 #define display_select_3_windows()                                                                                                      \
     do {                                                                                                                                \
-        wattron(G_display.wins[3], A_REVERSE);                                                                                          \
+        wattron(display_resource.wins[3], A_REVERSE);                                                                                          \
         display_draw_brief_information_box();                                                                                           \
-        wattroff(G_display.wins[3], A_REVERSE);                                                                                         \
+        wattroff(display_resource.wins[3], A_REVERSE);                                                                                         \
         display_draw_more_information_box();                                                                                            \
         display_draw_raw_information_box();                                                                                             \
 } while (0);                                                                                                                            \
@@ -1144,9 +1141,9 @@ void display_second_tui_exec_logic(void);
 #define display_select_4_windows()                                                                                                      \
     do {                                                                                                                                \
         display_draw_brief_information_box();                                                                                           \
-        wattron(G_display.wins[4], A_REVERSE);                                                                                          \
+        wattron(display_resource.wins[4], A_REVERSE);                                                                                          \
         display_draw_more_information_box();                                                                                            \
-        wattroff(G_display.wins[4], A_REVERSE);                                                                                         \
+        wattroff(display_resource.wins[4], A_REVERSE);                                                                                         \
         display_draw_raw_information_box();                                                                                             \
 } while (0);                                                                                                                            \
 
@@ -1159,9 +1156,9 @@ void display_second_tui_exec_logic(void);
     do {                                                                                                                                \
         display_draw_brief_information_box();                                                                                           \
         display_draw_more_information_box();                                                                                            \
-        wattron(G_display.wins[5], A_REVERSE);                                                                                          \
+        wattron(display_resource.wins[5], A_REVERSE);                                                                                          \
         display_draw_raw_information_box();                                                                                             \
-        wattroff(G_display.wins[5], A_REVERSE);                                                                                         \
+        wattroff(display_resource.wins[5], A_REVERSE);                                                                                         \
 } while (0);                                                                                                                            \
 
 
@@ -1182,7 +1179,7 @@ void display_second_tui_exec_logic(void);
         while(1) {	                                                                                                                    \
             flushinp();                                                                                                                 \
             ch = getch();                                                                                                               \
-            if (display_G_sigwinch_flag) {                                                                                              \
+            if (display_sigwinch_flag) {                                                                                              \
                 display_handle_win_resize(2);                                                                                           \
                 continue;                                                                                                               \
             }                                                                                                                           \
@@ -1238,14 +1235,15 @@ void display_second_tui_exec_logic(void);
     do {                                                                                                                                \
         while (1) {                                                                                                                     \
             display_handle_TUI_first_page();                                                                                            \
-            if (display_G_flag) break;                                                                                                  \
-            display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);                                                               \
-            display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);                                                               \
-            display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);                                                               \
-            display_G_win3_context_cols = ((DISPLAY_WINS_3_NCOLS) - 2);                                                                 \
-            display_G_win4_context_cols = ((DISPLAY_WINS_4_NCOLS) - 2);                                                                 \
-            display_G_win5_context_cols = ((DISPLAY_WINS_5_NCOLS) - 2);                                                                 \
-            ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;                                                                      \
+            if (display_exit_flag) break;                                                                                                  \
+            display_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);                                                               \
+            display_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);                                                               \
+            display_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);                                                               \
+            display_win3_context_cols = ((DISPLAY_WINS_3_NCOLS) - 2);                                                                 \
+            display_win4_context_cols = ((DISPLAY_WINS_4_NCOLS) - 2);                                                                 \
+            display_win5_context_cols = ((DISPLAY_WINS_5_NCOLS) - 2);                                                                 \
+            a2d_info.w3_displayed_max_lines = display_win3_context_lines;                                                                      \
+            TC("a2d_info.w3_displayed_max_lines: %d", a2d_info.w3_displayed_max_lines)\
             display_handle_TUI_second_page();                                                                                           \
         }                                                                                                                               \
     } while (0);
@@ -1273,11 +1271,11 @@ void display_second_tui_exec_logic(void);
                                                                                                                                         \
         display_initialize_scr();                                                                                                       \
                                                                                                                                         \
-        if (display_G_flag) goto label;                                                                                                 \
+        if (display_exit_flag) goto label;                                                                                                 \
                                                                                                                                         \
         display_initialize_color();                                                                                                     \
                                                                                                                                         \
-        if (display_G_flag) goto label;                                                                                                 \
+        if (display_exit_flag) goto label;                                                                                                 \
                                                                                                                                         \
         display_check_term_size();                                                                                                      \
                                                                                                                                         \
@@ -1291,9 +1289,9 @@ void display_second_tui_exec_logic(void);
                                                                                                                                         \
         display_apply_second_tui_panels_resources();                                                                                    \
                                                                                                                                         \
-        display_check_G_display();                                                                                                      \
+        display_check_display_resource();                                                                                                      \
                                                                                                                                         \
-        if (display_G_flag) goto label;                                                                                                 \
+        if (display_exit_flag) goto label;                                                                                                 \
                                                                                                                                         \
         display_set_wins_3_4_5_property();                                                                                              \
                                                                                                                                         \

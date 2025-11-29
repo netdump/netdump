@@ -12,16 +12,17 @@
  */
 
 #include "display.h"
-#include "msgcomm.h"
+#include "a2d_comm.h"
+#include "d2c_comm.h"
 
 
 /**
  * @brief The global flag of display tui, used to exit tui
  * @note
- * 	display_G_flag = 1; 
+ * 	display_exit_flag = 1; 
  * 	indicates an exception occurs and the system needs to exit
  */
-volatile unsigned char display_G_flag = 0;
+volatile unsigned char display_exit_flag = 0;
 
 
 /**
@@ -29,12 +30,12 @@ volatile unsigned char display_G_flag = 0;
  * 	Whether the SIGWINCH signal is received
  * @note
  * 	The default initial value is 0
- * 	display_G_sigwinch_flag = 1;
- * 	After receiving the signal, display_G_sigwinch_flag is set to 1
- * 	display_G_sigwinch_flag = 0;
- * 	After redrawing the interface, display_G_sigwinch_flag is set to 0
+ * 	display_sigwinch_flag = 1;
+ * 	After receiving the signal, display_sigwinch_flag is set to 1
+ * 	display_sigwinch_flag = 0;
+ * 	After redrawing the interface, display_sigwinch_flag is set to 0
  */
-volatile unsigned char display_G_sigwinch_flag = 0;
+volatile unsigned char display_sigwinch_flag = 0;
 
 
 /**
@@ -55,44 +56,44 @@ volatile unsigned int display_old_cols = 0;
  * @brief
  * 	The number of lines that can be displayed in window 3/4/5
  */
-volatile unsigned short display_G_win3_context_lines = 0;
-volatile unsigned short display_G_win4_context_lines = 0;
-volatile unsigned short display_G_win5_context_lines = 0;
+volatile unsigned short display_win3_context_lines = 0;
+volatile unsigned short display_win4_context_lines = 0;
+volatile unsigned short display_win5_context_lines = 0;
 
 
 /**
  * @brief
  * 	The number of cols that can be displayed in window 3/4/5
  */
-volatile unsigned short display_G_win3_context_cols = 0;
-volatile unsigned short display_G_win4_context_cols = 0;
-volatile unsigned short display_G_win5_context_cols = 0;
+volatile unsigned short display_win3_context_cols = 0;
+volatile unsigned short display_win4_context_cols = 0;
+volatile unsigned short display_win5_context_cols = 0;
 
 
 /**
  * @brief
  * 	Define a global variable to store the resources required by TUI
  * @note
- *  G_display.wins[0]: Netdump ASCII world
- *  G_display.wins[1]: Information of author
- *  G_display.wins[2]: Command input box
- *  G_display.wins[3]: Brief information display box
- *  G_display.wins[4]: Detailed information display box
- *  G_display.wins[5]: Original hexadecimal information display box
- * 	G_display.wins[6]: Display error message interface
- * 	G_display.wins[7]: Display information after executing the command
- * 	G_display.wins[8]: Display Captured packet information
- *  G_display.panels[0]: The panel associated with G_display.wins[0]
- *  G_display.panels[1]: The panel associated with G_display.wins[1]
- *  G_display.panels[2]: The panel associated with G_display.wins[2]
- *  G_display.panels[3]: The panel associated with G_display.wins[3]
- *  G_display.panels[4]: The panel associated with G_display.wins[4]
- *  G_display.panels[5]: The panel associated with G_display.wins[5]
- * 	G_display.panels[6]: The panel associated with G_display.wins[6]
- * 	G_display.panels[7]: The panel associated with G_display.wins[7]
- * 	G_display.panels[8]: The panel associated with G_display.wins[8]
+ *  display_resource.wins[0]: Netdump ASCII world
+ *  display_resource.wins[1]: Information of author
+ *  display_resource.wins[2]: Command input box
+ *  display_resource.wins[3]: Brief information display box
+ *  display_resource.wins[4]: Detailed information display box
+ *  display_resource.wins[5]: Original hexadecimal information display box
+ * 	display_resource.wins[6]: Display error message interface
+ * 	display_resource.wins[7]: Display information after executing the command
+ * 	display_resource.wins[8]: Display Captured packet information
+ *  display_resource.panels[0]: The panel associated with display_resource.wins[0]
+ *  display_resource.panels[1]: The panel associated with display_resource.wins[1]
+ *  display_resource.panels[2]: The panel associated with display_resource.wins[2]
+ *  display_resource.panels[3]: The panel associated with display_resource.wins[3]
+ *  display_resource.panels[4]: The panel associated with display_resource.wins[4]
+ *  display_resource.panels[5]: The panel associated with display_resource.wins[5]
+ * 	display_resource.panels[6]: The panel associated with display_resource.wins[6]
+ * 	display_resource.panels[7]: The panel associated with display_resource.wins[7]
+ * 	display_resource.panels[8]: The panel associated with display_resource.wins[8]
  */
-display_t G_display = {
+display_t display_resource = {
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
@@ -204,7 +205,7 @@ void display_exit_resource_destruction () {
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int display_cmd_to_capture (const char * command) {
+int display_cmd_to_capture (char * command) {
 
 	TC("Called { %s()", __func__);
 
@@ -213,9 +214,7 @@ int display_cmd_to_capture (const char * command) {
 		RInt(ND_ERR);
 	}
 
-	if ( unlikely(
-		((msgcomm_message_send(MSGCOMM_DIR_0TO1, MSGCOMM_CMD, command, strlen(command))) == ND_ERR)
-	))
+	if (unlikely(((d2c_comm_send_msg_2_capture(command)) == ND_ERR)))
 	{
 		TE("msgcomm message send failed");
 		RInt(ND_ERR);
@@ -234,8 +233,8 @@ int display_cmd_to_capture (const char * command) {
  *  If successful, it returns ND_OK; 
  *  if failed, it returns ND_ERR
  */
-int display_reply_from_capture (message_t * message) {
-
+int display_reply_from_capture(desc_comm_msg_t *message)
+{
 	TC("Called { %s(%p)", __func__, message);
 
 	if (unlikely((!message))) {
@@ -243,14 +242,14 @@ int display_reply_from_capture (message_t * message) {
         RInt(ND_ERR);
     }
 
-    if (unlikely((msgcomm_message_recv(MSGCOMM_DIR_1TO0, message)) == ND_ERR)) {
-        TE("msgcomm message recv failed");
+	if (unlikely((d2c_comm_recv_msg_from_capture(message)) == ND_ERR))
+	{
+		TE("msgcomm message recv failed");
         RInt(ND_ERR);
-    }
+	}
 
 	RInt(ND_OK);
 }
-
 
 /**
  * @brief 
@@ -278,9 +277,9 @@ static void display_message_display (const char * prefix, const char * msg, WIND
 	wclrtoeol(win);
 	wattrset(win, A_BOLD);
 	wattron(win, COLOR_PAIR((color)));
-	memset(msgcomm_G_reply, 0, MSGCOMM_REPLY_SIZE);
-	snprintf(msgcomm_G_reply, MSGCOMM_REPLY_SIZE, "%s\n\t%s\n", prefix, msg);
-	waddstr(win, msgcomm_G_reply);
+	memset(d2c_comm.store_hint_info, 0, COMM_SHM_ZONE_SIZE);
+	snprintf(d2c_comm.store_hint_info, COMM_SHM_ZONE_SIZE, "%s\n\t%s\n", prefix, msg);
+	waddstr(win, d2c_comm.store_hint_info);
 	wattroff(win, COLOR_PAIR((color)));
 	wattron(win, COLOR_PAIR((color)));
 	box(win, 0, 0);
@@ -314,14 +313,15 @@ static void display_message_display (const char * prefix, const char * msg, WIND
  *  If successful, it returns ND_OK;
  *  if failed, it returns ND_ERR
  */
-int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel)
+int display_first_tui_handle_logic(char *command, WINDOW *errwin, PANEL *errpanel, WINDOW *infowin, PANEL *infopanel)
 {
 
 	TC("Called { %s(%s, %p, %p)", __func__, command, errwin, errpanel);
 
 	if (unlikely((!command) || (!errwin) || (!errpanel) || (!infowin) || (!infopanel)))
 	{
-		TE("param error; command: %s, errwin: %p, errpanel: %p, infowin: %p, infopanel: %p", command, errwin, errpanel, infowin, infopanel);
+		TE("param error; command: %s, errwin: %p, errpanel: %p, infowin: %p, infopanel: %p", 
+			command, errwin, errpanel, infowin, infopanel);
 		RInt(ND_ERR);
 	}
 
@@ -344,43 +344,42 @@ int display_first_tui_handle_logic(const char *command, WINDOW *errwin, PANEL *e
 		RInt(ND_ERR);
 	}
 
-	char space[1024] = {0};
-	message_t * message = (message_t *)(space);
-	if (unlikely(((display_reply_from_capture(message)) == ND_ERR))) {
+	desc_comm_msg_t message;
+	if (unlikely(((display_reply_from_capture(&message)) == ND_ERR))) {
 		TE("display reply from capture failed");
 		RInt(ND_ERR);
 	}
 
 	TI("     ");
-	TI("message->dir: %u", message->dir);
-	TI("message->msgtype: %u", message->msgtype);
-	TI("message->length: %u", message->length);
-	TI("message->msg: %s", message->msg);
+	TI("message.direction: %u", message.direction);
+	TI("message.msgtype: %u", message.msgtype);
+	TI("message.length: %u", message.length);
+	TI("message.content: %s", message.content);
 
-	if (message->msgtype == MSGCOMM_ERR) {
-		TI("%s", message->msg);
-		display_message_display("ERROR MSG:", (const char *)(message->msg), errwin, errpanel, 4);
+	if (message.msgtype == D2C_COMM_ERR) {
+		TI("%s", message.content);
+		display_message_display("ERROR MSG:", (const char *)(message.content), errwin, errpanel, 4);
 		RInt(ND_ERR);
 	}
-	else if (message->msgtype == MSGCOMM_HLP)
+	else if (message.msgtype == D2C_COMM_HLP)
 	{
-		display_message_display("HELP MSG:", (const char *)(message->msg), infowin, infopanel, 5);
+		display_message_display("HELP MSG:", (const char *)(message.content), infowin, infopanel, 5);
 		RInt(ND_ERR);
 	}
-	else if (message->msgtype == MSGCOMM_FAD)
+	else if (message.msgtype == D2C_COMM_FAD)
 	{
-		display_message_display("ALLDEVICE MSG:", (const char *)(message->msg), infowin, infopanel, 5);
+		display_message_display("ALLDEVICE MSG:", (const char *)(message.content), infowin, infopanel, 5);
 		RInt(ND_ERR);
 	}
-	else if (message->msgtype == MSGCOMM_DLT)
+	else if (message.msgtype == D2C_COMM_DLT)
 	{
-		display_message_display("DATA-LINK-TYPE MSG:", (const char *)(message->msg), infowin, infopanel, 5);
+		display_message_display("DATA-LINK-TYPE MSG:", (const char *)(message.content), infowin, infopanel, 5);
 		RInt(ND_ERR);
 	}
-	else if (message->msgtype == MSGCOMM_SUC)
+	else if (message.msgtype == D2C_COMM_SUC)
 	{
-		memset(msgcomm_G_cpinfo, 0, MSGCOMM_CPINFO_SIZE);
-		snprintf(msgcomm_G_cpinfo, MSGCOMM_CPINFO_SIZE, "%s", (message->msg));
+		memset(d2c_comm.store_capture_info, 0, COMM_SHM_ZONE_SIZE);
+		snprintf(d2c_comm.store_capture_info, COMM_SHM_ZONE_SIZE, "%s", (message.content));
 	}
 
 	RInt(ND_OK);
@@ -397,7 +396,7 @@ void display_handle_winch_signal (int signum) {
 
 	TC("Called { %s(%d)", __func__, signum);
 
-	display_G_sigwinch_flag = 1;
+	display_sigwinch_flag = 1;
 
 	RVoid();
 }
@@ -450,32 +449,32 @@ void display_handle_win_resize(int flag) {
 
 	int i = 0;
 
-	display_G_sigwinch_flag = 0;
+	display_sigwinch_flag = 0;
 
 	display_hide_wins_all();
 
 	werase(stdscr);
 
-	for (i = 0; i < (display_PW_number - 1); i++)
+	for (i = 0; i < (display_pw_number - 1); i++)
 	{
-		werase(G_display.wins[i]);
+		werase(display_resource.wins[i]);
 	}
 
 	erase();
 
-	for (i = 0; i < (display_PW_number - 1); i++)
+	for (i = 0; i < (display_pw_number - 1); i++)
 	{
-		del_panel(G_display.panels[i]);
+		del_panel(display_resource.panels[i]);
 		update_panels();
-		G_display.panels[i] = NULL;
+		display_resource.panels[i] = NULL;
 	}
 
-	for (i = 0; i < (display_PW_number - 1); i++)
+	for (i = 0; i < (display_pw_number - 1); i++)
 	{
-		if (G_display.wins[i])
+		if (display_resource.wins[i])
 		{
-			delwin(G_display.wins[i]);
-			G_display.wins[i] = NULL;
+			delwin(display_resource.wins[i]);
+			display_resource.wins[i] = NULL;
 		}
 	}
 
@@ -533,9 +532,9 @@ void display_handle_win_resize(int flag) {
 	display_draw_cpinfo_win();
 
 	wnoutrefresh(stdscr);
-	for (i = 0; i < (display_PW_number - 1); i++)
+	for (i = 0; i < (display_pw_number - 1); i++)
 	{
-		wnoutrefresh(G_display.wins[1]);
+		wnoutrefresh(display_resource.wins[1]);
 	}
 
 	display_hide_wins_all();
@@ -553,13 +552,13 @@ void display_handle_win_resize(int flag) {
 		display_show_wins_3_4_5();
 	}
 
-	display_G_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);
-	display_G_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);
-	display_G_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);
-	display_G_win3_context_cols = ((DISPLAY_WINS_3_NCOLS) - 2);
-	display_G_win4_context_cols = ((DISPLAY_WINS_4_NCOLS) - 2);
-	display_G_win5_context_cols = ((DISPLAY_WINS_5_NCOLS) - 2);
-	ATOD_DISPLAY_MAX_LINES = display_G_win3_context_lines;
+	display_win3_context_lines = ((DISPLAY_WINS_3_NLINES) - 4);
+	display_win4_context_lines = ((DISPLAY_WINS_4_NLINES) - 2);
+	display_win5_context_lines = ((DISPLAY_WINS_5_NLINES) - 2);
+	display_win3_context_cols = ((DISPLAY_WINS_3_NCOLS) - 2);
+	display_win4_context_cols = ((DISPLAY_WINS_4_NCOLS) - 2);
+	display_win5_context_cols = ((DISPLAY_WINS_5_NCOLS) - 2);
+	a2d_info.w3_displayed_max_lines = display_win3_context_lines;
 
 	RVoid();
 }
@@ -621,7 +620,7 @@ void display_check_term_size(void)
 }
 
 
-static int g_display_second_cur_win = 0;
+static int display_resource_second_cur_win = 0;
 
 /**
  * @brief
@@ -639,38 +638,36 @@ void display_second_tui_exec_logic (void) {
 	display_disable_cursor();
 	unsigned int ch = 0;
 	unsigned char count = 0;
-	//msgcomm_clear_G_status();
-	atod_reset_dtoainfo_flag();
+	a2d_reset_a2dinfo_flag();
 
 	display_previous_head = NULL;
 	display_previous_tail = NULL;
 	display_previous_current = NULL;
 	display_previous_cur_index = 0xDFFF;
-	g_display_second_cur_win = 3;
+	display_resource_second_cur_win = 3;
 
 	#if 1
-	msgcomm_zero_variable(msgcomm_st_NObytes);
-	msgcomm_zero_variable(msgcomm_st_NOpackages);
-	msgcomm_zero_variable(msgcomm_st_runflag);
-	msgcomm_zero_variable(msgcomm_st_runflag_c2d);
-	#endif
+	__atomic_store_n(&(d2c_statistical_count.bytes), 0, __ATOMIC_SEQ_CST);
+	__atomic_store_n(&(d2c_statistical_count.packages), 0, __ATOMIC_SEQ_CST);
+	__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), 0, __ATOMIC_SEQ_CST);
+	__atomic_store_n(&(d2c_run_flag.c2d_run_flag_val), 0, __ATOMIC_SEQ_CST);
+#endif
 
 	while (1)
 	{
 		flushinp();
 		ch = getch();
-		if (display_G_sigwinch_flag)
+		if (display_sigwinch_flag)
 		{
 			display_handle_win_resize(2);
 			continue;
 		}
 
-		unsigned int tmp = 0;
-		msgcomm_receive_status_value(msgcomm_st_runflag_c2d, tmp);
-		if (tmp == MSGCOMM_ST_C2D_FD_ERR || 
-			tmp == MSGCOMM_ST_C2D_PCAP_BREAKLOOP_ERR || 
-			tmp == MSGCOMM_ST_C2D_PCAP_DISPATCH_ERR || 
-			tmp == MSGCOMM_ST_C2D_POLL_ERR)
+		unsigned int tmp = __atomic_load_n(&(d2c_run_flag.c2d_run_flag_val), __ATOMIC_SEQ_CST);
+		if (tmp == C2D_RUN_FLAG_FD_ERR ||
+			tmp == C2D_RUN_FLAG_PCAP_BREAKLOOP_ERR ||
+			tmp == C2D_RUN_FLAG_PCAP_DISPATCH_ERR ||
+			tmp == C2D_RUN_FLAG_POLL_ERR)
 		{
 			TE("Capture Process Error; ErrCode: %hu", tmp);
 			break;
@@ -679,15 +676,16 @@ void display_second_tui_exec_logic (void) {
 		if ('q' == ch) 
 		{
 			TI("ch: %u", ch);
-			msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_EXIT);
+			__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_EXIT, __ATOMIC_SEQ_CST);
 			// Whether the CP process needs to return the exit status
 			break;
 		}
 		else if ('s' == ch) 
 		{
 			TI("ch: %u", ch);
-			msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_SAVE);
+			__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_SAVE, __ATOMIC_SEQ_CST);
 			// Pop-up prompt window & Check whether the data is saved
+			// This feature is not implemented.
 			break;
 		}
 		switch (ch)
@@ -698,15 +696,15 @@ void display_second_tui_exec_logic (void) {
 				{
 					case 3:
 						display_select_3_windows();
-						g_display_second_cur_win = 3;
+						display_resource_second_cur_win = 3;
 						break;
 					case 4:
 						display_select_4_windows();
-						g_display_second_cur_win = 4;
+						display_resource_second_cur_win = 4;
 						break;
 					case 5:
 						display_select_5_windows();
-						g_display_second_cur_win = 5;
+						display_resource_second_cur_win = 5;
 						break;
 					default:
 						break;
@@ -715,44 +713,43 @@ void display_second_tui_exec_logic (void) {
 				break;
 			case 'p':
 				TI("ch: %u", ch);
-				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_PAUSE);
+				__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_PAUSE, __ATOMIC_SEQ_CST);
 				break;
 			case 'c':
 				TI("ch: %u", ch);
-				msgcomm_transfer_status_change(msgcomm_st_runflag, MSGCOMM_ST_CONTINUE);
+				__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_CONTINUE, __ATOMIC_SEQ_CST);
 				break;
 			case KEY_UP:
-				TI("ch: %u; KEY_UP: %u; g_display_second_cur_win: %d", ch, KEY_UP, g_display_second_cur_win);
-				display_move_up_selected_content(g_display_second_cur_win);
+				TI("ch: %u; KEY_UP: %u; display_resource_second_cur_win: %d", ch, KEY_UP, display_resource_second_cur_win);
+				display_move_up_selected_content(display_resource_second_cur_win);
 				break;
 			case KEY_DOWN:
-				TI("ch: %u; KEY_DOWN: %u; g_display_second_cur_win: %d", ch, KEY_DOWN, g_display_second_cur_win);
-				display_move_down_selected_content(g_display_second_cur_win);
+				TI("ch: %u; KEY_DOWN: %u; display_resource_second_cur_win: %d", ch, KEY_DOWN, display_resource_second_cur_win);
+				display_move_down_selected_content(display_resource_second_cur_win);
 				break;
 			case KEY_ENTER:
 				;__attribute__((fallthrough));
 			case '\n':;
 				;__attribute__((fallthrough));
 			case '\r':
-				TI("ch: %u; KEY_ENTER: %u; g_display_second_cur_win: %d", ch, KEY_ENTER, g_display_second_cur_win);
-				display_exec_enter_behavior(g_display_second_cur_win);
+				TI("ch: %u; KEY_ENTER: %u; display_resource_second_cur_win: %d", ch, KEY_ENTER, display_resource_second_cur_win);
+				display_exec_enter_behavior(display_resource_second_cur_win);
 				break;
 			default:
 				break;
 		}
 		if (
-			display_previous_head != ATOD_DISPLAY_DLL_HEAD ||
-			display_previous_tail != ATOD_DISPLAY_DLL_TAIL ||
-			display_previous_current != ATOD_CUR_DISPLAY_LINE
-		)
+			display_previous_head != a2d_info.w3_displayed_list_head ||
+			display_previous_tail != a2d_info.w3_displayed_list_tail ||
+			display_previous_current != a2d_info.w3_displayed_cur_node)
 		{
-			display_content_to_the_interface(ATOD_DISPLAY_DLL_HEAD);
-			display_previous_head = ATOD_DISPLAY_DLL_HEAD;
-			display_previous_tail = ATOD_DISPLAY_DLL_TAIL;
-			display_previous_current = ATOD_CUR_DISPLAY_LINE;
-			display_previous_cur_index = ATOD_CUR_DISPLAY_INDEX;
+			display_content_to_the_interface(a2d_info.w3_displayed_list_head);
+			display_previous_head = a2d_info.w3_displayed_list_head;
+			display_previous_tail = a2d_info.w3_displayed_list_tail;
+			display_previous_current = a2d_info.w3_displayed_cur_node;
+			display_previous_cur_index = a2d_info.w3_displayed_cur_index;
 		}
-		DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYED;
+		a2d_info.displayed_status_flag = A2D_DISPLAYED;
 		//display_draw_cpinfo_win();
 	}
 
@@ -793,53 +790,53 @@ void display_content_to_the_interface(nd_dll_t * head)
 {
 	//TC("Called { %s (%p)", __func__, head);
 
-	if (!ATOD_DISPLAY_DLL_NUMS || !head)
+	if (!a2d_info.w3_displayed_cur_node_nums || !head)
 		return ;
 
 	int i = 0;
 	nd_dll_t * node = head;
 	infonode_t * infonode = NULL;
 
-	while (ATOD_ANALYSIS_VAR_FLAG == ATOD_ANALYSISING);
+	while (a2d_info.analysis_status_flag == A2D_ANALYSISING);
 
-	DTOA_DISPLAY_VAR_FLAG = DTOA_DISPLAYING;
+	a2d_info.displayed_status_flag = A2D_DISPLAYING;
 
 	/* window 3 display */
 	if (
-		display_previous_head != ATOD_DISPLAY_DLL_HEAD || 
-		display_previous_tail != ATOD_DISPLAY_DLL_TAIL
+		display_previous_head != a2d_info.w3_displayed_list_head || 
+		display_previous_tail != a2d_info.w3_displayed_list_tail
 	)
 	{
-		for (i = 0; i < ATOD_DISPLAY_DLL_NUMS; i++)
+		for (i = 0; i < a2d_info.w3_displayed_cur_node_nums; i++)
 		{
 			infonode = container_of(node, infonode_t, listnode);
 
-			if (node == ATOD_CUR_DISPLAY_LINE)
-				wattron(G_display.wins[3], COLOR_PAIR(5));
+			if (node == a2d_info.w3_displayed_cur_node)
+				wattron(display_resource.wins[3], COLOR_PAIR(5));
 			else 
 				if (i % 2)
-					wattron(G_display.wins[3], COLOR_PAIR(7));
+					wattron(display_resource.wins[3], COLOR_PAIR(7));
 				else
-					wattron(G_display.wins[3], COLOR_PAIR(8));
+					wattron(display_resource.wins[3], COLOR_PAIR(8));
 
-			wmove(G_display.wins[3], (i + 3), 1);
-			wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
-			if (node == ATOD_CUR_DISPLAY_LINE)
-				mvwprintw(G_display.wins[3], (i + 3), 1, "%c", '>');
-			mvwprintw(G_display.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
-			mvwprintw(G_display.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
-			mvwprintw(G_display.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
-			mvwprintw(G_display.wins[3], (i + 3), START_X_PROTOCOL, "%s", infonode->protocol);
-			mvwprintw(G_display.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
-			mvwprintw(G_display.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
+			wmove(display_resource.wins[3], (i + 3), 1);
+			wprintw(display_resource.wins[3], "%*s", (COLS - 2), "");
+			if (node == a2d_info.w3_displayed_cur_node)
+				mvwprintw(display_resource.wins[3], (i + 3), 1, "%c", '>');
+			mvwprintw(display_resource.wins[3], (i + 3), START_X_TIME, "%s", infonode->timestamp);
+			mvwprintw(display_resource.wins[3], (i + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+			mvwprintw(display_resource.wins[3], (i + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+			mvwprintw(display_resource.wins[3], (i + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+			mvwprintw(display_resource.wins[3], (i + 3), START_X_DATALENGTH, "%s", infonode->length);
+			mvwprintw(display_resource.wins[3], (i + 3), START_X_BRIEF, "%s", infonode->brief);
 
-			if (node == ATOD_CUR_DISPLAY_LINE)
-				wattroff(G_display.wins[3], COLOR_PAIR(5));
+			if (node == a2d_info.w3_displayed_cur_node)
+				wattroff(display_resource.wins[3], COLOR_PAIR(5));
 			else 
 				if (i % 2)
-					wattroff(G_display.wins[3], COLOR_PAIR(7));
+					wattroff(display_resource.wins[3], COLOR_PAIR(7));
 				else
-					wattroff(G_display.wins[3], COLOR_PAIR(8));
+					wattroff(display_resource.wins[3], COLOR_PAIR(8));
 
 			node = node->next;
 			if (!node)
@@ -848,55 +845,55 @@ void display_content_to_the_interface(nd_dll_t * head)
 	}
 	else 
 	{
-		if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
+		if (display_previous_current != a2d_info.w3_displayed_cur_node)
 		{
 
 			infonode = container_of(display_previous_current, infonode_t, listnode);
 			if (display_previous_cur_index % 2)
-				wattron(G_display.wins[3], COLOR_PAIR(7));
+				wattron(display_resource.wins[3], COLOR_PAIR(7));
 			else
-				wattron(G_display.wins[3], COLOR_PAIR(8));
+				wattron(display_resource.wins[3], COLOR_PAIR(8));
 
-			wmove(G_display.wins[3], (display_previous_cur_index + 3), 1);
-			wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
-			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_TIME, "%s", infonode->timestamp);
-			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
-			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
-			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_PROTOCOL, "%s", infonode->protocol);
-			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_DATALENGTH, "%s", infonode->length);
-			mvwprintw(G_display.wins[3], (display_previous_cur_index + 3), START_X_BRIEF, "%s", infonode->brief);
+			wmove(display_resource.wins[3], (display_previous_cur_index + 3), 1);
+			wprintw(display_resource.wins[3], "%*s", (COLS - 2), "");
+			mvwprintw(display_resource.wins[3], (display_previous_cur_index + 3), START_X_TIME, "%s", infonode->timestamp);
+			mvwprintw(display_resource.wins[3], (display_previous_cur_index + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+			mvwprintw(display_resource.wins[3], (display_previous_cur_index + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+			mvwprintw(display_resource.wins[3], (display_previous_cur_index + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+			mvwprintw(display_resource.wins[3], (display_previous_cur_index + 3), START_X_DATALENGTH, "%s", infonode->length);
+			mvwprintw(display_resource.wins[3], (display_previous_cur_index + 3), START_X_BRIEF, "%s", infonode->brief);
 
 			if (display_previous_cur_index % 2)
-				wattroff(G_display.wins[3], COLOR_PAIR(7));
+				wattroff(display_resource.wins[3], COLOR_PAIR(7));
 			else
-				wattroff(G_display.wins[3], COLOR_PAIR(8));
+				wattroff(display_resource.wins[3], COLOR_PAIR(8));
 
 			
-			infonode = container_of(ATOD_CUR_DISPLAY_LINE, infonode_t, listnode);
-			wattron(G_display.wins[3], COLOR_PAIR(5));
+			infonode = container_of(a2d_info.w3_displayed_cur_node, infonode_t, listnode);
+			wattron(display_resource.wins[3], COLOR_PAIR(5));
 
-			wmove(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), 1);
-			wprintw(G_display.wins[3], "%*s", (COLS - 2), "");
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), 1, "%c", '>');
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_TIME, "%s", infonode->timestamp);
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_PROTOCOL, "%s", infonode->protocol);
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_DATALENGTH, "%s", infonode->length);
-			mvwprintw(G_display.wins[3], (ATOD_CUR_DISPLAY_INDEX + 3), START_X_BRIEF, "%s", infonode->brief);
+			wmove(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), 1);
+			wprintw(display_resource.wins[3], "%*s", (COLS - 2), "");
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), 1, "%c", '>');
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), START_X_TIME, "%s", infonode->timestamp);
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), START_X_SRCADDR, "%s", infonode->srcaddr);
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), START_X_DSTADDR, "%s", infonode->dstaddr);
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), START_X_PROTOCOL, "%s", infonode->protocol);
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), START_X_DATALENGTH, "%s", infonode->length);
+			mvwprintw(display_resource.wins[3], (a2d_info.w3_displayed_cur_index + 3), START_X_BRIEF, "%s", infonode->brief);
 
-			wattroff(G_display.wins[3], COLOR_PAIR(5));
+			wattroff(display_resource.wins[3], COLOR_PAIR(5));
 		}
 	}
 
-	if (display_previous_current != ATOD_CUR_DISPLAY_LINE)
+	if (display_previous_current != a2d_info.w3_displayed_cur_node)
 	{
 		/* window 4 display */
 
 		DISPLAY_WIN_4_CONTENT_CLEAR();
 
 		int i = 0;
-		infonode = container_of(ATOD_CUR_DISPLAY_LINE, infonode_t, listnode);
+		infonode = container_of(a2d_info.w3_displayed_cur_node, infonode_t, listnode);
 
 		if (!(infonode->l1l2head)) {
 			TE("fatal logic error; infonode->l1l2head: %p", infonode->l1l2head);
@@ -904,29 +901,29 @@ void display_content_to_the_interface(nd_dll_t * head)
 		}
 
 		l1l2_node_t * l1l2h = container_of(infonode->l1l2head, l1l2_node_t, l1l2node);
-		
-		ATOD_DISPLAY_L1L2_HEAD = l1l2h;
-		ATOD_DISPLAY_L1L2_CUR = l1l2h;
-		ATOD_DISPLAY_L1L2_CURLINE = 1;
 
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
-		l1l2_node_t * tmp = ATOD_DISPLAY_L1L2_HEAD;
+		a2d_info.w4_l1l2_node_list_head = l1l2h;
+		a2d_info.w4_l1l2_node_cur_node = l1l2h;
+		a2d_info.w4_l1l2_node_cur_line = 1;
 
-		for (i = 0; i < display_G_win4_context_lines; i++)
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line;
+		l1l2_node_t * tmp = a2d_info.w4_l1l2_node_list_head;
+
+		for (i = 0; i < display_win4_context_lines; i++)
 		{
 			if (!tmp) break;
 
-			ATOD_DISPLAY_L1L2_TAIL = tmp;
+			a2d_info.w4_l1l2_node_list_tail = tmp;
 
-			if (rows_num == ATOD_DISPLAY_L1L2_CURLINE)
-				wattron(G_display.wins[4], COLOR_PAIR(5));
+			if (rows_num == a2d_info.w4_l1l2_node_cur_line)
+				wattron(display_resource.wins[4], COLOR_PAIR(5));
 			else
-				wattroff(G_display.wins[4], COLOR_PAIR(5));
+				wattroff(display_resource.wins[4], COLOR_PAIR(5));
 
 			if (tmp->level == 1) {
 				if (tmp->isexpand == 1) {
 					DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-						G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '-', "%s", tmp->content);
+						display_resource.wins[4], rows_num, 2, display_win4_context_cols, '-', "%s", tmp->content);
 					tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
 					if (!tmp) {
 						TE("fatal logic error;");
@@ -936,7 +933,7 @@ void display_content_to_the_interface(nd_dll_t * head)
 				}
 				else if (tmp->isexpand == 0) {
 					DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-						G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '+', "%s", tmp->content);
+						display_resource.wins[4], rows_num, 2, display_win4_context_cols, '+', "%s", tmp->content);
 
 					if (tmp->l1node.next == NULL)
 					{
@@ -962,7 +959,7 @@ void display_content_to_the_interface(nd_dll_t * head)
 				}
 				#endif
 				DISPLAY_WIN_DISPLAY_CONTENT(
-					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", tmp->content);
+					display_resource.wins[4], rows_num, 2, display_win4_context_cols, "%s", tmp->content);
 
 				if (tmp->l1l2node.next == NULL)
 				{
@@ -985,24 +982,23 @@ void display_content_to_the_interface(nd_dll_t * head)
 		w5_node_t * w5 = NULL, * w5tmp = NULL;
 		w5 = container_of(infonode->w5head, w5_node_t, w5node);
 
-		ATOD_DISPLAY_W5_CURINDEX = rows_num = 1;
-		ATOD_DISPLAY_W5_START_BYTE_INDEX = w5->startindex;
-		ATOD_DISPLAY_W5_END_BYTE_INDEX = 0;
-		ATOD_DISPLAY_W5_HEAD = w5tmp = w5;
-		ATOD_DISPLAY_W5_CUR = w5;
+		a2d_info.w5_displayed_cur_line_number = rows_num = 1;
+		a2d_info.w5_displayed_start_byte_index = w5->startindex;
+		a2d_info.w5_displayed_end_byte_index = 0;
+		a2d_info.w5_displayed_list_head = w5tmp = w5;
+		a2d_info.w5_displayed_cur_node = w5;
 
-		for (i = 0; i < display_G_win5_context_lines; i++)
+		for (i = 0; i < display_win5_context_lines; i++)
 		{
 			if (!w5tmp) break;
+			a2d_info.w5_displayed_list_tail = w5tmp;
 
-			ATOD_DISPLAY_W5_TAIL = w5tmp;
-
-			if (w5tmp == ATOD_DISPLAY_W5_CUR)
-				wattron(G_display.wins[5], COLOR_PAIR(5));
+			if (w5tmp == a2d_info.w5_displayed_cur_node)
+				wattron(display_resource.wins[5], COLOR_PAIR(5));
 			else
-				wattroff(G_display.wins[5], COLOR_PAIR(5));
+				wattroff(display_resource.wins[5], COLOR_PAIR(5));
 
-			mvwprintw(G_display.wins[5], (rows_num + i), 1, "%s", w5tmp->content);
+			mvwprintw(display_resource.wins[5], (rows_num + i), 1, "%s", w5tmp->content);
 
 			if (!(w5tmp->w5node.next)) {
 				TI("win5 output complete");
@@ -1012,12 +1008,12 @@ void display_content_to_the_interface(nd_dll_t * head)
 			w5tmp = container_of((w5tmp->w5node.next), w5_node_t, w5node);
 		}
 
-		ATOD_DISPLAY_W5_END_BYTE_INDEX = ATOD_DISPLAY_W5_TAIL->endindex;
+		a2d_info.w5_displayed_end_byte_index = a2d_info.w5_displayed_list_tail->endindex;
 	}
 	
-	wrefresh(G_display.wins[3]);
-	wrefresh(G_display.wins[4]);
-	wrefresh(G_display.wins[5]);
+	wrefresh(display_resource.wins[3]);
+	wrefresh(display_resource.wins[4]);
+	wrefresh(display_resource.wins[5]);
 
 	//RVoid();
 	return ;
@@ -1032,12 +1028,12 @@ void display_win_3_move_up_selected_content (void)
 {
 	//TC("Called { %s(void)", __func__);
 
-	if (!ATOD_CUR_DISPLAY_LINE)
+	if (!a2d_info.w3_displayed_cur_node)
 		return ;
 
-	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+	a2d_info.is_manual_flag = A2D_MANUAL;
 	
-	nd_dll_t *node = ATOD_CUR_DISPLAY_LINE;
+	nd_dll_t *node = a2d_info.w3_displayed_cur_node;
 	infonode_t *infonode = container_of(node, infonode_t, listnode);
 
 	TI("infonode->g_store_index: %lu", infonode->g_store_index);
@@ -1048,15 +1044,15 @@ void display_win_3_move_up_selected_content (void)
 		return ;
 	}
 
-	if (ATOD_CUR_DISPLAY_INDEX == 0) {
-		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_TOP;
+	if (a2d_info.w3_displayed_cur_index == 0) {
+		a2d_info.is_manual_flag = A2D_MANUAL_TOP;
 		nd_delay_microsecond(0, 1000000);
 		//RVoid();
 		return ;
 	}
 
-	ATOD_CUR_DISPLAY_LINE = node->prev;
-	ATOD_CUR_DISPLAY_INDEX--;
+	a2d_info.w3_displayed_cur_node = node->prev;
+	a2d_info.w3_displayed_cur_index--;
 
 	//RVoid();
 	return ;
@@ -1072,9 +1068,9 @@ void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int li
  */
 #define DISPLAY_WIN4_CLEAR_WIN5_CURLINE_COLOR()																\
 	do {																									\
-		wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);												\
-		wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");									\
-		mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", ATOD_DISPLAY_W5_CUR->content);		\
+		wmove(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1);												\
+		wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");									\
+		mvwprintw(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1, "%s", a2d_info.w5_displayed_cur_node->content);		\
 	} while(0);																								\
 
 
@@ -1104,10 +1100,10 @@ void display_win4_clear_win5_specified_area_color(l1l2_node_t * l1l2node)
 	if (l1l2node->byte_start == 0 && l1l2node->byte_end == 0)
 		RVoid();
 
-	if (l1l2node->byte_start < ATOD_DISPLAY_W5_START_BYTE_INDEX)
+	if (l1l2node->byte_start < a2d_info.w5_displayed_start_byte_index)
 	{
-		w5_node_t * tmp_w5_head = ATOD_DISPLAY_W5_HEAD;
-		unsigned short tmp_w5_start_byte_index = ATOD_DISPLAY_W5_START_BYTE_INDEX;
+		w5_node_t * tmp_w5_head = a2d_info.w5_displayed_list_head;
+		unsigned short tmp_w5_start_byte_index = a2d_info.w5_displayed_start_byte_index;
 		while (l1l2node->byte_start < tmp_w5_start_byte_index)
 		{
 			if (!(tmp_w5_head->w5node.prev))
@@ -1129,7 +1125,7 @@ void display_win4_clear_win5_specified_area_color(l1l2_node_t * l1l2node)
 	w5_node_t * byte_start = NULL, * tmp = NULL;
 	unsigned short byte_start_index = 0, tmp_index = 1;
 
-	for (tmp_index = 1, tmp = ATOD_DISPLAY_W5_HEAD; tmp_index <= display_G_win5_context_lines; tmp_index++)
+	for (tmp_index = 1, tmp = a2d_info.w5_displayed_list_head; tmp_index <= display_win5_context_lines; tmp_index++)
 	{
 		if (l1l2node->byte_start >= tmp->startindex && l1l2node->byte_start <= tmp->endindex) 
 		{
@@ -1153,11 +1149,11 @@ void display_win4_clear_win5_specified_area_color(l1l2_node_t * l1l2node)
 
 	tmp = byte_start;
 	tmp_index = byte_start_index;
-	for (tmp_index = byte_start_index; tmp_index <= display_G_win5_context_lines; tmp_index++)
+	for (tmp_index = byte_start_index; tmp_index <= display_win5_context_lines; tmp_index++)
 	{
-		wmove(G_display.wins[5], tmp_index, 1);
-		wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
-		mvwprintw(G_display.wins[5], tmp_index, 1, "%s", tmp->content);
+		wmove(display_resource.wins[5], tmp_index, 1);
+		wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");
+		mvwprintw(display_resource.wins[5], tmp_index, 1, "%s", tmp->content);
 
 		if (l1l2node->byte_end > tmp->endindex) 
 		{
@@ -1172,7 +1168,7 @@ void display_win4_clear_win5_specified_area_color(l1l2_node_t * l1l2node)
 		break;
 	}
 
-	wrefresh(G_display.wins[5]);
+	wrefresh(display_resource.wins[5]);
 
 	RVoid();
 }
@@ -1203,10 +1199,10 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 	if (l1l2node->byte_start == 0 && l1l2node->byte_end == 0)
 		RVoid();
 
-	if (l1l2node->byte_start < ATOD_DISPLAY_W5_START_BYTE_INDEX)
+	if (l1l2node->byte_start < a2d_info.w5_displayed_start_byte_index)
 	{
-		w5_node_t *tmp_w5_head = ATOD_DISPLAY_W5_HEAD;
-		unsigned short tmp_w5_start_byte_index = ATOD_DISPLAY_W5_START_BYTE_INDEX;
+		w5_node_t *tmp_w5_head = a2d_info.w5_displayed_list_head;
+		unsigned short tmp_w5_start_byte_index = a2d_info.w5_displayed_start_byte_index;
 		while (l1l2node->byte_start < tmp_w5_start_byte_index)
 		{
 			if (!(tmp_w5_head->w5node.prev))
@@ -1228,7 +1224,7 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 	w5_node_t * byte_start = NULL, * byte_tail = NULL, * tmp = NULL;
 	unsigned short byte_start_index = 0, byte_tail_index = 0, tmp_index = 1;
 
-	for (tmp_index = 1, tmp = ATOD_DISPLAY_W5_HEAD; tmp_index <= display_G_win5_context_lines; tmp_index++)
+	for (tmp_index = 1, tmp = a2d_info.w5_displayed_list_head; tmp_index <= display_win5_context_lines; tmp_index++)
 	{
 		if (l1l2node->byte_start >= tmp->startindex && l1l2node->byte_start <= tmp->endindex)
 		{
@@ -1296,11 +1292,11 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 		hex_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].hex_offset_tail;
 		char_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].char_offset;
 		char_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].char_offset;
-		wattron(G_display.wins[5], COLOR_PAIR(5));
-		mvwaddnstr(G_display.wins[5], byte_start_index, hex_start, byte_start->content + hex_start - 1, hex_tail - hex_start + 1);
-		mvwaddnstr(G_display.wins[5], byte_start_index, char_start, byte_start->content + char_start - 1, char_tail - char_start + 1);
-		wattroff(G_display.wins[5], COLOR_PAIR(5));
-		wrefresh(G_display.wins[5]);
+		wattron(display_resource.wins[5], COLOR_PAIR(5));
+		mvwaddnstr(display_resource.wins[5], byte_start_index, hex_start, byte_start->content + hex_start - 1, hex_tail - hex_start + 1);
+		mvwaddnstr(display_resource.wins[5], byte_start_index, char_start, byte_start->content + char_start - 1, char_tail - char_start + 1);
+		wattroff(display_resource.wins[5], COLOR_PAIR(5));
+		wrefresh(display_resource.wins[5]);
 		RVoid();
 	}
 
@@ -1314,13 +1310,13 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 	hex_tail = clhco[byte_start->endindex % CLHCO_NUMBER].hex_offset_tail;
 	char_start = clhco[l1l2node->byte_start % CLHCO_NUMBER].char_offset;
 	char_tail = clhco[byte_start->endindex % CLHCO_NUMBER].char_offset;
-	wattron(G_display.wins[5], COLOR_PAIR(5));
-	mvwaddnstr(G_display.wins[5], byte_start_index, hex_start, byte_start->content + hex_start - 1, hex_tail - hex_start + 1);
-	mvwaddnstr(G_display.wins[5], byte_start_index, char_start, byte_start->content + char_start - 1, char_tail - char_start + 1);
-	wattroff(G_display.wins[5], COLOR_PAIR(5));
+	wattron(display_resource.wins[5], COLOR_PAIR(5));
+	mvwaddnstr(display_resource.wins[5], byte_start_index, hex_start, byte_start->content + hex_start - 1, hex_tail - hex_start + 1);
+	mvwaddnstr(display_resource.wins[5], byte_start_index, char_start, byte_start->content + char_start - 1, char_tail - char_start + 1);
+	wattroff(display_resource.wins[5], COLOR_PAIR(5));
 
 	tmp = container_of(byte_start->w5node.next, w5_node_t, w5node);
-	for (tmp_index = (byte_start_index + 1); tmp_index <= display_G_win5_context_lines; tmp_index++)
+	for (tmp_index = (byte_start_index + 1); tmp_index <= display_win5_context_lines; tmp_index++)
 	{
 		if (byte_tail == tmp) 
 		{
@@ -1328,10 +1324,10 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 			hex_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].hex_offset_tail;
 			char_start = clhco[tmp->startindex % CLHCO_NUMBER].char_offset;
 			char_tail = clhco[l1l2node->byte_end % CLHCO_NUMBER].char_offset;
-			wattron(G_display.wins[5], COLOR_PAIR(5));
-			mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
-			mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
-			wattroff(G_display.wins[5], COLOR_PAIR(5));
+			wattron(display_resource.wins[5], COLOR_PAIR(5));
+			mvwaddnstr(display_resource.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
+			mvwaddnstr(display_resource.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
+			wattroff(display_resource.wins[5], COLOR_PAIR(5));
 			break;
 		}
 
@@ -1339,15 +1335,15 @@ void display_win4_fills_win5_specified_area_color(l1l2_node_t * l1l2node)
 		hex_tail = clhco[tmp->endindex % CLHCO_NUMBER].hex_offset_tail;
 		char_start = clhco[tmp->startindex % CLHCO_NUMBER].char_offset;
 		char_tail = clhco[tmp->endindex % CLHCO_NUMBER].char_offset;
-		wattron(G_display.wins[5], COLOR_PAIR(5));
-		mvwaddnstr(G_display.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
-		mvwaddnstr(G_display.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
-		wattroff(G_display.wins[5], COLOR_PAIR(5));
+		wattron(display_resource.wins[5], COLOR_PAIR(5));
+		mvwaddnstr(display_resource.wins[5], tmp_index, hex_start, tmp->content + hex_start - 1, hex_tail - hex_start + 1);
+		mvwaddnstr(display_resource.wins[5], tmp_index, char_start, tmp->content + char_start - 1, char_tail - char_start + 1);
+		wattroff(display_resource.wins[5], COLOR_PAIR(5));
 
 		tmp = container_of(tmp->w5node.next, w5_node_t, w5node);
 	}
 
-	wrefresh(G_display.wins[5]);
+	wrefresh(display_resource.wins[5]);
 
 	RVoid();
 }
@@ -1382,31 +1378,31 @@ void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, in
 			newhead = su;
 	}
 
-	ATOD_DISPLAY_L1L2_HEAD = newhead;
-	ATOD_DISPLAY_L1L2_CUR = cur;
-	ATOD_DISPLAY_L1L2_CURLINE = line;
+	a2d_info.w4_l1l2_node_list_head = newhead;
+	a2d_info.w4_l1l2_node_cur_node = cur;
+	a2d_info.w4_l1l2_node_cur_line = line;
 
 	unsigned short rows_num = 1;
-	l1l2_node_t *tmp = ATOD_DISPLAY_L1L2_HEAD;
+	l1l2_node_t *tmp = a2d_info.w4_l1l2_node_list_head;
 
-	for (i = 0; i < display_G_win4_context_lines; i++)
+	for (i = 0; i < display_win4_context_lines; i++)
 	{
 		if (!tmp)
 			break;
 
-		ATOD_DISPLAY_L1L2_TAIL = tmp;
+		a2d_info.w4_l1l2_node_list_tail = tmp;
 
-		if (rows_num == ATOD_DISPLAY_L1L2_CURLINE) 
-			wattron(G_display.wins[4], COLOR_PAIR(5));
+		if (rows_num == a2d_info.w4_l1l2_node_cur_line) 
+			wattron(display_resource.wins[4], COLOR_PAIR(5));
 		else
-			wattroff(G_display.wins[4], COLOR_PAIR(5));
+			wattroff(display_resource.wins[4], COLOR_PAIR(5));
 
 		if (tmp->level == 1)
 		{
 			if (tmp->isexpand == 1)
 			{
 				DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '-', "%s", tmp->content);
+					display_resource.wins[4], rows_num, 2, display_win4_context_cols, '-', "%s", tmp->content);
 				tmp = container_of((tmp->l1l2node.next), l1l2_node_t, l1l2node);
 				if (!tmp)
 				{
@@ -1418,7 +1414,7 @@ void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, in
 			else if (tmp->isexpand == 0)
 			{
 				DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-					G_display.wins[4], rows_num, 2, display_G_win4_context_cols, '+', "%s", tmp->content);
+					display_resource.wins[4], rows_num, 2, display_win4_context_cols, '+', "%s", tmp->content);
 				
 				if (tmp->l1node.next == NULL) 
 				{
@@ -1439,7 +1435,7 @@ void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, in
 		if (tmp->level == 2)
 		{
 			DISPLAY_WIN_DISPLAY_CONTENT(
-				G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", tmp->content);
+				display_resource.wins[4], rows_num, 2, display_win4_context_cols, "%s", tmp->content);
 
 			if (tmp->l1l2node.next == NULL)
 			{
@@ -1451,7 +1447,7 @@ void display_win_4_redraw_interface(l1l2_node_t * newhead, l1l2_node_t * cur, in
 		}	
 	}
 
-	wrefresh(G_display.wins[4]);
+	wrefresh(display_resource.wins[4]);
 
 	RVoid();
 }
@@ -1465,64 +1461,64 @@ void display_win_4_move_up_selected_content (void)
 {
 	TC("Called { %s(void)", __func__);
 
-	if (!ATOD_DISPLAY_L1L2_CUR)
+	if (!a2d_info.w4_l1l2_node_cur_node)
 		RVoid();
 
-	if ((ATOD_DISPLAY_L1L2_CURLINE < 1) || (ATOD_DISPLAY_L1L2_CURLINE > display_G_win4_context_lines))
+	if ((a2d_info.w4_l1l2_node_cur_line < 1) || (a2d_info.w4_l1l2_node_cur_line > display_win4_context_lines))
 	{
-		TE("fatal logic error; ATOD_DISPLAY_L1L2_CURLINE: %hu", ATOD_DISPLAY_L1L2_CURLINE);
+		TE("fatal logic error; a2d_info.w4_l1l2_node_cur_line: %hu", a2d_info.w4_l1l2_node_cur_line);
 		abort();
 	}
 
 	l1l2_node_t * prev = NULL, * su = NULL;
 
-	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.prev == NULL && ATOD_DISPLAY_L1L2_CURLINE != 1) {
-		TW("warning ATOD_DISPLAY_L1L2_CURLINE: %d; ATOD_DISPLAY_L1L2_CUR->l1l2node.prev: %p",
-		   ATOD_DISPLAY_L1L2_CURLINE, ATOD_DISPLAY_L1L2_CUR->l1l2node.prev);
+	if (a2d_info.w4_l1l2_node_cur_node->l1l2node.prev == NULL && a2d_info.w4_l1l2_node_cur_line != 1) {
+		TW("warning a2d_info.w4_l1l2_node_cur_line: %d; a2d_info.w4_l1l2_node_cur_node->l1l2node.prev: %p",
+		   a2d_info.w4_l1l2_node_cur_line, a2d_info.w4_l1l2_node_cur_node->l1l2node.prev);
 		RVoid();
 	}
 
-	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.prev == NULL /*&& ATOD_DISPLAY_L1L2_CURLINE == 1*/)
+	if (a2d_info.w4_l1l2_node_cur_node->l1l2node.prev == NULL /*&& a2d_info.w4_l1l2_node_cur_line == 1*/)
 	{
 		display_popup_message_notification("It's already at the top");
 		RVoid();
 	}
 
-	prev = container_of((ATOD_DISPLAY_L1L2_CUR->l1l2node.prev), l1l2_node_t, l1l2node);
+	prev = container_of((a2d_info.w4_l1l2_node_cur_node->l1l2node.prev), l1l2_node_t, l1l2node);
 	if (!prev) {
 		TE("fatal logic error; prev: %p;", prev);
 		abort();
 	}
 
-	if ((prev) && ATOD_DISPLAY_L1L2_CURLINE == 1)
+	if ((prev) && a2d_info.w4_l1l2_node_cur_line == 1)
 	{
-		display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
-		display_win_4_redraw_interface(prev, prev, ATOD_DISPLAY_L1L2_CURLINE);
+		display_win4_clear_win5_specified_area_color(a2d_info.w4_l1l2_node_cur_node);
+		display_win_4_redraw_interface(prev, prev, a2d_info.w4_l1l2_node_cur_line);
 		display_win4_fills_win5_specified_area_color(prev);
 		RVoid();
 	}
 
-	if (ATOD_DISPLAY_L1L2_CUR->level == 1)
+	if (a2d_info.w4_l1l2_node_cur_node->level == 1)
 	{
-		char c = ATOD_DISPLAY_L1L2_CUR->isexpand ? '-' : '+';
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		char c = a2d_info.w4_l1l2_node_cur_node->isexpand ? '-' : '+';
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line;
 		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, c, "%s", a2d_info.w4_l1l2_node_cur_node->content);
 	}
-	else if (ATOD_DISPLAY_L1L2_CUR->level == 2)
+	else if (a2d_info.w4_l1l2_node_cur_node->level == 2)
 	{
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line;
 		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, "%s", a2d_info.w4_l1l2_node_cur_node->content);
 	}
 	else
 	{
-		TE("fatal logic error; ATOD_DISPLAY_L1L2_CUR: %p; ATOD_DISPLAY_L1L2_CUR->level: %d", 
-				ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
+		TE("fatal logic error; a2d_info.w4_l1l2_node_cur_node: %p; a2d_info.w4_l1l2_node_cur_node->level: %d", 
+				a2d_info.w4_l1l2_node_cur_node, a2d_info.w4_l1l2_node_cur_node->level);
 		abort();
 	}
 
-	display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
+	display_win4_clear_win5_specified_area_color(a2d_info.w4_l1l2_node_cur_node);
 
 	if (prev->level == 2) 
 	{
@@ -1531,20 +1527,20 @@ void display_win_4_move_up_selected_content (void)
 			prev = su;
 	}
 
-	wattron(G_display.wins[4], COLOR_PAIR(5));
+	wattron(display_resource.wins[4], COLOR_PAIR(5));
 
 	if (prev->level == 1) 
 	{
 		char c = prev->isexpand ? '-' : '+';
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE - 1;
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line - 1;
 		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", prev->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, c, "%s", prev->content);
 	}
 	else if (prev->level == 2)
 	{
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE - 1;
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line - 1;
 		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", prev->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, "%s", prev->content);
 	}
 	else 
 	{
@@ -1552,14 +1548,14 @@ void display_win_4_move_up_selected_content (void)
 		abort();
 	}
 
-	wattroff(G_display.wins[4], COLOR_PAIR(5));
+	wattroff(display_resource.wins[4], COLOR_PAIR(5));
 
 	display_win4_fills_win5_specified_area_color(prev);
 
-	ATOD_DISPLAY_L1L2_CURLINE--;
-	ATOD_DISPLAY_L1L2_CUR = prev;
+	a2d_info.w4_l1l2_node_cur_line--;
+	a2d_info.w4_l1l2_node_cur_node = prev;
 
-	wrefresh(G_display.wins[4]);
+	wrefresh(display_resource.wins[4]);
 
 	RVoid();
 }
@@ -1577,23 +1573,23 @@ void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int li
 	w5_node_t * w5tmp = NULL;
 	unsigned short rows_num = 1;
 
-	ATOD_DISPLAY_W5_CURINDEX = line;
-	ATOD_DISPLAY_W5_HEAD = w5tmp = newhead;
-	ATOD_DISPLAY_W5_CUR = cur;
-	ATOD_DISPLAY_W5_START_BYTE_INDEX = w5tmp->startindex;
+	a2d_info.w5_displayed_cur_line_number = line;
+	a2d_info.w5_displayed_list_head = w5tmp = newhead;
+	a2d_info.w5_displayed_cur_node = cur;
+	a2d_info.w5_displayed_start_byte_index = w5tmp->startindex;
 
-	for (i = 0; i < display_G_win5_context_lines; i++)
+	for (i = 0; i < display_win5_context_lines; i++)
 	{
 		if (!w5tmp) break;
 
-		ATOD_DISPLAY_W5_TAIL = w5tmp;
+		a2d_info.w5_displayed_list_tail = w5tmp;
 
-		if (w5tmp == ATOD_DISPLAY_W5_CUR)
-			wattron(G_display.wins[5], COLOR_PAIR(5));
+		if (w5tmp == a2d_info.w5_displayed_cur_node)
+			wattron(display_resource.wins[5], COLOR_PAIR(5));
 		else
-			wattroff(G_display.wins[5], COLOR_PAIR(5));
+			wattroff(display_resource.wins[5], COLOR_PAIR(5));
 
-		mvwprintw(G_display.wins[5], (rows_num + i), 1, "%s", w5tmp->content);
+		mvwprintw(display_resource.wins[5], (rows_num + i), 1, "%s", w5tmp->content);
 
 		if (!(w5tmp->w5node.next)) {
 			TI("win5 output complete");
@@ -1603,9 +1599,9 @@ void display_win_5_redraw_interface(w5_node_t * newhead, w5_node_t * cur, int li
 		w5tmp = container_of((w5tmp->w5node.next), w5_node_t, w5node);
 	}
 
-	ATOD_DISPLAY_W5_END_BYTE_INDEX = ATOD_DISPLAY_W5_TAIL->endindex;
+	a2d_info.w5_displayed_end_byte_index = a2d_info.w5_displayed_list_tail->endindex;
 
-	wrefresh(G_display.wins[5]);
+	wrefresh(display_resource.wins[5]);
 
 	RVoid();
 }
@@ -1619,50 +1615,50 @@ void display_win_5_move_up_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
-	if (!ATOD_DISPLAY_W5_CUR)
+	if (!a2d_info.w5_displayed_cur_node)
 		RVoid();
 
-	if (ATOD_DISPLAY_W5_CURINDEX < 1 || ATOD_DISPLAY_W5_CURINDEX > display_G_win5_context_lines) {
-		TW("warning ATOD_DISPLAY_W5_CURINDEX value is error");
-		RVoid();
-	}
-
-	if (ATOD_DISPLAY_W5_CUR->w5node.prev == NULL && ATOD_DISPLAY_W5_CURINDEX != 1) {
-		TW("warning ATOD_DISPLAY_W5_CURINDEX: %d; ATOD_DISPLAY_W5_CUR->w5node.prev: %p", 
-				ATOD_DISPLAY_W5_CURINDEX, ATOD_DISPLAY_W5_CUR->w5node.prev);
+	if (a2d_info.w5_displayed_cur_line_number < 1 || a2d_info.w5_displayed_cur_line_number > display_win5_context_lines) {
+		TW("warning a2d_info.w5_displayed_cur_line_number value is error");
 		RVoid();
 	}
 
-	if (ATOD_DISPLAY_W5_CUR->w5node.prev == NULL) {
+	if (a2d_info.w5_displayed_cur_node->w5node.prev == NULL && a2d_info.w5_displayed_cur_line_number != 1) {
+		TW("warning a2d_info.w5_displayed_cur_line_number: %d; a2d_info.w5_displayed_cur_node->w5node.prev: %p", 
+				a2d_info.w5_displayed_cur_line_number, a2d_info.w5_displayed_cur_node->w5node.prev);
+		RVoid();
+	}
+
+	if (a2d_info.w5_displayed_cur_node->w5node.prev == NULL) {
 		display_popup_message_notification("It's already at the top");
 		RVoid();
 	}
 
-	w5_node_t * prev = container_of(ATOD_DISPLAY_W5_CUR->w5node.prev, w5_node_t, w5node);
+	w5_node_t * prev = container_of(a2d_info.w5_displayed_cur_node->w5node.prev, w5_node_t, w5node);
 	if (!prev) {
 		TE("fatal logic error; prev: %p;", prev);
 		abort();
 	} 
 
-	if ((ATOD_DISPLAY_W5_CUR == ATOD_DISPLAY_W5_HEAD) && (ATOD_DISPLAY_W5_CURINDEX == 1) && (prev)) {
-		display_win_5_redraw_interface(prev, prev, ATOD_DISPLAY_W5_CURINDEX);
+	if ((a2d_info.w5_displayed_cur_node == a2d_info.w5_displayed_list_head) && (a2d_info.w5_displayed_cur_line_number == 1) && (prev)) {
+		display_win_5_redraw_interface(prev, prev, a2d_info.w5_displayed_cur_line_number);
 		RVoid();
 	}
 
-	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
-	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
-	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", ATOD_DISPLAY_W5_CUR->content);
+	wmove(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1);
+	wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");
+	mvwprintw(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1, "%s", a2d_info.w5_displayed_cur_node->content);
 
-	ATOD_DISPLAY_W5_CURINDEX--;
-	ATOD_DISPLAY_W5_CUR = prev;
+	a2d_info.w5_displayed_cur_line_number--;
+	a2d_info.w5_displayed_cur_node = prev;
 
-	wattron(G_display.wins[5], COLOR_PAIR(5));
-	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
-	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
-	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", prev->content);
-	wattroff(G_display.wins[5], COLOR_PAIR(5));
+	wattron(display_resource.wins[5], COLOR_PAIR(5));
+	wmove(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1);
+	wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");
+	mvwprintw(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1, "%s", prev->content);
+	wattroff(display_resource.wins[5], COLOR_PAIR(5));
 
-	wrefresh(G_display.wins[5]);
+	wrefresh(display_resource.wins[5]);
 
 	RVoid();
 }
@@ -1707,17 +1703,17 @@ void display_win_3_move_down_selected_content(void)
 {
 	//TC("Called { %s(void)", __func__);
 
-	TI("ATOD_CUR_DISPLAY_LINE: %p", ATOD_CUR_DISPLAY_LINE);
-	TI("ATOD_CUR_DISPLAY_INDEX: %hu", ATOD_CUR_DISPLAY_INDEX);
+	TI("a2d_info.w3_displayed_cur_node: %p", a2d_info.w3_displayed_cur_node);
+	TI("a2d_info.w3_displayed_cur_index: %hu", a2d_info.w3_displayed_cur_index);
 
-	if (!ATOD_CUR_DISPLAY_LINE)
+	if (!a2d_info.w3_displayed_cur_node)
 		return ;
 	
-	DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL;
+	a2d_info.is_manual_flag = A2D_MANUAL;
 
-	nd_dll_t *node = ATOD_CUR_DISPLAY_LINE;
+	nd_dll_t *node = a2d_info.w3_displayed_cur_node;
 	infonode_t *infonode = container_of(node, infonode_t, listnode);
-	unsigned long tmp = __sync_fetch_and_add(msgcomm_st_NOpackages, 0);
+	unsigned long tmp = __sync_fetch_and_add(&(d2c_statistical_count.packages), 0);
 
 	TI("infonode->g_store_index: %lu; tmp: %lu", infonode->g_store_index, tmp);
 
@@ -1730,14 +1726,14 @@ void display_win_3_move_down_selected_content(void)
 
 	if (node->next == NULL)
 	{
-		DTOA_ISOR_MANUAL_VAR_FLAG = DTOA_MANUAL_BOTTOM;
+		a2d_info.is_manual_flag = A2D_MANUAL_BOTTOM;
 		nd_delay_microsecond(0, 1000000);
 		//RVoid();
 		return ;
 	}
 
-	ATOD_CUR_DISPLAY_LINE = node->next;
-	ATOD_CUR_DISPLAY_INDEX++;
+	a2d_info.w3_displayed_cur_node = node->next;
+	a2d_info.w3_displayed_cur_index++;
 
 	//RVoid();
 	return ;
@@ -1752,39 +1748,39 @@ void display_win_4_move_down_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
-	if (!ATOD_DISPLAY_L1L2_CUR)
+	if (!a2d_info.w4_l1l2_node_cur_node)
 		RVoid();
 
-	if ((ATOD_DISPLAY_L1L2_CURLINE < 1) || (ATOD_DISPLAY_L1L2_CURLINE > display_G_win4_context_lines))
+	if ((a2d_info.w4_l1l2_node_cur_line < 1) || (a2d_info.w4_l1l2_node_cur_line > display_win4_context_lines))
 	{
-		TE("fatal logic error; ATOD_DISPLAY_L1L2_CURLINE: %hu", ATOD_DISPLAY_L1L2_CURLINE);
+		TE("fatal logic error; a2d_info.w4_l1l2_node_cur_line: %hu", a2d_info.w4_l1l2_node_cur_line);
 		abort();
 	}
 
 	l1l2_node_t *next = NULL, *nextsu = NULL, *newhead = NULL, *tmp = NULL;
 
-	if (ATOD_DISPLAY_L1L2_CUR->l1l2node.next == NULL)
+	if (a2d_info.w4_l1l2_node_cur_node->l1l2node.next == NULL)
 	{
 		display_popup_message_notification("It's already at the bottom");
 		RVoid();
 	}
 
-	next = container_of((ATOD_DISPLAY_L1L2_CUR->l1l2node.next), l1l2_node_t, l1l2node);
+	next = container_of((a2d_info.w4_l1l2_node_cur_node->l1l2node.next), l1l2_node_t, l1l2node);
 
-	if (ATOD_DISPLAY_L1L2_CUR->level == 1 && ATOD_DISPLAY_L1L2_CUR->l1node.next != NULL)
-		nextsu = container_of((ATOD_DISPLAY_L1L2_CUR->l1node.next), l1l2_node_t, l1node);
+	if (a2d_info.w4_l1l2_node_cur_node->level == 1 && a2d_info.w4_l1l2_node_cur_node->l1node.next != NULL)
+		nextsu = container_of((a2d_info.w4_l1l2_node_cur_node->l1node.next), l1l2_node_t, l1node);
 
-	if ((next) && ATOD_DISPLAY_L1L2_CUR == ATOD_DISPLAY_L1L2_TAIL &&
-		ATOD_DISPLAY_L1L2_CUR->level == 1 && ATOD_DISPLAY_L1L2_CUR->isexpand == 0 &&
+	if ((next) && a2d_info.w4_l1l2_node_cur_node == a2d_info.w4_l1l2_node_list_tail &&
+		a2d_info.w4_l1l2_node_cur_node->level == 1 && a2d_info.w4_l1l2_node_cur_node->isexpand == 0 &&
 		!nextsu)
 	{
 		display_popup_message_notification("It's already at the bottom");
 		RVoid();
 	}
 
-	if ((next) && (ATOD_DISPLAY_L1L2_CURLINE == display_G_win4_context_lines))
+	if ((next) && (a2d_info.w4_l1l2_node_cur_line == display_win4_context_lines))
 	{
-		tmp = container_of((ATOD_DISPLAY_L1L2_HEAD->l1l2node.next), l1l2_node_t, l1l2node);
+		tmp = container_of((a2d_info.w4_l1l2_node_list_head->l1l2node.next), l1l2_node_t, l1l2node);
 
 		if (tmp->level == 2) 
 		{
@@ -1795,33 +1791,33 @@ void display_win_4_move_down_selected_content(void)
 		}
 		if (tmp->level == 1)
 			newhead = tmp;
-		display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
-		display_win_4_redraw_interface(newhead, next, ATOD_DISPLAY_L1L2_CURLINE);
-		display_win4_fills_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
+		display_win4_clear_win5_specified_area_color(a2d_info.w4_l1l2_node_cur_node);
+		display_win_4_redraw_interface(newhead, next, a2d_info.w4_l1l2_node_cur_line);
+		display_win4_fills_win5_specified_area_color(a2d_info.w4_l1l2_node_cur_node);
 		RVoid();
 	}
 
-	if (ATOD_DISPLAY_L1L2_CUR->level == 1)
+	if (a2d_info.w4_l1l2_node_cur_node->level == 1)
 	{
-		char c = ATOD_DISPLAY_L1L2_CUR->isexpand ? '-' : '+';
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		char c = a2d_info.w4_l1l2_node_cur_node->isexpand ? '-' : '+';
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line;
 		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, c, "%s", a2d_info.w4_l1l2_node_cur_node->content);
 	}
-	else if (ATOD_DISPLAY_L1L2_CUR->level == 2)
+	else if (a2d_info.w4_l1l2_node_cur_node->level == 2)
 	{
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE;
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line;
 		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", ATOD_DISPLAY_L1L2_CUR->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, "%s", a2d_info.w4_l1l2_node_cur_node->content);
 	}
 	else
 	{
-		TE("fatal logic error; ATOD_DISPLAY_L1L2_CUR: %p; ATOD_DISPLAY_L1L2_CUR->level: %d",
-		   ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
+		TE("fatal logic error; a2d_info.w4_l1l2_node_cur_node: %p; a2d_info.w4_l1l2_node_cur_node->level: %d",
+		   a2d_info.w4_l1l2_node_cur_node, a2d_info.w4_l1l2_node_cur_node->level);
 		abort();
 	}
 
-	display_win4_clear_win5_specified_area_color(ATOD_DISPLAY_L1L2_CUR);
+	display_win4_clear_win5_specified_area_color(a2d_info.w4_l1l2_node_cur_node);
 
 	if (next->level == 2)
 	{
@@ -1829,20 +1825,20 @@ void display_win_4_move_down_selected_content(void)
 			next = container_of((next->superior->l1node.next), l1l2_node_t, l1node);
 	}
 
-	wattron(G_display.wins[4], COLOR_PAIR(5));
+	wattron(display_resource.wins[4], COLOR_PAIR(5));
 
 	if (next->level == 1) 
 	{
 		char c = next->isexpand ? '-' : '+';
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE + 1;
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line + 1;
 		DISPLAY_WIN_DISPLAY_CONTENT_WITH_SPECIFYING_CHAR(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, c, "%s", next->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, c, "%s", next->content);
 	}
 	else if (next->level == 2) 
 	{
-		unsigned short rows_num = ATOD_DISPLAY_L1L2_CURLINE + 1;
+		unsigned short rows_num = a2d_info.w4_l1l2_node_cur_line + 1;
 		DISPLAY_WIN_DISPLAY_CONTENT(
-			G_display.wins[4], rows_num, 2, display_G_win4_context_cols, "%s", next->content);
+			display_resource.wins[4], rows_num, 2, display_win4_context_cols, "%s", next->content);
 	}
 	else
 	{
@@ -1850,14 +1846,14 @@ void display_win_4_move_down_selected_content(void)
 		abort();
 	}
 
-	wattroff(G_display.wins[4], COLOR_PAIR(5));
+	wattroff(display_resource.wins[4], COLOR_PAIR(5));
 
 	display_win4_fills_win5_specified_area_color(next);
 
-	ATOD_DISPLAY_L1L2_CURLINE++;
-	ATOD_DISPLAY_L1L2_CUR = next;
+	a2d_info.w4_l1l2_node_cur_line++;
+	a2d_info.w4_l1l2_node_cur_node = next;
 
-	wrefresh(G_display.wins[4]);
+	wrefresh(display_resource.wins[4]);
 
 	RVoid();
 }
@@ -1871,54 +1867,58 @@ void display_win_5_move_down_selected_content(void)
 {
 	TC("Called { %s(void)", __func__);
 
-	if (!ATOD_DISPLAY_W5_CUR)
+	if (!a2d_info.w5_displayed_cur_node)
 		RVoid();
 
-	if (ATOD_DISPLAY_W5_CURINDEX < 1 || ATOD_DISPLAY_W5_CURINDEX > display_G_win5_context_lines) {
-		TW("warning ATOD_DISPLAY_W5_CURINDEX value is error");
+	if (a2d_info.w5_displayed_cur_line_number < 1 || 
+			a2d_info.w5_displayed_cur_line_number > display_win5_context_lines) {
+		TW("warning a2d_info.w5_displayed_cur_line_number value is error");
 		RVoid();
 	}
 
-	if (ATOD_DISPLAY_W5_CUR == ATOD_DISPLAY_W5_TAIL && ATOD_DISPLAY_W5_CUR->w5node.next == NULL) {
+	if (a2d_info.w5_displayed_cur_node == a2d_info.w5_displayed_list_tail && 
+		a2d_info.w5_displayed_cur_node->w5node.next == NULL) {
 		display_popup_message_notification("It's already at the bottom");
 		RVoid();
 	}
 
-	if (ATOD_DISPLAY_W5_CUR->w5node.next == NULL && ATOD_DISPLAY_W5_CUR != ATOD_DISPLAY_W5_TAIL) {
-		TW("warning value is error; ATOD_DISPLAY_W5_CUR->w5node.next: %p; ATOD_DISPLAY_W5_CUR:%p; ATOD_DISPLAY_W5_TAIL: %p",
-		   ATOD_DISPLAY_W5_CUR->w5node.next, ATOD_DISPLAY_W5_CUR, ATOD_DISPLAY_W5_TAIL);
+	if (a2d_info.w5_displayed_cur_node->w5node.next == NULL && 
+		a2d_info.w5_displayed_cur_node != a2d_info.w5_displayed_list_tail) {
+		TW("warning value is error; a2d_info.w5_displayed_cur_node->w5node.next: %p; a2d_info.w5_displayed_cur_node:%p; a2d_info.w5_displayed_list_tail: %p",
+		   a2d_info.w5_displayed_cur_node->w5node.next, a2d_info.w5_displayed_cur_node, a2d_info.w5_displayed_list_tail);
 		RVoid();
 	}
 
-	if (!(ATOD_DISPLAY_W5_CUR->w5node.next)) {
+	if (!(a2d_info.w5_displayed_cur_node->w5node.next)) {
 		display_popup_message_notification("It's already at the bottom");
 		RVoid();
 	}
 
-	w5_node_t * next = container_of((ATOD_DISPLAY_W5_CUR->w5node.next), w5_node_t, w5node);
+	w5_node_t * next = container_of((a2d_info.w5_displayed_cur_node->w5node.next), w5_node_t, w5node);
 
-	if (ATOD_DISPLAY_W5_CUR == ATOD_DISPLAY_W5_TAIL && ATOD_DISPLAY_W5_CUR->w5node.next &&
-		ATOD_DISPLAY_W5_CURINDEX == display_G_win5_context_lines)
+	if (a2d_info.w5_displayed_cur_node == a2d_info.w5_displayed_list_tail && 
+		a2d_info.w5_displayed_cur_node->w5node.next &&
+		a2d_info.w5_displayed_cur_line_number == display_win5_context_lines)
 	{
-		w5_node_t * newhead = container_of(ATOD_DISPLAY_W5_HEAD->w5node.next, w5_node_t, w5node);
-		display_win_5_redraw_interface(newhead, next, ATOD_DISPLAY_W5_CURINDEX);
+		w5_node_t * newhead = container_of(a2d_info.w5_displayed_list_head->w5node.next, w5_node_t, w5node);
+		display_win_5_redraw_interface(newhead, next, a2d_info.w5_displayed_cur_line_number);
 		RVoid();
 	}
 
-	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
-	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
-	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", ATOD_DISPLAY_W5_CUR->content);
+	wmove(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1);
+	wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");
+	mvwprintw(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1, "%s", a2d_info.w5_displayed_cur_node->content);
 
-	ATOD_DISPLAY_W5_CURINDEX++;
-	ATOD_DISPLAY_W5_CUR = next;
+	a2d_info.w5_displayed_cur_line_number++;
+	a2d_info.w5_displayed_cur_node = next;
 
-	wattron(G_display.wins[5], COLOR_PAIR(5));
-	wmove(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1);
-	wprintw(G_display.wins[5], "%*s", display_G_win5_context_cols, "");
-	mvwprintw(G_display.wins[5], ATOD_DISPLAY_W5_CURINDEX, 1, "%s", next->content);
-	wattroff(G_display.wins[5], COLOR_PAIR(5));
+	wattron(display_resource.wins[5], COLOR_PAIR(5));
+	wmove(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1);
+	wprintw(display_resource.wins[5], "%*s", display_win5_context_cols, "");
+	mvwprintw(display_resource.wins[5], a2d_info.w5_displayed_cur_line_number, 1, "%s", next->content);
+	wattroff(display_resource.wins[5], COLOR_PAIR(5));
 
-	wrefresh(G_display.wins[5]);
+	wrefresh(display_resource.wins[5]);
 
 	RVoid();
 }
@@ -1968,24 +1968,25 @@ void display_exec_enter_behavior(int winnumber)
 	if (winnumber != 4)
 		RVoid();
 
-	if (!ATOD_DISPLAY_L1L2_CUR)
+	if (!a2d_info.w4_l1l2_node_cur_node)
 		RVoid();
 
-	if (ATOD_DISPLAY_L1L2_CUR->level != 1)
+	if (a2d_info.w4_l1l2_node_cur_node->level != 1)
 		RVoid();
 
-	if (ATOD_DISPLAY_L1L2_CUR->isexpand == 0)
-		ATOD_DISPLAY_L1L2_CUR->isexpand = 1;
-	else if (ATOD_DISPLAY_L1L2_CUR->isexpand == 1)
-		ATOD_DISPLAY_L1L2_CUR->isexpand = 0;
+	if (a2d_info.w4_l1l2_node_cur_node->isexpand == 0)
+		a2d_info.w4_l1l2_node_cur_node->isexpand = 1;
+	else if (a2d_info.w4_l1l2_node_cur_node->isexpand == 1)
+		a2d_info.w4_l1l2_node_cur_node->isexpand = 0;
 	else
 	{
-		TE("a fatal error occurred; ATOD_DISPLAY_L1L2_CUR: %p; ATOD_DISPLAY_L1L2_CUR->level: %d",
-		   ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CUR->level);
+		TE("a fatal error occurred; a2d_info.w4_l1l2_node_cur_node: %p; a2d_info.w4_l1l2_node_cur_node->level: %d",
+		   a2d_info.w4_l1l2_node_cur_node, a2d_info.w4_l1l2_node_cur_node->level);
 		abort();
 	}
 
-	display_win_4_redraw_interface(ATOD_DISPLAY_L1L2_HEAD, ATOD_DISPLAY_L1L2_CUR, ATOD_DISPLAY_L1L2_CURLINE);
+	display_win_4_redraw_interface(a2d_info.w4_l1l2_node_list_head, 
+		a2d_info.w4_l1l2_node_cur_node, a2d_info.w4_l1l2_node_cur_line);
 
 	RVoid();
 }

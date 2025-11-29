@@ -24,7 +24,7 @@
 #include "trace.h"
 #include "ndo.h"
 #include "infonode.h"
-#include "atodcomm.h"
+#include "a2d_comm.h"
 #include "common.h"
 
 #if 1
@@ -86,10 +86,10 @@ static l1l2_node_t * nd_get_fill_put_l1l2_node_level1(
            exit(1);
     }
 
-    nd_dll_t * node = nd_dll_takeout_from_head_s(&ATOD_L1L2IDLE_DLL);
+    nd_dll_t * node = nd_dll_takeout_from_head_s(&a2d_info.l1l2_node_idle_list);
     if (!node)
     {
-        TE("fatal logic error; node: %p; ATOD_L1L2IDLE_DLL: %p", node, ATOD_L1L2IDLE_DLL);
+        TE("fatal logic error; node: %p; a2d_info.l1l2_node_idle_list: %p", node, a2d_info.l1l2_node_idle_list);
         exit(1);
     }
 
@@ -134,10 +134,10 @@ static void nd_get_fill_put_l1l2_node_level2(
         exit(1);
     }
 
-    nd_dll_t *node = nd_dll_takeout_from_head_s(&ATOD_L1L2IDLE_DLL);
+    nd_dll_t *node = nd_dll_takeout_from_head_s(&a2d_info.l1l2_node_idle_list);
     if (!node)
     {
-        TE("fatal logic error; node: %p; ATOD_L1L2IDLE_DLL: %p", node, ATOD_L1L2IDLE_DLL);
+        TE("fatal logic error; node: %p; a2d_info.l1l2_node_idle_list: %p", node, a2d_info.l1l2_node_idle_list);
         exit(1);
     }
 
@@ -174,10 +174,10 @@ static l1l2_node_t *nd_filling_l1(infonode_t *ifn, int isexpand, const char *for
         exit(1);
     }
 
-    nd_dll_t *node = nd_dll_takeout_from_head_s(&ATOD_L1L2IDLE_DLL);
+    nd_dll_t *node = nd_dll_takeout_from_head_s(&a2d_info.l1l2_node_idle_list);
     if (!node)
     {
-        TE("fatal logic error; node: %p; ATOD_L1L2IDLE_DLL: %p", node, ATOD_L1L2IDLE_DLL);
+        TE("fatal logic error; node: %p; a2d_info.l1l2_node_idle_list: %p", node, a2d_info.l1l2_node_idle_list);
         exit(1);
     }
 
@@ -221,10 +221,10 @@ static void nd_filling_l2(
         exit(1);
     }
 
-    nd_dll_t *node = nd_dll_takeout_from_head_s(&ATOD_L1L2IDLE_DLL);
+    nd_dll_t *node = nd_dll_takeout_from_head_s(&a2d_info.l1l2_node_idle_list);
     if (!node)
     {
-        TE("fatal logic error; node: %p; ATOD_L1L2IDLE_DLL: %p", node, ATOD_L1L2IDLE_DLL);
+        TE("fatal logic error; node: %p; a2d_info.l1l2_node_idle_list: %p", node, a2d_info.l1l2_node_idle_list);
         exit(1);
     }
 
