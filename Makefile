@@ -44,6 +44,8 @@ DYNAMIC = -Wl,-Bdynamic
 
 DYNAMIC_LIB = -lrt
 
+LDFLAGS = 
+#LDFLAGS += -fsanitize=address
 LDFLAGS += $(STATIC) $(STATIC_LIB_PATH) $(STATIC_LIB) $(DYNAMIC) $(DYNAMIC_LIB)
 
 LINK_SCRIPT := link.ld
