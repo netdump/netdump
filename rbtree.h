@@ -37,7 +37,8 @@ struct rbtree_node_s {
 
 typedef struct rbtree_s  rbtree_t;
 
-typedef void (*rbtree_insert_pt) (rbtree_node_t *root, rbtree_node_t *node, rbtree_node_t *sentinel);
+typedef void (*rbtree_insert_pt) (rbtree_node_t *root, 
+    rbtree_node_t *node, rbtree_node_t *sentinel);
 
 struct rbtree_s {
     rbtree_node_t     *root;
@@ -60,9 +61,11 @@ void rbtree_insert(rbtree_t *tree, rbtree_node_t *node);
 
 void rbtree_delete(rbtree_t *tree, rbtree_node_t *node);
 
-void rbtree_insert_value(rbtree_node_t *root, rbtree_node_t *node, rbtree_node_t *sentinel);
+void rbtree_insert_value(rbtree_node_t *root, rbtree_node_t *node, 
+    rbtree_node_t *sentinel);
 
-void rbtree_insert_timer_value(rbtree_node_t *root, rbtree_node_t *node, rbtree_node_t *sentinel);
+void rbtree_insert_timer_value(rbtree_node_t *root, rbtree_node_t *node, 
+    rbtree_node_t *sentinel);
 
 rbtree_node_t *rbtree_next(rbtree_t *tree, rbtree_node_t *node);
 
@@ -79,7 +82,8 @@ rbtree_node_t *rbtree_next(rbtree_t *tree, rbtree_node_t *node);
 #define rbtree_sentinel_init(node)  rbt_black(node)
 
 
-static inline rbtree_node_t * rbtree_min(rbtree_node_t *node, rbtree_node_t *sentinel)
+static inline rbtree_node_t * rbtree_min(rbtree_node_t *node, 
+    rbtree_node_t *sentinel)
 {
     while (node->left != sentinel) {
         node = node->left;

@@ -7,9 +7,11 @@
 
  #include "rbtree.h"
  
-static inline void rbtree_left_rotate(rbtree_node_t **root, rbtree_node_t *sentinel, rbtree_node_t *node);
+static inline void rbtree_left_rotate(rbtree_node_t **root, 
+    rbtree_node_t *sentinel, rbtree_node_t *node);
 
-static inline void rbtree_right_rotate(rbtree_node_t **root, rbtree_node_t *sentinel, rbtree_node_t *node);
+static inline void rbtree_right_rotate(rbtree_node_t **root, 
+    rbtree_node_t *sentinel, rbtree_node_t *node);
 
 
 void rbtree_insert(rbtree_t *tree, rbtree_node_t *node)
