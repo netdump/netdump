@@ -14,40 +14,23 @@
 #include "capture.h"
 #include "d2c_comm.h"
 
-
 /**
- * @brief 
- *  list available devices and exit
- */
-static int Dflag;
-
-/**
- * @brief 
- *  list available data link types and exit
- */
-static int Lflag;
-
-/**
- * @brief
- *  rfmon (monitor) mode
+ * @brief rfmon (monitor) mode
  */
 static int Iflag;
 
 /**
- * @brief
- *  don't go promiscuous
+ * @brief don't go promiscuous
  */
 static int pflag = 0;
 
 /**
- * @brief
- *  restrict captured packet by send/receive direction
+ * @brief restrict captured packet by send/receive direction
  */
 static int Qflag = -1;
 
 /**
- * @brief
- *  Whether to support monitoring mode
+ * @brief whether to support monitoring mode
  */
 static int supports_monitor_mode;
 
@@ -59,52 +42,28 @@ static int supports_monitor_mode;
 static int timeout = 1000;
 
 /**
- * @brief
- *  Cache size
- *  userful for function 
+ * @brief Cache size; userful for function 
  */
 static int Bflag = (16 * 1024 * 1024);
 
 /**
- * @brief
- *  Timestamp accuracy
+ * @brief Timestamp accuracy
  */
 #define CAPTURE_TSTAMP_PRECISION    0
 static int tstamp_precision = CAPTURE_TSTAMP_PRECISION;
 
 /**
- * @brief
- *  Process name
+ * @brief process name
  */
 char *program_name = "netdump";
 
-/*
- * This is exported because, in some versions of libpcap, if libpcap
- * is built with optimizer debugging code (which is *NOT* the default
- * configuration!), the library *imports*(!) a variable named dflag,
- * under the expectation that tcpdump is exporting it, to govern
- * how much debugging information to print when optimizing
- * the generated BPF code.
- *
- * This is a horrible hack; newer versions of libpcap don't import
- * dflag but, instead, *if* built with optimizer debugging code,
- * *export* a routine to set that flag.
- */
 /**
- * @brief 
- *  print filter code
- */
-int dflag;
-
-/**
- * @brief
- *  Global pcap_t pointer
+ * @brief global pcap_t pointer
  */
 static pcap_t *pd = NULL;
 
 /**
- * @brief
- *  for "pcap_compile()", "pcap_setfilter()"
+ * @brief for "pcap_compile()", "pcap_setfilter()"
  */
 struct bpf_program fcode;
 
@@ -155,61 +114,6 @@ static const struct option longopts[] = {
     {"linktype", required_argument, NULL, 'y'},
 
     {NULL, 0, NULL, 0}
-};
-
-
-/**
- * @brief
- *  Initialize a structure of type netdissect_options
- */
-ndo_t Gndo = {
-
-    .ndo_bflag = 0,
-    .ndo_eflag = 1,
-    .ndo_fflag = 0, /* 该选项与 -r 不能同时使用，先初始化为0，如果 cmd 命令中有 -r 选项，则将 ndo_fflag 置为0， 后期看看可不可以同时存在，或者是否可以不支持从文件中读取过滤规则 */
-    .ndo_Kflag = 0, /* 禁用 TCP 校验和验证; 忽略 TCP 校验和错误; 初始化的时已初始化为 1 */
-    .ndo_nflag = 1,
-    .ndo_Nflag = 0,
-    .ndo_qflag = 0,
-    .ndo_Sflag = 0, /*将来调用print函数时看看如何可以同时获取到原始的序列号与相对的序列号*/
-    .ndo_tflag = 0,
-    .ndo_uflag = 0,
-    .ndo_vflag = 4,
-    .ndo_xflag = 1,
-    .ndo_Xflag = 1,
-    .ndo_Aflag = 1,
-    .ndo_Hflag = 0,
-    .ndo_protocol = NULL,
-    .ndo_last_mem_p = NULL,
-    .ndo_packet_number = 1,
-    .ndo_suppress_default_print = 1,
-    .ndo_tstamp_precision = CAPTURE_TSTAMP_PRECISION,
-    .program_name = "netdump",
-    .ndo_espsecret = NULL,
-    .ndo_sa_list_head = NULL,
-    .ndo_sa_default = NULL,
-    .ndo_sigsecret = NULL,
-    .ndo_packettype = 0,
-    .ndo_snaplen = MAXIMUM_SNAPLEN,
-    .ndo_ll_hdr_len = 0,
-    /*global pointers to beginning and end of current packet (during printing) */
-    .ndo_packetp = NULL,
-    .ndo_snapend = NULL,
-    /* stack of saved packet boundary and buffer information */
-    .ndo_packet_info_stack = NULL,
-    /* pointer to the if_printer function */
-    .ndo_if_printer = NULL,
-
-#if 0
-    /* pointer to void function to output stuff */
-    .ndo_default_print = NULL,
-    /* pointer to function to do regular output */
-    .ndo_printf = NULL,
-    /* pointer to function to output errors */
-    .ndo_error = NULL,
-    /* pointer to function to output warnings */
-    .ndo_warning = NULL
-#endif
 };
 
 /**
@@ -309,12 +213,6 @@ int capture_loop (void) {
         TI("message.length: %u", message.length);
         TI("message.content: %s", message.content);
 
-        #if 0
-        // 还未实现
-        G_ctos_shm_mem_cursor = c2a_shm_addr;
-        memset((void *)G_cp_aa_shared_addr_info, 0, MSGCOMM_PKTPTRARR_SIZE);
-        #endif
-
         capture_parsing_cmd_and_exec_capture((char *)(message.content));
     }
 
@@ -375,8 +273,6 @@ int capture_reply_to_display (unsigned int msgtype, char * reply) {
 
     RInt(ND_OK);
 }
-
-
 
 /**
  * @brief 
@@ -695,7 +591,6 @@ void capture_resource_release(void)
         pcap_close(pd);
     }
 
-    
     pcap_freecode(&fcode);
 
     RVoid();
@@ -1448,7 +1343,7 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
  * @param sp
  *  Pointer to data
  */
-static void  capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
+static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h, const unsigned char *sp)
 {
 
     //TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
@@ -1685,6 +1580,55 @@ int capture_convert_command_to_argv(char * command)
     RInt(nums);
 }
 
+/**
+ * @brief initialize multi-process shared variables of type ndo_t
+ */
+void * capture_initialize_shared_ndo(void) {
+
+    TC("called { %s(void)", __func__);
+
+    d2c_comm.d2c_ndo.ndo_bflag = 0;
+    d2c_comm.d2c_ndo.ndo_eflag = 1;
+    /* 该选项与 -r 不能同时使用，先初始化为0，如果 cmd 命令中有 -r 选项，则将 ndo_fflag 置为0， 后期看看可不可以同时存在，或者是否可以不支持从文件中读取过滤规则 */
+    d2c_comm.d2c_ndo.ndo_fflag = 0;
+    /* 禁用 TCP 校验和验证; 忽略 TCP 校验和错误; 初始化的时已初始化为 1 */
+    d2c_comm.d2c_ndo.ndo_Kflag = 0;
+    d2c_comm.d2c_ndo.ndo_nflag = 1;
+    d2c_comm.d2c_ndo.ndo_Nflag = 0;
+    d2c_comm.d2c_ndo.ndo_qflag = 0;
+    /*将来调用print函数时看看如何可以同时获取到原始的序列号与相对的序列号*/
+    d2c_comm.d2c_ndo.ndo_Sflag = 0;
+    d2c_comm.d2c_ndo.ndo_tflag = 0;
+    d2c_comm.d2c_ndo.ndo_uflag = 0;
+    d2c_comm.d2c_ndo.ndo_vflag = 4;
+    d2c_comm.d2c_ndo.ndo_xflag = 1;
+    d2c_comm.d2c_ndo.ndo_Xflag = 1;
+    d2c_comm.d2c_ndo.ndo_Aflag = 1;
+    d2c_comm.d2c_ndo.ndo_Hflag = 0;
+    d2c_comm.d2c_ndo.ndo_protocol = NULL;
+    d2c_comm.d2c_ndo.ndo_last_mem_p = NULL;
+    d2c_comm.d2c_ndo.ndo_packet_number = 1;
+    d2c_comm.d2c_ndo.ndo_suppress_default_print = 1;
+    d2c_comm.d2c_ndo.ndo_tstamp_precision = CAPTURE_TSTAMP_PRECISION;
+    d2c_comm.d2c_ndo.program_name = "netdump";
+    d2c_comm.d2c_ndo.ndo_espsecret = NULL;
+    d2c_comm.d2c_ndo.ndo_sa_list_head = NULL;
+    d2c_comm.d2c_ndo.ndo_sa_default = NULL;
+    d2c_comm.d2c_ndo.ndo_sigsecret = NULL;
+    d2c_comm.d2c_ndo.ndo_packettype = 0;
+    d2c_comm.d2c_ndo.ndo_snaplen = MAXIMUM_SNAPLEN;
+    d2c_comm.d2c_ndo.ndo_ll_hdr_len = 0;
+    /*global pointers to beginning and end of current packet (during printing) */
+    d2c_comm.d2c_ndo.ndo_packetp = NULL;
+    d2c_comm.d2c_ndo.ndo_snapend = NULL;
+    /* stack of saved packet boundary and buffer information */
+    d2c_comm.d2c_ndo.ndo_packet_info_stack = NULL;
+    /* pointer to the if_printer function */
+    d2c_comm.d2c_ndo.ndo_if_printer = NULL;
+
+    RVoidPtr((void *)(&(d2c_comm.d2c_ndo)));
+}
+
 
 /**
  * @brief
@@ -1711,16 +1655,12 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     pcap_if_t *devlist;
     bpf_u_int32 netmask = 0;
 
-    ndo_t *ndo = &Gndo;
+    ndo_t *ndo = (ndo_t*)(capture_initialize_shared_ndo());
 
     memset(ebuf, 0, sizeof(ebuf));
-    #if 0
-    int len = COMM_SHM_ZONE_SIZE;
-    char *sp = d2c_comm.store_response_info;
-    memset(d2c_comm.store_response_info, 0, COMM_SHM_ZONE_SIZE);
-    #endif
-
-    Dflag = 0, Lflag = 0, Iflag = 0, pflag = 0, Qflag = 0;
+    
+    int Dflag = 0, Lflag = 0;
+    Iflag = 0, pflag = 0, Qflag = 0;
 
     tzset();
 
@@ -1971,7 +1911,6 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     }
 
     ndo->ndo_if_printer = get_if_printer(dlt);
-    d2c_comm.d2c_ndo = Gndo;
 
     __atomic_store_n(&(capture_notify_analysis), (0x01), __ATOMIC_SEQ_CST);
 
