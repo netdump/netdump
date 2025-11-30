@@ -487,6 +487,265 @@ struct rr_result
 #define ICMP6_RR_RESULT_FLAGS_OOB ((uint16_t)htons(0x0002))
 #define ICMP6_RR_RESULT_FLAGS_FORBIDDEN ((uint16_t)htons(0x0001))
 
+static const char *get_rtpref(u_int);
+static const char *get_lifetime(uint32_t);
+static void print_lladdr(ndo_t *ndo, const u_char *, size_t);
+static int icmp6_opt_print(ndo_t *ndo, const u_char *, int);
+static void mld6_print(ndo_t *ndo, const u_char *);
+static void mldv2_report_print(ndo_t *ndo, const u_char *, u_int);
+static void mldv2_query_print(ndo_t *ndo, const u_char *, u_int);
+static const struct udphdr *get_upperlayer(ndo_t *ndo, const u_char *, u_int *);
+static void dnsname_print(ndo_t *ndo, const u_char *, const u_char *);
+static void icmp6_nodeinfo_print(ndo_t *ndo, u_int, const u_char *, const u_char *);
+static void icmp6_rrenum_print(ndo_t *ndo, const u_char *, const u_char *);
+
+/*
+ * DIO: Updated to RFC6550, as published in 2012: section 6. (page 30)
+ */
+
+#define ND_RPL_MESSAGE 155  /* 0x9B */
+
+enum ND_RPL_CODE {
+    ND_RPL_DAG_IS=0x00,
+    ND_RPL_DAG_IO=0x01,
+    ND_RPL_DAO   =0x02,
+    ND_RPL_DAO_ACK=0x03,
+    ND_RPL_SEC_DAG_IS = 0x80,
+    ND_RPL_SEC_DAG_IO = 0x81,
+    ND_RPL_SEC_DAG    = 0x82,
+    ND_RPL_SEC_DAG_ACK= 0x83,
+    ND_RPL_SEC_CONSIST= 0x8A
+};
+
+enum ND_RPL_DIO_FLAGS {
+        ND_RPL_DIO_GROUNDED = 0x80,
+        ND_RPL_DIO_DATRIG   = 0x40,
+        ND_RPL_DIO_DASUPPORT= 0x20,
+        ND_RPL_DIO_RES4     = 0x10,
+        ND_RPL_DIO_RES3     = 0x08,
+        ND_RPL_DIO_PRF_MASK = 0x07  /* 3-bit preference */
+};
+
+#define DAGID_LEN 16
+
+/* section 6 of draft-ietf-roll-rpl-19 */
+struct nd_rpl_security {
+    nd_uint8_t  rpl_sec_t_reserved;     /* bit 7 is T-bit */
+    nd_uint8_t  rpl_sec_algo;
+    nd_uint16_t rpl_sec_kim_lvl_flags;  /* bit 15/14, KIM */
+                                      /* bit 10-8, LVL, bit 7-0 flags */
+    nd_uint32_t rpl_sec_counter;
+#if 0
+    nd_byte     rpl_sec_ki[0];          /* depends upon kim */
+#endif
+};
+
+/* section 6.2.1, DODAG Information Solicitation (DIS_IS) */
+struct nd_rpl_dis_is {
+    nd_uint8_t rpl_dis_flags;
+    nd_uint8_t rpl_dis_reserved;
+#if 0
+    nd_byte    rpl_dis_options[0];
+#endif
+};
+
+/* section 6.3.1, DODAG Information Object (DIO) */
+struct nd_rpl_dio {
+    nd_uint8_t  rpl_instanceid;
+    nd_uint8_t  rpl_version;
+    nd_uint16_t rpl_dagrank;
+    nd_uint8_t  rpl_mopprf;   /* bit 7=G, 5-3=MOP, 2-0=PRF */
+    nd_uint8_t  rpl_dtsn;     /* Dest. Advertisement Trigger Sequence Number */
+    nd_uint8_t  rpl_flags;    /* no flags defined yet */
+    nd_uint8_t  rpl_resv1;
+    nd_byte     rpl_dagid[DAGID_LEN];
+};
+#define RPL_DIO_GROUND_FLAG 0x80
+#define RPL_DIO_MOP_SHIFT   3
+#define RPL_DIO_MOP_MASK    (7 << RPL_DIO_MOP_SHIFT)
+#define RPL_DIO_PRF_SHIFT   0
+#define RPL_DIO_PRF_MASK    (7 << RPL_DIO_PRF_SHIFT)
+#define RPL_DIO_GROUNDED(X) ((X)&RPL_DIO_GROUND_FLAG)
+#define RPL_DIO_MOP(X)      (enum RPL_DIO_MOP)(((X)&RPL_DIO_MOP_MASK) >> RPL_DIO_MOP_SHIFT)
+#define RPL_DIO_PRF(X)      (((X)&RPL_DIO_PRF_MASK) >> RPL_DIO_PRF_SHIFT)
+
+enum RPL_DIO_MOP {
+    RPL_DIO_NONSTORING= 0x0,
+    RPL_DIO_STORING   = 0x1,
+    RPL_DIO_NONSTORING_MULTICAST = 0x2,
+    RPL_DIO_STORING_MULTICAST    = 0x3
+};
+
+enum RPL_SUBOPT {
+        RPL_OPT_PAD1        = 0,
+        RPL_OPT_PADN        = 1,
+        RPL_DIO_METRICS     = 2,
+        RPL_DIO_ROUTINGINFO = 3,
+        RPL_DIO_CONFIG      = 4,
+        RPL_DAO_RPLTARGET   = 5,
+        RPL_DAO_TRANSITINFO = 6,
+        RPL_DIO_DESTPREFIX  = 8,
+        RPL_DAO_RPLTARGET_DESC=9
+};
+
+struct rpl_genoption {
+    nd_uint8_t rpl_dio_type;
+    nd_uint8_t rpl_dio_len;        /* suboption length, not including type/len */
+};
+#define RPL_GENOPTION_LEN	2
+
+#define RPL_DIO_LIFETIME_INFINITE   0xffffffff
+#define RPL_DIO_LIFETIME_DISCONNECT 0
+
+struct rpl_dio_destprefix {
+    nd_uint8_t rpl_dio_type;
+    nd_uint8_t rpl_dio_len;
+    nd_uint8_t rpl_dio_prefixlen;        /* in bits */
+    nd_uint8_t rpl_dio_prf;              /* flags, including Route Preference */
+    nd_uint32_t rpl_dio_prefixlifetime;  /* in seconds */
+#if 0
+    nd_byte     rpl_dio_prefix[0];       /* variable number of bytes */
+#endif
+};
+
+/* section 6.4.1, DODAG Information Object (DIO) */
+struct nd_rpl_dao {
+    nd_uint8_t  rpl_instanceid;
+    nd_uint8_t  rpl_flags;      /* bit 7=K, 6=D */
+    nd_uint8_t  rpl_resv;
+    nd_uint8_t  rpl_daoseq;
+    nd_byte     rpl_dagid[DAGID_LEN];   /* present when D set. */
+};
+#define ND_RPL_DAO_MIN_LEN	4	/* length without DAGID */
+
+/* indicates if this DAO is to be acK'ed */
+#define RPL_DAO_K_SHIFT   7
+#define RPL_DAO_K_MASK    (1 << RPL_DAO_K_SHIFT)
+#define RPL_DAO_K(X)      (((X)&RPL_DAO_K_MASK) >> RPL_DAO_K_SHIFT)
+
+/* indicates if the DAGID is present */
+#define RPL_DAO_D_SHIFT   6
+#define RPL_DAO_D_MASK    (1 << RPL_DAO_D_SHIFT)
+#define RPL_DAO_D(X)      (((X)&RPL_DAO_D_MASK) >> RPL_DAO_D_SHIFT)
+
+struct rpl_dao_target {
+    nd_uint8_t rpl_dao_type;
+    nd_uint8_t rpl_dao_len;
+    nd_uint8_t rpl_dao_flags;            /* unused */
+    nd_uint8_t rpl_dao_prefixlen;        /* in bits */
+#if 0
+    nd_byte    rpl_dao_prefix[0];        /* variable number of bytes */
+#endif
+};
+
+/* section 6.5.1, Destination Advertisement Object Acknowledgement (DAO-ACK) */
+struct nd_rpl_daoack {
+    nd_uint8_t  rpl_instanceid;
+    nd_uint8_t  rpl_flags;      /* bit 7=D */
+    nd_uint8_t  rpl_daoseq;
+    nd_uint8_t  rpl_status;
+    nd_byte     rpl_dagid[DAGID_LEN];   /* present when D set. */
+};
+#define ND_RPL_DAOACK_MIN_LEN	4	/* length without DAGID */
+/* indicates if the DAGID is present */
+#define RPL_DAOACK_D_SHIFT   7
+#define RPL_DAOACK_D_MASK    (1 << RPL_DAOACK_D_SHIFT)
+#define RPL_DAOACK_D(X)      (((X)&RPL_DAOACK_D_MASK) >> RPL_DAOACK_D_SHIFT)
+
+static const struct tok icmp6_type_values[] = {
+    { ICMP6_DST_UNREACH, "destination unreachable"},
+    { ICMP6_PACKET_TOO_BIG, "packet too big"},
+    { ICMP6_TIME_EXCEEDED, "time exceeded in-transit"},
+    { ICMP6_PARAM_PROB, "parameter problem"},
+    { ICMP6_ECHO_REQUEST, "echo request"},
+    { ICMP6_ECHO_REPLY, "echo reply"},
+    { MLD6_LISTENER_QUERY, "multicast listener query"},
+    { MLD6_LISTENER_REPORT, "multicast listener report"},
+    { MLD6_LISTENER_DONE, "multicast listener done"},
+    { ND_ROUTER_SOLICIT, "router solicitation"},
+    { ND_ROUTER_ADVERT, "router advertisement"},
+    { ND_NEIGHBOR_SOLICIT, "neighbor solicitation"},
+    { ND_NEIGHBOR_ADVERT, "neighbor advertisement"},
+    { ND_REDIRECT, "redirect"},
+    { ICMP6_ROUTER_RENUMBERING, "router renumbering"},
+    { IND_SOLICIT, "inverse neighbor solicitation"},
+    { IND_ADVERT, "inverse neighbor advertisement"},
+    { MLDV2_LISTENER_REPORT, "multicast listener report v2"},
+    { ICMP6_HADISCOV_REQUEST, "ha discovery request"},
+    { ICMP6_HADISCOV_REPLY, "ha discovery reply"},
+    { ICMP6_MOBILEPREFIX_SOLICIT, "mobile router solicitation"},
+    { ICMP6_MOBILEPREFIX_ADVERT, "mobile router advertisement"},
+    { ICMP6_WRUREQUEST, "who-are-you request"},
+    { ICMP6_WRUREPLY, "who-are-you reply"},
+    { ICMP6_NI_QUERY, "node information query"},
+    { ICMP6_NI_REPLY, "node information reply"},
+    { MLD6_MTRACE, "mtrace message"},
+    { MLD6_MTRACE_RESP, "mtrace response"},
+    { ND_RPL_MESSAGE,   "RPL"},
+    { 0,	NULL }
+};
+
+static const struct tok icmp6_dst_unreach_code_values[] = {
+    { ICMP6_DST_UNREACH_NOROUTE, "unreachable route" },
+    { ICMP6_DST_UNREACH_ADMIN, " unreachable prohibited"},
+    { ICMP6_DST_UNREACH_BEYONDSCOPE, "beyond scope"},
+    { ICMP6_DST_UNREACH_ADDR, "unreachable address"},
+    { ICMP6_DST_UNREACH_NOPORT, "unreachable port"},
+    { 0,	NULL }
+};
+
+static const struct tok icmp6_opt_pi_flag_values[] = {
+    { ND_OPT_PI_FLAG_ONLINK, "onlink" },
+    { ND_OPT_PI_FLAG_AUTO, "auto" },
+    { ND_OPT_PI_FLAG_ROUTER, "router" },
+    { 0,	NULL }
+};
+
+static const struct tok icmp6_opt_ra_flag_values[] = {
+    { ND_RA_FLAG_MANAGED, "managed" },
+    { ND_RA_FLAG_OTHER, "other stateful"},
+    { ND_RA_FLAG_HOME_AGENT, "home agent"},
+    { ND_RA_FLAG_IPV6ONLY, "ipv6 only"},
+    { 0,	NULL }
+};
+
+static const struct tok icmp6_nd_na_flag_values[] = {
+    { ND_NA_FLAG_ROUTER, "router" },
+    { ND_NA_FLAG_SOLICITED, "solicited" },
+    { ND_NA_FLAG_OVERRIDE, "override" },
+    { 0,	NULL }
+};
+
+static const struct tok icmp6_opt_values[] = {
+   { ND_OPT_SOURCE_LINKADDR, "source link-address"},
+   { ND_OPT_TARGET_LINKADDR, "destination link-address"},
+   { ND_OPT_PREFIX_INFORMATION, "prefix info"},
+   { ND_OPT_REDIRECTED_HEADER, "redirected header"},
+   { ND_OPT_MTU, "mtu"},
+   { ND_OPT_RDNSS, "rdnss"},
+   { ND_OPT_DNSSL, "dnssl"},
+   { ND_OPT_ADVINTERVAL, "advertisement interval"},
+   { ND_OPT_HOMEAGENT_INFO, "homeagent information"},
+   { ND_OPT_ROUTE_INFO, "route info"},
+   { 0,	NULL }
+};
+
+/* mldv2 report types */
+static const struct tok mldv2report2str[] = {
+	{ 1,	"is_in" },
+	{ 2,	"is_ex" },
+	{ 3,	"to_in" },
+	{ 4,	"to_ex" },
+	{ 5,	"allow" },
+	{ 6,	"block" },
+	{ 0,	NULL }
+};
+
+
+#define LAYER_4_ICMPV6_CONTENT                      "Internet Control Message Protocol V6:"
+#define LAYER_4_ICMPV6_TYPE                         "type: %d (%s)"
+#define LAYER_4_ICMPV6_CODE                         "code: %d"
+
 void icmp6_print(ndo_t *ndo, void *infonode, const u_char *bp,
                  u_int length, const u_char *bp2, int fragmented)
 {
@@ -494,7 +753,6 @@ void icmp6_print(ndo_t *ndo, void *infonode, const u_char *bp,
     TC("Called { %s(%p, %p, %p, %u, %p, %d)", __func__, ndo, infonode,
        bp, length, bp2, fragmented);
 
-    #if 0
     const struct icmp6_hdr *dp;
     uint8_t icmp6_type, icmp6_code;
     const struct ip6_hdr *ip;
@@ -504,12 +762,36 @@ void icmp6_print(ndo_t *ndo, void *infonode, const u_char *bp,
     const u_char *ep;
     u_int prot;
 
+    infonode_t *ifn = (infonode_t *)infonode;
+    l1l2_node_t *su = NULL;
+
     ndo->ndo_protocol = "icmp6";
     dp = (const struct icmp6_hdr *)bp;
     ip = (const struct ip6_hdr *)bp2;
     oip = (const struct ip6_hdr *)(dp + 1);
     /* 'ep' points to the end of available data. */
-    #endif
+    
+    ep = ndo->ndo_snapend;
+
+    if (length == 0) {
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", 0);
+        snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", "ICMP6 length 0 (invalid)");
+        snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", "icmp6");
+        RVoid();
+    }
+
+    su = nd_filling_l1(ifn, 0, "%s", LAYER_4_ICMPV6_CONTENT);
+
+    icmp6_type = GET_U_1(dp->icmp6_type);
+    icmp6_code = GET_U_1(dp->icmp6_code);
+
+    nd_filling_l2(ifn, su, 0, 1, LAYER_4_ICMPV6_TYPE, icmp6_type, 
+        tok2str(icmp6_type_values, "unknown icmp6 type (%u)", icmp6_type));
+
+    if (ndo->ndo_vflag && !fragmented) {
+
+
+    }
     
 
     RVoid();
