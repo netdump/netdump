@@ -130,6 +130,48 @@ int atodcomm_init_w5node_idle_list (void)
 }
 
 /**
+ * @brief reset some members of a2d_info
+ */
+void a2d_comm_reset_a2d_info_member(void)
+{
+
+    TC("Called { %s(void)", __func__);
+
+    a2d_info.w3_displayed_list_head = NULL;
+    a2d_info.w3_displayed_list_tail = NULL;
+    a2d_info.w3_displayed_cur_node = NULL;
+    a2d_info.w3_displayed_cur_index = 0;
+    a2d_info.w3_displayed_cur_node_nums = 0;
+
+    a2d_info.analysis_finished_list_head = NULL;
+    a2d_info.analysis_finished_list_tail = NULL;
+    a2d_info.analysis_finished_node_nums = 0;
+
+    a2d_info.l1l2_node_idle_list = NULL;
+    a2d_info.info_node_idle_list = NULL;
+
+    a2d_info.w4_l1l2_node_list_head = NULL;
+    a2d_info.w4_l1l2_node_list_tail = NULL;
+    a2d_info.w4_l1l2_node_cur_node = NULL;
+    a2d_info.w4_l1l2_node_cur_line = 0;
+
+    a2d_info.w5_displayed_cur_line_number = 0;
+    a2d_info.w5_displayed_start_byte_index = 0;
+    a2d_info.w5_displayed_end_byte_index = 0;
+
+    a2d_info.w5_node_idle_list = NULL;
+    a2d_info.w5_displayed_list_head = NULL;
+    a2d_info.w5_displayed_cur_node = NULL;
+    a2d_info.w5_displayed_list_tail = NULL;
+
+    a2d_info.is_manual_flag = 0;
+    a2d_info.analysis_status_flag = 0;
+    a2d_info.displayed_status_flag = 0;
+
+    RVoid();
+}
+
+/**
  * @brief
  *  Inter-process communication resource initialization operation
  * @return
@@ -140,6 +182,8 @@ int a2d_comm_startup(void)
 {
 
     TC("Called { %s(void)", __func__);
+
+    a2d_comm_reset_a2d_info_member();
 
     memset(infonode_array, 0, A2D_INFONODE_NUMBER * sizeof(infonode_t));
 
