@@ -18,8 +18,9 @@ CFLAGS += -Wno-unused-function
 
 # -DTRACE -DTOPTRACE 
 # the log switch needs to be turned on or off simultaneously.
-CFLAGS += -DTRACE
-CFLAGS += -DTOPTRACE
+# -DTRACE -DTOPTRACE 全部打开可以开启记录日志的功能
+#CFLAGS += -DTRACE
+#CFLAGS += -DTOPTRACE
 
 CFLAGS += -I ./
 CFLAGS += -I ${NCURSESW_PATH}/include
