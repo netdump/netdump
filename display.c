@@ -647,11 +647,11 @@ void display_second_tui_exec_logic (void) {
 	display_resource_second_cur_win = 3;
 
 	#if 1
-	__atomic_store_n(&(d2c_statistical_count.bytes), 0, __ATOMIC_SEQ_CST);
-	__atomic_store_n(&(d2c_statistical_count.packages), 0, __ATOMIC_SEQ_CST);
-	__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), 0, __ATOMIC_SEQ_CST);
-	__atomic_store_n(&(d2c_run_flag.c2d_run_flag_val), 0, __ATOMIC_SEQ_CST);
-#endif
+	msgcomm_zero_variable(&(d2c_statistical_count.bytes));
+	msgcomm_zero_variable(&(d2c_statistical_count.packages));
+	msgcomm_zero_variable(&(d2c_run_flag.d2c_run_flag_val));
+	msgcomm_zero_variable(&(d2c_run_flag.c2d_run_flag_val));
+	#endif
 
 	while (1)
 	{

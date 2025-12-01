@@ -12,6 +12,7 @@ PCAP_PATH = ./Third/pcap
 
 
 CFLAGS = -O0 -g
+#CFLAGS = -O3
 CFLAGS += -Wall
 CFLAGS += -Wno-unused-function
 #CFLAGS += -fsanitize=address -g

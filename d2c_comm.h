@@ -139,7 +139,7 @@
  */
 #define msgcomm_zero_variable(address)															\
 	do {																						\
-		__atomic_store_n(address, 0, __ATOMIC_RELEASE);											\
+		__atomic_store_n(address, 0, __ATOMIC_SEQ_CST);											\
 		/*__atomic_thread_fence(__ATOMIC_SEQ_CST);*/											\
 	} while(0);
 

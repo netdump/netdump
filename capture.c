@@ -1736,11 +1736,15 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         unsigned int tmp = 0;
         msgcomm_receive_status_value(&(d2c_run_flag.d2c_run_flag_val), tmp);
 
-        if (C2D_RUN_FLAG_EXIT == tmp)
+        if (C2D_RUN_FLAG_EXIT == tmp) {
+            TC("break out of the loop tmp: %d", tmp);
             break;
+        }
 
-        if (C2D_RUN_FLAG_SAVE == tmp)
+        if (C2D_RUN_FLAG_SAVE == tmp) {
+            TC("break out of the loop tmp: %d", tmp);
             break;
+        }
         #if 0
         ret = poll(&fds, 1, 100);
 
@@ -1799,6 +1803,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     msgcomm_zero_variable(&(d2c_comm.d2c_msg_complate_flag));
     msgcomm_zero_variable(&(d2c_comm.c2d_msg_complate_flag));
     msgcomm_zero_variable(&capture_notify_analysis);
+    msgcomm_zero_variable(&(d2c_run_flag.d2c_run_flag_val));
+    msgcomm_zero_variable(&(d2c_run_flag.c2d_run_flag_val));
 
     RInt(ND_OK);
 }
