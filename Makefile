@@ -24,7 +24,7 @@ CFLAGS += -Wno-unused-function
 #CFLAGS += -DTOPTRACE
 
 CFLAGS += -I ./
-CFLAGS += -I ${NCURSESW_PATH}/include
+CFLAGS += -I ${NCURSESW_PATH}/include/ncursesw/
 CFLAGS += -I ${PCAP_PATH}/include
 CFLAGS += -I ${PCAP_PATH}/include/pcap
 
