@@ -248,7 +248,7 @@ void udp_print(ndo_t *ndo, void *infonode, const u_char *bp,
             // bootp_print(ndo, cp, length);
         }
         else {
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)length);
             snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "%s", icollect);
         }
@@ -258,7 +258,7 @@ void udp_print(ndo_t *ndo, void *infonode, const u_char *bp,
 
 trunc:
 
-    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)length);
     snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
 
     RVoid();

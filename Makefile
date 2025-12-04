@@ -20,8 +20,8 @@ NCURSESW_PATH = $(THIRD_PATH)/ncursesw
 PCAP_PATH = $(THIRD_PATH)/pcap
 
 
-CFLAGS = -O0 -g
-#CFLAGS = -O3
+#CFLAGS = -O0 -g
+CFLAGS = -O3
 CFLAGS += -Wall
 #CFLAGS += -fPIE
 CFLAGS += -Wno-unused-function

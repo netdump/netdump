@@ -205,7 +205,7 @@ int nd_check_fpath (char * fname) {
     TC("Called { %s(%p)", __func__, fname);
 
     char fpath[COMM_NAMESIZE];
-    strncpy(fpath, fname, sizeof(fpath));
+    snprintf(fpath, sizeof(fpath), "%s", fname);
 
     char * slash = strrchr(fpath, '/');
     if (slash != NULL) { 

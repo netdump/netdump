@@ -116,7 +116,7 @@ void mpls_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length)
 		 */
 		if (length < 1) {
 			/* nothing to print */
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", rsdl);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)rsdl);
             snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "mpls packet type unknow, length < 1");
             RVoid();
@@ -136,7 +136,7 @@ void mpls_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length)
     switch (pt)
     {
         case PT_UNKNOWN:
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", rsdl);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)rsdl);
             snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "mpls packet type unknow");
             break;

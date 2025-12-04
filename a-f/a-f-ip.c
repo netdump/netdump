@@ -596,7 +596,7 @@ void ip_print(ndo_t *ndo, void *infonode, const u_char *bp, const u_int length)
     else 
     {
         p_name = netdb_protoname(ip_proto);
-        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)length);
         if (p_name) 
         {
             snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", p_name);

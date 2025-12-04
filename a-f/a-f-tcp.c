@@ -639,7 +639,7 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
      */
     if (!ND_TTEST_LEN(bp, header_len))
     {
-        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)length);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, " truncated (invalid)");
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
         nd_trunc_longjmp(ndo);
@@ -650,7 +650,7 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
     {
         char buffer[80] = {0};
         print_tcp_rst_data(ndo, bp, length, buffer);
-        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)length);
         #if 0
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "sport %u -> dport %u, %s, win %u, %s",
             sport, dport, bittok2str(tcp_flag_values, "none", flags), win, buffer);
@@ -692,7 +692,7 @@ void tcp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length,
     #endif
 
     // add else
-    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+    snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", (unsigned short)length);
     #if 0
     snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "sport %u -> dport %u, %s, win %u",
              sport, dport, bittok2str(tcp_flag_values, "none", flags), win);
