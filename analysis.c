@@ -49,8 +49,6 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
-    comm_zone_startup();
-
     __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr), 0, 3);
 
     TC("a2d_info.w3_displayed_max_lines: %d", a2d_info.w3_displayed_max_lines);

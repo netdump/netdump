@@ -57,7 +57,7 @@ int c2a_comm_init_c2a_comm (void)
         RInt(ND_ERR);
     }
 
-    //memset(c2a_shm_addr, 0, C2A_COMM_SHM_FILESIZE);
+    memset(c2a_shm_addr, 0, C2A_COMM_SHM_FILESIZE);
 
     TI("C2A_COMM_SHM_BASEADDR: %p; c2a_shm_addr: %p", C2A_COMM_SHM_BASEADDR, c2a_shm_addr);
 

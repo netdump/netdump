@@ -634,7 +634,7 @@ void display_second_tui_exec_logic (void) {
 	display_draw_cpinfo_win();
 	display_clear_content_line();
 	display_set_wins_noecho_and_cbreak();
-	display_start_or_close_timeout(1000);
+	display_start_or_close_timeout(10);
 	display_disable_cursor();
 	unsigned int ch = 0;
 	unsigned char count = 0;
@@ -753,6 +753,7 @@ void display_second_tui_exec_logic (void) {
 		//display_draw_cpinfo_win();
 	}
 
+	display_clear_content_line();
 	display_hide_wins_3_4_5();
 	display_start_or_close_timeout(0);
 	display_set_wins_echo_and_nocbreak();
