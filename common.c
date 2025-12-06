@@ -847,7 +847,9 @@ void comm_zone_ending(void)
 {
     TC("Called { %s()", __func__);
 
-    //munmap(__netdump_shared_start, NETDUMP_ZONESIZE);
+    unsigned long size = __netdump_shared_end - __netdump_shared_start;
+
+    munmap(__netdump_shared_start, size);
 
     shm_unlink(NETDUMP_FILENAME);
 
