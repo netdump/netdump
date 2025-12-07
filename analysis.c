@@ -75,139 +75,6 @@ label1:
     RInt(ND_OK);
 }
 
-
-/**
- * @brief The Code for debug
- */
-#if 1
-void print_mac(const char *label, const unsigned char *mac)
-{
-    //TI("%s %02x:%02x:%02x:%02x:%02x:%02x", label, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-}
-
-void print_payload(const unsigned char *payload, int len)
-{
-    char buffer[96] = {0};
-    //TI("Payload (first %d bytes): ", len);
-    for (int i = 0; i < len; i++)
-    {
-        sprintf(buffer + strlen(buffer), "%02x ", payload[i]);
-    }
-    //TI("%s", buffer);
-}
-
-
-void packet_handler(infonode_t * infonode, const struct pcap_pkthdr *header, const unsigned char *packet)
-{
-
-    //TC("Called { %s(%p, %p, %p)", __func__, infonode, header, packet);
-
-    struct tm * tm_info = localtime(&(header->ts.tv_sec));
-    memset(infonode->timestamp, 0, sizeof(infonode->timestamp));
-    snprintf(infonode->timestamp, sizeof(infonode->timestamp), "%02d:%02d:%02d.%06ld",
-             tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, header->ts.tv_usec);
-
-    //TI("infonode: %p; infonode->timestamp: %s", infonode, infonode->timestamp);
-
-    struct ether_header *eth_header = (struct ether_header *)packet;
-    uint16_t eth_type = ntohs(eth_header->ether_type);
-    int ip_header_len = 0;
-
-    print_mac("Source MAC:", eth_header->ether_shost);
-    print_mac("Destination MAC:", eth_header->ether_dhost);
-
-    if (eth_type == ETHERTYPE_IP)
-    { // IPv4
-        struct iphdr *ip_header = (struct iphdr *)(packet + sizeof(struct ether_header));
-        struct in_addr src_ip, dst_ip;
-        src_ip.s_addr = ip_header->saddr;
-        dst_ip.s_addr = ip_header->daddr;
-
-        //TI("Protocol: IPv4");
-        //TI("Source IP: %s", inet_ntoa(src_ip));
-        memset(infonode->srcaddr, 0, sizeof(infonode->srcaddr));
-        snprintf(infonode->srcaddr, sizeof(infonode->srcaddr), "%s", inet_ntoa(src_ip));
-        //TI("Destination IP: %s", inet_ntoa(dst_ip));
-        memset(infonode->dstaddr, 0, sizeof(infonode->srcaddr));
-        snprintf(infonode->dstaddr, sizeof(infonode->dstaddr), "%s", inet_ntoa(dst_ip));
-
-        ip_header_len = ip_header->ihl * 4;
-    }
-    else if (eth_type == ETHERTYPE_IPV6)
-    { // IPv6
-        struct ip6_hdr *ip6_header = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
-        char src_ip[INET6_ADDRSTRLEN], dst_ip[INET6_ADDRSTRLEN];
-
-        inet_ntop(AF_INET6, &ip6_header->ip6_src, src_ip, sizeof(src_ip));
-        inet_ntop(AF_INET6, &ip6_header->ip6_dst, dst_ip, sizeof(dst_ip));
-
-        //TI("Protocol: IPv6");
-        //TI("Source IP: %s", src_ip);
-        //TI("Destination IP: %s", dst_ip);
-
-        ip_header_len = sizeof(struct ip6_hdr);
-    }
-    else if (eth_type == ETHERTYPE_ARP)
-    { // ARP
-        TI("Protocol: ARP (Skipping IP and ports)");
-        return;
-    }
-    else
-    {
-        TI("Unknown protocol: 0x%04x", eth_type);
-        return;
-    }
-
-    // 计算 IP 头部后的数据偏移
-    const unsigned char *transport_header = packet + sizeof(struct ether_header) + ip_header_len;
-    uint8_t protocol = eth_type == ETHERTYPE_IP ? ((struct iphdr *)(packet + sizeof(struct ether_header)))->protocol : 0;
-
-    if (protocol == IPPROTO_TCP)
-    { // TCP
-        struct tcphdr *tcp_header = (struct tcphdr *)transport_header;
-        //TI("Source Port: %u", ntohs(tcp_header->source));
-        //TI("Destination Port: %u", ntohs(tcp_header->dest));
-        snprintf(infonode->srcaddr + strlen(infonode->srcaddr), sizeof(infonode->srcaddr) - strlen(infonode->srcaddr), ".%u", ntohs(tcp_header->source));
-        snprintf(infonode->dstaddr + strlen(infonode->dstaddr), sizeof(infonode->dstaddr) - strlen(infonode->dstaddr), ".%u", ntohs(tcp_header->dest));
-        //TI("infonode->srcaddr: %s; infonode->dstaddr: %s", infonode->srcaddr, infonode->dstaddr);
-        memset(infonode->protocol, 0, sizeof(infonode->protocol));
-        snprintf(infonode->protocol, sizeof(infonode->protocol), "%s", "tcp");
-        // 计算 TCP 负载起始位置
-        int tcp_header_len = tcp_header->doff * 4;
-        const unsigned char *payload = transport_header + tcp_header_len;
-        int payload_len = header->caplen - (payload - packet);
-        memset(infonode->length, 0, sizeof(infonode->length));
-        snprintf(infonode->length, sizeof(infonode->length), "%u", payload_len);
-
-        print_payload(payload, payload_len > 16 ? 16 : payload_len);
-    }
-    else if (protocol == IPPROTO_UDP)
-    { // UDP
-        struct udphdr *udp_header = (struct udphdr *)transport_header;
-        //TI("Source Port: %u", ntohs(udp_header->source));
-        //TI("Destination Port: %u", ntohs(udp_header->dest));
-        snprintf(infonode->srcaddr + strlen(infonode->srcaddr), sizeof(infonode->srcaddr) - strlen(infonode->srcaddr), ".%u", ntohs(udp_header->source));
-        snprintf(infonode->dstaddr + strlen(infonode->dstaddr), sizeof(infonode->dstaddr) - strlen(infonode->dstaddr), ".%u", ntohs(udp_header->dest));
-        memset(infonode->protocol, 0, sizeof(infonode->protocol));
-        snprintf(infonode->protocol, sizeof(infonode->protocol), "%s", "udp");
-
-        // 计算 UDP 负载起始位置
-        const unsigned char *payload = transport_header + sizeof(struct udphdr);
-        int payload_len = header->caplen - (payload - packet);
-        memset(infonode->length, 0, sizeof(infonode->length));
-        snprintf(infonode->length, sizeof(infonode->length), "%u", payload_len);
-
-        print_payload(payload, payload_len > 16 ? 16 : payload_len);
-    }
-
-    snprintf(infonode->brief, sizeof(infonode->brief), "%s", "Test output position");
-
-    //RVoid();
-    return ;
-}
-
-#endif
-
 /**
  * @brief
  *  Store captured network frame pointers in order
@@ -303,7 +170,6 @@ void analysis_no_manual_mode (void)
 
         infonode->g_store_index = strore_frame_addr_array_index;
 
-        //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
         c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
@@ -366,7 +232,6 @@ void analysis_manual_mode (void)
 
                 infonode->g_store_index = strore_frame_addr_array_index;
 
-                // packet_handler(infonode, &(ds->pkthdr), ds->data);
                 analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
                 c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
@@ -438,7 +303,6 @@ void analysis_manual_mode (void)
         infonode = container_of(node, infonode_t, listnode);
         infonode->g_store_index = index;
 
-        //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
         nd_dll_intsert_into_head(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
@@ -494,7 +358,6 @@ void analysis_manual_mode (void)
         infonode = container_of(node, infonode_t, listnode);
         infonode->g_store_index = index;
 
-        //packet_handler(infonode, &(ds->pkthdr), ds->data);
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
         nd_dll_insert_into_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail, node);
