@@ -78,7 +78,7 @@ extern void *c2a_shm_read_addr;
 /**
  * @brief ctoa shared memory file size
  */
-#define C2A_COMM_SHM_FILESIZE                   ((1073741824ULL))
+#define C2A_COMM_SHM_FILESIZE                   ((1<<30))
 
 
 /**
