@@ -84,6 +84,31 @@ extern char __netdump_shared_end[];
 #define NETDUMP_ZONESIZE					0x1000000000
 
 
+/***********************************************************/
+
+#include <stdint.h>
+
+#ifdef __STDC_NO_ATOMICS__
+typedef uint32_t atomic_uint_fast32_t;
+typedef uint64_t atomic_uint_fast64_t; 
+#else
+#include <stdatomic.h>
+#endif
+
+#ifndef CACHELINE
+#define CACHELINE 64
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define ALIGN_CACHELINE __attribute__((aligned(CACHELINE)))
+#else
+#define ALIGN_CACHELINE
+#endif
+
+/***********************************************************/
+
+
+
 /**
  * @brief 
  *  Error Code

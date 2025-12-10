@@ -132,7 +132,7 @@ int analysis_loop (void) {
  */
 void analysis_no_manual_mode (void) 
 {
-    unsigned long tmp = __atomic_load_n(&(d2c_statistical_count.packages), __ATOMIC_ACQUIRE);
+    unsigned long tmp = __atomic_load_n(&(d2c_flag_statistical.packages), __ATOMIC_ACQUIRE);
 
     if (tmp == strore_frame_addr_array_index || tmp == 0 || strore_frame_addr_array_index > tmp)
     {
@@ -210,7 +210,7 @@ void analysis_manual_mode (void)
         infonode = container_of(a2d_info.w3_displayed_list_tail, infonode_t, listnode);
 
         unsigned long tmp = 0;
-        msgcomm_receive_status_value(&(d2c_statistical_count.packages), tmp);
+        msgcomm_receive_status_value(&(d2c_flag_statistical.packages), tmp);
         if (infonode->g_store_index < (tmp - 1))
         {
             infonode = analysis_get_infonode();
@@ -318,7 +318,7 @@ void analysis_manual_mode (void)
         infonode = container_of(a2d_info.w3_displayed_list_tail, infonode_t, listnode);
 
         unsigned long tmp = 0;
-        msgcomm_receive_status_value(&(d2c_statistical_count.packages), tmp);
+        msgcomm_receive_status_value(&(d2c_flag_statistical.packages), tmp);
         if (infonode->g_store_index == (tmp - 1)) {
             TI("It's at the bottom now.");
             RVoid();

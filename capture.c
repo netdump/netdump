@@ -1145,7 +1145,7 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     unsigned int tmp = 0;
     int invalid_header = 0;
-    msgcomm_receive_status_value(&(d2c_run_flag.d2c_run_flag_val), tmp);
+    msgcomm_receive_status_value(&(d2c_flag_statistical.d2c_run_flag_val), tmp);
     if (C2D_RUN_FLAG_PAUSE == tmp)
         return ;
 
@@ -1225,8 +1225,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_write_addr), 1, 3);
 
-    msgcomm_increase_data_value(&(d2c_statistical_count.packages), 1);
-    msgcomm_increase_data_value(&(d2c_statistical_count.bytes), h->caplen);
+    msgcomm_increase_data_value(&(d2c_flag_statistical.packages), 1);
+    msgcomm_increase_data_value(&(d2c_flag_statistical.bytes), h->caplen);
 
     return ;
 }
@@ -1734,7 +1734,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     {
 
         unsigned int tmp = 0;
-        msgcomm_receive_status_value(&(d2c_run_flag.d2c_run_flag_val), tmp);
+        msgcomm_receive_status_value(&(d2c_flag_statistical.d2c_run_flag_val), tmp);
 
         if (C2D_RUN_FLAG_EXIT == tmp) {
             TC("break out of the loop tmp: %d", tmp);
@@ -1798,13 +1798,13 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     pd = NULL;
     pcap_freecode(&fcode);
 
-    msgcomm_zero_variable(&(d2c_statistical_count.bytes));
-    msgcomm_zero_variable(&(d2c_statistical_count.packages));
+    msgcomm_zero_variable(&(d2c_flag_statistical.bytes));
+    msgcomm_zero_variable(&(d2c_flag_statistical.packages));
     msgcomm_zero_variable(&(d2c_comm.d2c_msg_complate_flag));
     msgcomm_zero_variable(&(d2c_comm.c2d_msg_complate_flag));
     msgcomm_zero_variable(&capture_notify_analysis);
-    msgcomm_zero_variable(&(d2c_run_flag.d2c_run_flag_val));
-    msgcomm_zero_variable(&(d2c_run_flag.c2d_run_flag_val));
+    msgcomm_zero_variable(&(d2c_flag_statistical.d2c_run_flag_val));
+    msgcomm_zero_variable(&(d2c_flag_statistical.c2d_run_flag_val));
 
     RInt(ND_OK);
 }

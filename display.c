@@ -647,11 +647,11 @@ void display_second_tui_exec_logic (void) {
 	display_resource_second_cur_win = 3;
 
 	#if 1
-	msgcomm_zero_variable(&(d2c_statistical_count.bytes));
-	msgcomm_zero_variable(&(d2c_statistical_count.packages));
-	msgcomm_zero_variable(&(d2c_run_flag.d2c_run_flag_val));
-	msgcomm_zero_variable(&(d2c_run_flag.c2d_run_flag_val));
-	#endif
+	msgcomm_zero_variable(&(d2c_flag_statistical.bytes));
+	msgcomm_zero_variable(&(d2c_flag_statistical.packages));
+	msgcomm_zero_variable(&(d2c_flag_statistical.d2c_run_flag_val));
+	msgcomm_zero_variable(&(d2c_flag_statistical.c2d_run_flag_val));
+#endif
 
 	while (1)
 	{
@@ -663,7 +663,7 @@ void display_second_tui_exec_logic (void) {
 			continue;
 		}
 
-		unsigned int tmp = __atomic_load_n(&(d2c_run_flag.c2d_run_flag_val), __ATOMIC_SEQ_CST);
+		unsigned int tmp = __atomic_load_n(&(d2c_flag_statistical.c2d_run_flag_val), __ATOMIC_SEQ_CST);
 		if (tmp == C2D_RUN_FLAG_FD_ERR ||
 			tmp == C2D_RUN_FLAG_PCAP_BREAKLOOP_ERR ||
 			tmp == C2D_RUN_FLAG_PCAP_DISPATCH_ERR ||
@@ -676,14 +676,14 @@ void display_second_tui_exec_logic (void) {
 		if ('q' == ch) 
 		{
 			TI("ch: %u", ch);
-			__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_EXIT, __ATOMIC_SEQ_CST);
+			__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_EXIT, __ATOMIC_SEQ_CST);
 			// Whether the CP process needs to return the exit status
 			break;
 		}
 		else if ('s' == ch) 
 		{
 			TI("ch: %u", ch);
-			__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_SAVE, __ATOMIC_SEQ_CST);
+			__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_SAVE, __ATOMIC_SEQ_CST);
 			// Pop-up prompt window & Check whether the data is saved
 			// This feature is not implemented.
 			break;
@@ -713,11 +713,11 @@ void display_second_tui_exec_logic (void) {
 				break;
 			case 'p':
 				TI("ch: %u", ch);
-				__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_PAUSE, __ATOMIC_SEQ_CST);
+				__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_PAUSE, __ATOMIC_SEQ_CST);
 				break;
 			case 'c':
 				TI("ch: %u", ch);
-				__atomic_store_n(&(d2c_run_flag.d2c_run_flag_val), C2D_RUN_FLAG_CONTINUE, __ATOMIC_SEQ_CST);
+				__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_CONTINUE, __ATOMIC_SEQ_CST);
 				break;
 			case KEY_UP:
 				TI("ch: %u; KEY_UP: %u; display_resource_second_cur_win: %d", ch, KEY_UP, display_resource_second_cur_win);
@@ -1714,7 +1714,7 @@ void display_win_3_move_down_selected_content(void)
 
 	nd_dll_t *node = a2d_info.w3_displayed_cur_node;
 	infonode_t *infonode = container_of(node, infonode_t, listnode);
-	unsigned long tmp = __sync_fetch_and_add(&(d2c_statistical_count.packages), 0);
+	unsigned long tmp = __sync_fetch_and_add(&(d2c_flag_statistical.packages), 0);
 
 	TI("infonode->g_store_index: %lu; tmp: %lu", infonode->g_store_index, tmp);
 

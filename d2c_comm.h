@@ -185,19 +185,15 @@
 
 
 typedef struct {
-    unsigned int d2c_run_flag_val; // _runflag_;
-    unsigned int c2d_run_flag_val; // _runflag_c2d;
-} d2c_run_flag_t;
 
+    ALIGN_CACHELINE atomic_uint_fast32_t d2c_run_flag_val; // _runflag_;
+    ALIGN_CACHELINE atomic_uint_fast32_t c2d_run_flag_val; // _runflag_c2d;
+    ALIGN_CACHELINE atomic_uint_fast32_t bytes;
+    ALIGN_CACHELINE atomic_uint_fast32_t packages;
 
-typedef struct {
-    volatile unsigned long bytes;
-    volatile unsigned long packages;
-} d2c_statistical_count_t;
+} d2c_flag_statistical_t;
 
-extern netdump_shared_t d2c_run_flag_t d2c_run_flag;
-
-extern netdump_shared_t d2c_statistical_count_t d2c_statistical_count;
+extern netdump_shared_t d2c_flag_statistical_t d2c_flag_statistical;
 
 /**
  * @brief

@@ -3,9 +3,7 @@
 
 netdump_shared_t d2c_comm_t d2c_comm;
 
-netdump_shared_t d2c_run_flag_t d2c_run_flag;
-
-netdump_shared_t d2c_statistical_count_t d2c_statistical_count;
+netdump_shared_t d2c_flag_statistical_t d2c_flag_statistical;
 
 /**
  * @brief
@@ -19,9 +17,8 @@ int d2c_comm_startup(void)
     TC("Called { %s(void)", __func__);
 
     memset(&d2c_comm, 0, sizeof(d2c_comm_t));
-    memset(&d2c_run_flag, 0, sizeof(d2c_run_flag_t));
-    memset(&d2c_statistical_count, 0, sizeof(d2c_statistical_count_t));
-
+    memset(&d2c_flag_statistical, 0, sizeof(d2c_flag_statistical));
+    
     RInt(ND_OK);
 }
 
