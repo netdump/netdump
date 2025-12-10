@@ -663,7 +663,7 @@ void display_second_tui_exec_logic (void) {
 			continue;
 		}
 
-		unsigned int tmp = __atomic_load_n(&(d2c_flag_statistical.c2d_run_flag_val), __ATOMIC_SEQ_CST);
+		unsigned int tmp = __atomic_load_n(&(d2c_flag_statistical.c2d_run_flag_val), __ATOMIC_ACQUIRE);
 		if (tmp == C2D_RUN_FLAG_FD_ERR ||
 			tmp == C2D_RUN_FLAG_PCAP_BREAKLOOP_ERR ||
 			tmp == C2D_RUN_FLAG_PCAP_DISPATCH_ERR ||
@@ -676,14 +676,14 @@ void display_second_tui_exec_logic (void) {
 		if ('q' == ch) 
 		{
 			TI("ch: %u", ch);
-			__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_EXIT, __ATOMIC_SEQ_CST);
+			__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_EXIT, __ATOMIC_RELEASE);
 			// Whether the CP process needs to return the exit status
 			break;
 		}
 		else if ('s' == ch) 
 		{
 			TI("ch: %u", ch);
-			__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_SAVE, __ATOMIC_SEQ_CST);
+			__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_SAVE, __ATOMIC_RELEASE);
 			// Pop-up prompt window & Check whether the data is saved
 			// This feature is not implemented.
 			break;
@@ -713,11 +713,11 @@ void display_second_tui_exec_logic (void) {
 				break;
 			case 'p':
 				TI("ch: %u", ch);
-				__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_PAUSE, __ATOMIC_SEQ_CST);
+				__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_PAUSE, __ATOMIC_RELEASE);
 				break;
 			case 'c':
 				TI("ch: %u", ch);
-				__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_CONTINUE, __ATOMIC_SEQ_CST);
+				__atomic_store_n(&(d2c_flag_statistical.d2c_run_flag_val), C2D_RUN_FLAG_CONTINUE, __ATOMIC_RELEASE);
 				break;
 			case KEY_UP:
 				TI("ch: %u; KEY_UP: %u; display_resource_second_cur_win: %d", ch, KEY_UP, display_resource_second_cur_win);
