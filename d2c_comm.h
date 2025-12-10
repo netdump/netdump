@@ -183,13 +183,19 @@
  */
 #define C2D_RUN_FLAG_SAVE                               (0x08)
 
-
+/**
+ * @brief process running status values ​​and statistics
+ * @memberof d2c_run_flag_val
+ * @memberof c2d_run_flag_val
+ * @memberof bytes
+ * @memberof packages
+ */
 typedef struct {
 
-    ALIGN_CACHELINE atomic_uint_fast32_t d2c_run_flag_val; // _runflag_;
-    ALIGN_CACHELINE atomic_uint_fast32_t c2d_run_flag_val; // _runflag_c2d;
-    ALIGN_CACHELINE atomic_uint_fast64_t bytes;
-    ALIGN_CACHELINE atomic_uint_fast64_t packages;
+    ALIGN_CACHELINE uint32_t d2c_run_flag_val;             // _runflag_;
+    ALIGN_CACHELINE uint32_t c2d_run_flag_val;             // _runflag_c2d;
+    ALIGN_CACHELINE uint64_t bytes;
+    ALIGN_CACHELINE uint64_t packages;
 
 } d2c_flag_statistical_t;
 
