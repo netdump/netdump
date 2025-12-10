@@ -14,7 +14,10 @@
 #include "c2a_comm.h"
 #include "trace.h"
 
-netdump_shared_t unsigned int capture_notify_analysis;
+netdump_shared_t ALIGN_CACHELINE unsigned int capture_notify_analysis;
+
+// If each block is 512MB, then the maximum size of the corresponding mapped file is 128GB.
+netdump_shared_t c2a_memory_block_management_t c2a_mem_block_management[256];
 
 /**
  * @brief 

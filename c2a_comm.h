@@ -37,7 +37,7 @@ typedef struct datastore_s
     unsigned char data[0];
 } datastore_t;
 
-extern netdump_shared_t unsigned int capture_notify_analysis;
+extern netdump_shared_t ALIGN_CACHELINE unsigned int capture_notify_analysis;
 
 /**
  * @brief Global ctoa shared memory pointer variable
@@ -93,6 +93,27 @@ extern void *c2a_shm_read_addr;
  */
 #define C2A_COMM_ADDR_ALIGN(address)            (((uintptr_t)(address) + 7) & ~(7))
 
+/**
+ * @brief
+ * this structure stores the offset of the current block relative to the start of the file after mmap memory mapping,
+ * as well as the start and end indices of the network frames stored in the current block.
+ * @memberof offset
+ *  the offset of the current block relative to the start of the file
+ * @memberof start_idx
+ *  the start indices of the network frames stored in the current block
+ * @memberof end_idx
+ *  the end indices of the network frames stored in the current block
+ * @memberof padding
+ *  Padding to 16 bytes
+ */
+typedef struct ALIGN_CACHELINE {
+    uint32_t offset;
+    uint32_t start_idx;
+    uint32_t end_idx;
+    uint32_t padding;
+} c2a_memory_block_management_t;
+
+extern netdump_shared_t c2a_memory_block_management_t c2a_mem_block_management[256];
 
 /**
  * @brief
