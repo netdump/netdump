@@ -1150,13 +1150,6 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     if (transmit_pause_status)
         return;
 
-    #if 0
-    unsigned int tmp = 0;
-    msgcomm_receive_status_value(&(d2c_flag_statistical.d2c_run_flag_val), tmp);
-    if (C2D_RUN_FLAG_PAUSE == tmp)
-        return ;
-    #endif
-
     if (h->caplen == 0)
     {
         invalid_header = 1;
@@ -1234,8 +1227,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_write_addr), 1, 3);
 
     msgcomm_increase_data_value(&(d2c_flag_statistical.packages), 1);
-    msgcomm_increase_data_value(&(d2c_flag_statistical.bytes), h->caplen);
-
+    //msgcomm_increase_data_value(&(d2c_flag_statistical.bytes), h->caplen);
+    
     return ;
 }
 
