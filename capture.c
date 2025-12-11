@@ -1128,6 +1128,8 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
 }
 
 
+int transmit_pause_status = 0;
+
 /**
  * @brief
  *  Copy data to shared memory
@@ -1143,11 +1145,17 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     //TC("Called { %s(%p, %p, %p)", __func__, user, h, sp);
 
-    unsigned int tmp = 0;
     int invalid_header = 0;
+
+    if (transmit_pause_status)
+        return;
+
+    #if 0
+    unsigned int tmp = 0;
     msgcomm_receive_status_value(&(d2c_flag_statistical.d2c_run_flag_val), tmp);
     if (C2D_RUN_FLAG_PAUSE == tmp)
         return ;
+    #endif
 
     if (h->caplen == 0)
     {
@@ -1720,13 +1728,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
         msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_FD_ERR);
         RInt(ND_ERR);
     }
-    #if 0
-    struct pollfd fds;
-    int ret = 0;
-    fds.fd = fd;
-    fds.events = POLLIN;
-    fcntl(fd, F_SETFL, O_NONBLOCK);
-    #endif
+    
     pcap_set_immediate_mode(pd, 1);
     pcap_setnonblock(pd, 1, NULL);
 
@@ -1745,34 +1747,15 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             TC("break out of the loop tmp: %d", tmp);
             break;
         }
-        #if 0
-        ret = poll(&fds, 1, 100);
 
-        if (ret >= 0) 
-        {
-            if (ret && (fds.revents & POLLIN)) {
-                status = pcap_dispatch(pd, 0, capture_copy_packet, NULL);
-                if (status == -2)
-                {
-                    TE("%s: pcap_breakloop() is called, forcing the loop to terminate.", program_name);
-                    msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_BREAKLOOP_ERR);
-                    break;
-                }
-                if (status == -1)
-                {
-                    TE("%s: pcap_dispatch: %s\n", program_name, pcap_geterr(pd));
-                    msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_DISPATCH_ERR);
-                    break;
-                }
-            }
+        if (C2D_RUN_FLAG_CONTINUE == tmp) {
+            transmit_pause_status = 0;
         }
-        else
-        {
-            TE("poll() error; errno: %d; errmsg: %s", errno, strerror(errno));
-            msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_POLL_ERR);
-            break;
+
+        if (C2D_RUN_FLAG_PAUSE == tmp) {
+            transmit_pause_status = 1;
         }
-        #else
+
         status = pcap_dispatch(pd, -1, capture_copy_packet, NULL);
         if (status == 0) 
         {
@@ -1791,7 +1774,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_DISPATCH_ERR);
             break;
         }
-        #endif
+        
     }
 
     pcap_close(pd);
