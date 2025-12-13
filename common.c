@@ -855,3 +855,40 @@ void comm_zone_ending(void)
 
     RVoid();
 }
+
+/**
+ * @brief general memory page locking functions
+ * @param obj the address of the object to be locked
+ * @param len length of the object to be locked
+ * @return returns 0 on success, -1 on failure.
+ */
+int comm_lock_object_pages(void *obj, size_t len)
+{
+    TC("Called { %s(%p, %ld)", __func__, obj, len);
+
+    size_t pagesz = sysconf(_SC_PAGESIZE);
+
+    TI("pagesz: %ld", pagesz);
+
+    uintptr_t start = (uintptr_t)obj;
+    uintptr_t end = start + len - 1;
+
+    TI("start: %ld; end: %ld", start, end);
+
+    uintptr_t page_start = start & ~(pagesz - 1);
+    uintptr_t page_end = end & ~(pagesz - 1);
+
+    TI("page_start: %ld; page_end: %ld", page_start, page_end);
+
+    size_t lock_len = page_end - page_start + pagesz;
+
+    TI("lock_len: %ld", lock_len);
+
+    if (mlock((void *)page_start, lock_len) != 0)
+    {
+        TE("mlock errmsg: %s", strerror(errno));
+        RInt(-1);
+    }
+
+    RInt(0);
+}

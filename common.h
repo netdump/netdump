@@ -79,7 +79,7 @@ typedef unsigned long long  uint64_t;
 /** custom segment related information */
 extern char __netdump_shared_start[];
 extern char __netdump_shared_end[];
-#define netdump_shared_t 					__attribute__((section(".netdump_shared")))
+#define NETDUMP_SHARED 					__attribute__((section(".netdump_shared")))
 #define NETDUMP_FILENAME 					"/netdump_shm"
 #define NETDUMP_ZONESIZE					0x1000000000
 
@@ -107,10 +107,14 @@ typedef uint64_t atomic_uint_fast64_t;
 
 /***********************************************************/
 
+/** define the smallest granularity of a page table */
+#define PAGE_ALIGN 4096
+#define ALIGN_PAGE __attribute__((aligned(PAGE_ALIGN)))
 
+/***********************************************************/
 
 /**
- * @brief 
+ * @brief
  *  Error Code
  * @memberof ND_OK
  *  Indicates success
@@ -118,11 +122,10 @@ typedef uint64_t atomic_uint_fast64_t;
  *  Indicates failure
  */
 enum {
-    ND_OK,
-    ND_ERR,
+	ND_OK,
+	ND_ERR,
 	CP_FAD,
 };
-
 
 /**
  * @brief
@@ -521,5 +524,13 @@ int comm_zone_startup(void);
  *  inter-process communication resource destruction operation
  */
 void comm_zone_ending(void);
+
+/**
+ * @brief general memory page locking functions
+ * @param obj the address of the object to be locked
+ * @param len length of the object to be locked
+ * @return returns 0 on success, -1 on failure.
+ */
+int comm_lock_object_pages(void *obj, size_t len);
 
 #endif 
