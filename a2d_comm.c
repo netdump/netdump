@@ -18,22 +18,22 @@
 /**
  * @brief a2d global information interaction pointer
  */
-netdump_shared_t a2d_info_t a2d_info = {0};
+NETDUMP_SHARED a2d_info_t a2d_info = {0};
 
 /**
  * @brief information node array
  */
-netdump_shared_t infonode_t infonode_array[A2D_INFONODE_NUMBER] = {0};
+NETDUMP_SHARED infonode_t infonode_array[A2D_INFONODE_NUMBER] = {0};
 
 /**
  * @brief level 1 level2 node array
  */
-netdump_shared_t l1l2_node_t l1l2node_array[(A2D_INFONODE_NUMBER) * (l1l2_NODE_NUMS)] = {0};
+NETDUMP_SHARED l1l2_node_t l1l2node_array[(A2D_INFONODE_NUMBER) * (l1l2_NODE_NUMS)] = {0};
 
 /**
  * @brief window 5 node array
  */
-netdump_shared_t w5_node_t w5_node_array[(A2D_INFONODE_NUMBER) * (W5_NODE_NUMS)] = {0};
+NETDUMP_SHARED w5_node_t w5_node_array[(A2D_INFONODE_NUMBER) * (W5_NODE_NUMS)] = {0};
 
 
 /**

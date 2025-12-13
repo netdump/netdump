@@ -119,7 +119,7 @@ typedef struct a2d_info_s
  * @brief
  *  a2d global information interaction pointer
  */
-extern netdump_shared_t a2d_info_t a2d_info;
+extern NETDUMP_SHARED a2d_info_t a2d_info;
 
 /**
  * @brief
