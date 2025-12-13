@@ -36,15 +36,15 @@ int main(int argc, char ** argv) {
 
     sigact_called_prctl_set_value();
 
-    if (unlikely((c2a_comm_startup()) == ND_ERR))
-    {
-        TE("ctoacomm startup failed");
-        goto label1;
-    }
-
     if (unlikely(comm_zone_startup()) == ND_ERR)
     {
         TE("comm zone startup failed");
+        goto label1;
+    }
+
+    if (unlikely((c2a_comm_startup()) == ND_ERR))
+    {
+        TE("ctoacomm startup failed");
         goto label2;
     }
 
@@ -77,11 +77,11 @@ label4:
 
 label3:
 
-    comm_zone_ending();
+    c2a_comm_ending();
 
 label2:
 
-    c2a_comm_ending();
+    comm_zone_ending();
 
 label1:
 
