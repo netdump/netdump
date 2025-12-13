@@ -18,7 +18,10 @@ int d2c_comm_startup(void)
 
     memset(&d2c_comm, 0, sizeof(d2c_comm_t));
     memset(&d2c_flag_statistical, 0, sizeof(d2c_flag_statistical));
-    
+
+    size_t pagesz = sysconf(_SC_PAGESIZE);
+    mlock(&d2c_flag_statistical, pagesz);
+
     RInt(ND_OK);
 }
 
