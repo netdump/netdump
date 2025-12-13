@@ -1,9 +1,9 @@
 
 #include "d2c_comm.h"
 
-netdump_shared_t d2c_comm_t d2c_comm;
+NETDUMP_SHARED d2c_comm_t d2c_comm;
 
-netdump_shared_t d2c_flag_statistical_t d2c_flag_statistical;
+NETDUMP_SHARED ALIGN_PAGE d2c_flag_statistical_t d2c_flag_statistical;
 
 /**
  * @brief
@@ -19,8 +19,7 @@ int d2c_comm_startup(void)
     memset(&d2c_comm, 0, sizeof(d2c_comm_t));
     memset(&d2c_flag_statistical, 0, sizeof(d2c_flag_statistical));
 
-    size_t pagesz = sysconf(_SC_PAGESIZE);
-    mlock(&d2c_flag_statistical, pagesz);
+    comm_lock_object_pages((void *)&d2c_flag_statistical, sizeof(d2c_flag_statistical));
 
     RInt(ND_OK);
 }

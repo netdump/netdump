@@ -199,7 +199,7 @@ typedef struct {
 
 } d2c_flag_statistical_t;
 
-extern netdump_shared_t d2c_flag_statistical_t d2c_flag_statistical;
+extern NETDUMP_SHARED ALIGN_PAGE d2c_flag_statistical_t d2c_flag_statistical;
 
 /**
  * @brief
@@ -278,7 +278,7 @@ typedef struct {
 
 } d2c_comm_t;
 
-extern netdump_shared_t d2c_comm_t d2c_comm;
+extern NETDUMP_SHARED d2c_comm_t d2c_comm;
 
 /**
  * @brief
