@@ -14,10 +14,10 @@
 #include "c2a_comm.h"
 #include "trace.h"
 
-netdump_shared_t ALIGN_CACHELINE unsigned int capture_notify_analysis;
+NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
 
 // If each block is 512MB, then the maximum size of the corresponding mapped file is 128GB.
-netdump_shared_t c2a_memory_block_management_t c2a_mem_block_management[256];
+NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_management_t c2a_mem_block_management[C2A_MAX_BLOCK_NUMS];
 
 /**
  * @brief 
@@ -52,7 +52,7 @@ int c2a_comm_init_c2a_comm (void)
     c2a_shm_addr = nd_called_shmopen_mmap_openup_memory(C2A_COMM_SHM_FILENAME,
                                     C2A_COMM_SHM_BASEADDR, C2A_COMM_SHM_FILESIZE);
 
-    TC("C2A_COMM_SHM_FILESIZE: %llu", C2A_COMM_SHM_FILESIZE);
+    TC("C2A_COMM_SHM_FILESIZE: %u", C2A_COMM_SHM_FILESIZE);
 
     if (unlikely((!c2a_shm_addr)))
     {
@@ -89,6 +89,12 @@ int c2a_comm_startup (void)
     }
 
     TI("__alignof__(struct datastore_s): %lu", __alignof__(struct datastore_s));
+
+    TI("sizeof(c2a_mem_block_management): %ld", sizeof(c2a_mem_block_management));
+
+    memset(c2a_mem_block_management, 0, sizeof(c2a_mem_block_management));
+
+    comm_lock_object_pages(c2a_mem_block_management, sizeof(c2a_mem_block_management));
 
     RInt(ND_OK);
 }

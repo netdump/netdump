@@ -37,7 +37,7 @@ typedef struct datastore_s
     unsigned char data[0];
 } datastore_t;
 
-extern netdump_shared_t ALIGN_CACHELINE unsigned int capture_notify_analysis;
+extern NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
 
 /**
  * @brief Global ctoa shared memory pointer variable
@@ -103,17 +103,19 @@ extern void *c2a_shm_read_addr;
  *  the start indices of the network frames stored in the current block
  * @memberof end_idx
  *  the end indices of the network frames stored in the current block
- * @memberof padding
- *  Padding to 16 bytes
+ * @memberof seq
+ *  sequence counter
  */
 typedef struct ALIGN_CACHELINE {
     uint32_t offset;
     uint32_t start_idx;
     uint32_t end_idx;
-    uint32_t padding;
+    uint32_t seq;
 } c2a_memory_block_management_t;
 
-extern netdump_shared_t c2a_memory_block_management_t c2a_mem_block_management[256];
+
+#define C2A_MAX_BLOCK_NUMS      256
+extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_management_t c2a_mem_block_management[C2A_MAX_BLOCK_NUMS];
 
 /**
  * @brief
