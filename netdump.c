@@ -36,6 +36,11 @@ int main(int argc, char ** argv) {
 
     sigact_called_prctl_set_value();
 
+    if (c2a_check_fs_vfs_sparse() == ND_ERR) {
+        TE("c2a_check_fs_vfs_sparse failed");
+        return 1;
+    }
+
     if (unlikely(comm_zone_startup()) == ND_ERR)
     {
         TE("comm zone startup failed");
@@ -53,14 +58,14 @@ int main(int argc, char ** argv) {
 
     fflush(trace_G_log);
 
-    if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
-        TE("Fork Capture failed");
+    if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
+        TE("Fork Analysis failed");
         goto label3;
     }
 
-    if (unlikely((netdump_fork(GCOREID_AA, "analysis", analysis_main)) == ND_ERR)) {
-        TE("Fork Analysis failed");
-        kill(childpid[GCOREID_CP], SIGTERM);
+    if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
+        TE("Fork Capture failed");
+        kill(childpid[GCOREID_AA], SIGTERM);
         goto label4;
     }
 

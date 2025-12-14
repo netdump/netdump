@@ -130,5 +130,104 @@ void c2a_comm_memory_load(void)
     RVoid();
 }
 
+#if 0
+1. statfs → 校验文件系统
+2. statvfs → 校验可用空间
+3. ftruncate(64GB)
+4. 校验 sparse file
+#endif
+/**
+ * @brief u
+ *  sed to test file systems, verify available space, and check for sparse files.
+ * @return 
+ *  returns ND_OK on success, ND_ERR on failure.
+ * @note
+ *  if any non-compliance is detected, the program will exit immediately.
+ */
+int c2a_check_fs_vfs_sparse(void) {
 
+    TC("Called { %s()", __func__);
+
+    if ((nd_check_fpath(C2A_COMM_SHM_STORE_ABSOLUTE_FN)) == ND_ERR) {
+        printf("\n\nerrmsg: %s.\n\n", strerror(errno));
+        TE("errmsg: %s.", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    struct statfs s;
+    if ((statfs(C2A_COMM_SHM_STORE_FILE_PATH, &s)) == -1) {
+        printf("\n\nerrmsg: %s.\n\n", strerror(errno));
+        TE("errmsg: %s.", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    switch (s.f_type) {
+        case EXT4_SUPER_MAGIC:
+        case XFS_SUPER_MAGIC:
+            break;
+        default:
+            printf(
+                "\n\n\terrmsg: The file system does not meet the requirements.\n\n"
+                "\t Please use the ext4 or xfs file system. \n\n"
+            );
+            TE("The file system does not meet the requirements; Please use the ext4 or xfs file system.");
+            RInt(ND_ERR);
+    }
+
+    struct statvfs v;
+    if ((statvfs(C2A_COMM_SHM_STORE_FILE_PATH, &v)) == -1) {
+        printf("\n\nerrmsg: %s.\n\n", strerror(errno));
+        TE("errmsg: %s.", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    uint64_t free_bytes = v.f_bavail * v.f_frsize;
+
+    uint32_t free_gbytes = free_bytes >> GiB_SHIFT;
+
+    if (free_gbytes < C2A_COMM_SHM_STORE_FILE_MIN_SIZE) {
+        printf("\n\n\terrmsg: Insufficient disk resources.\n\n");
+        TE("errmsg: Insufficient disk resources.");
+        RInt(ND_ERR);
+    }
+
+    uint64_t half = free_gbytes >> 1;
+
+    uint64_t result = 1;
+    while (result < half) {
+        result <<= 1;
+    }
+
+    if (result > C2A_COMM_SHM_STORE_FILE_MAX_SIZE) 
+        result = C2A_COMM_SHM_STORE_FILE_MAX_SIZE;
+
+    int fd = -1;
+    if (unlikely((fd = open(C2A_COMM_SHM_STORE_ABSOLUTE_FN, O_RDWR | O_CREAT, 0666)) < 0)) {
+        printf("\n\nerrmsg: %s.\n\n", strerror(errno));
+        TE("errmsg: %s.", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    off_t size = result << GiB_SHIFT;
+    if ((ftruncate(fd, size)) == -1) {
+        printf("\n\nerrmsg: %s.\n\n", strerror(errno));
+        TE("errmsg: %s.", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    struct stat st;
+    if ((fstat(fd, &st)) == -1) {
+        printf("\n\nerrmsg: %s.\n\n", strerror(errno));
+        TE("errmsg: %s.", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    if (st.st_blocks * 512 > 1 << 20) {
+        printf("\n\n\terrmsg: The created file is not a sparse file.\n\n");
+        TE("errmsg: The created file is not a sparse file.");
+        RInt(ND_ERR);
+    }
+
+    RInt(ND_OK);
+}
 

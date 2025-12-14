@@ -18,6 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/statfs.h>
+#include <linux/magic.h>
+#include <sys/statvfs.h>
+#include <sys/types.h>
+#include <stdint.h>
+#include <errno.h>
 
 #include "pcap.h"
 #include "common.h"
@@ -38,6 +44,10 @@ typedef struct datastore_s
 } datastore_t;
 
 extern NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
+
+/*********************************************************************************/
+
+/* 分割线中的内容在修改完后会删除 */
 
 /**
  * @brief Global ctoa shared memory pointer variable
@@ -80,12 +90,12 @@ extern void *c2a_shm_read_addr;
  */
 #define C2A_COMM_SHM_FILESIZE                   ((1<<30))
 
-
 /**
  * @brief ctoa shared memory starting base address
  */
 #define C2A_COMM_SHM_BASEADDR                   ((void *)(0x6EEE00000000))
 
+/*********************************************************************************/
 
 /**
  * @brief
@@ -117,6 +127,18 @@ typedef struct ALIGN_CACHELINE {
 #define C2A_MAX_BLOCK_NUMS      256
 extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_management_t c2a_mem_block_management[C2A_MAX_BLOCK_NUMS];
 
+#define C2A_COMM_SHM_STORE_FILE_PATH                "/var/lib/netdump"
+
+#define C2A_COMM_SHM_STORE_FILE_NAME                ".netdump_store"
+
+#define C2A_COMM_SHM_STORE_ABSOLUTE_FN              "/var/lib/netdump/.netdump_store"
+
+#define GiB_SHIFT                                   (30)
+
+#define C2A_COMM_SHM_STORE_FILE_MIN_SIZE            (16)
+#define C2A_COMM_SHM_STORE_FILE_MAX_SIZE            (256)
+
+
 /**
  * @brief
  *  Inter-process communication resource initialization operation
@@ -137,5 +159,21 @@ void c2a_comm_ending(void);
  *  Load the mapped memory into the memory page
  */
 void c2a_comm_memory_load(void);
+
+#if 0
+1. statfs → 校验文件系统
+2. statvfs → 校验可用空间
+3. ftruncate(64GB)
+4. 校验 sparse file
+#endif
+/**
+ * @brief u
+ *  sed to test file systems, verify available space, and check for sparse files.
+ * @return
+ *  returns ND_OK on success, ND_ERR on failure.
+ * @note
+ *  if any non-compliance is detected, the program will exit immediately.
+ */
+int c2a_check_fs_vfs_sparse(void);
 
 #endif // __C2A_COMM_H__
