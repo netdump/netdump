@@ -118,7 +118,7 @@ int analysis_loop (void) {
                 c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
                 strore_frame_addr_array_index = 0;
             }
-            nd_delay_microsecond(0, 1000000);
+            nd_delay_microsecond(0, 1000);
         }
     }
 
