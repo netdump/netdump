@@ -90,12 +90,6 @@ int c2a_comm_startup (void)
 
     TI("__alignof__(struct datastore_s): %lu", __alignof__(struct datastore_s));
 
-    TI("sizeof(c2a_mem_block_management): %ld", sizeof(c2a_mem_block_management));
-
-    memset(c2a_mem_block_management, 0, sizeof(c2a_mem_block_management));
-
-    comm_lock_object_pages(c2a_mem_block_management, sizeof(c2a_mem_block_management));
-
     RInt(ND_OK);
 }
 
@@ -112,6 +106,45 @@ void c2a_comm_ending (void)
     munmap(C2A_COMM_SHM_BASEADDR, C2A_COMM_SHM_FILESIZE);
 
     shm_unlink(C2A_COMM_SHM_FILENAME);
+
+    RVoid();
+}
+
+
+/**
+ * @brief initialization mem_block_management
+ */
+void c2a_comm_mem_block_management_init(void) {
+
+    TC("Called { %s()", __func__);
+
+    TI("sizeof(c2a_mem_block_management): %ld", sizeof(c2a_mem_block_management));
+
+    memset(c2a_mem_block_management, 0, sizeof(c2a_mem_block_management));
+
+    comm_lock_object_pages(c2a_mem_block_management, sizeof(c2a_mem_block_management));
+
+    RVoid();
+}
+
+/**
+ * @brief block0 used for initializing the parsing process
+ */
+int c2a_comm_block_0_init(void) {
+
+    TC("Called { %s()", __func__);
+
+    RVoid();
+}
+
+/**
+ * @brief Blocks 1 and 2 used to initialize the capture process
+ */
+int c2a_comm_block_1_block_2_init(void) {
+
+    TC("Called { %s()", __func__);
+
+
 
     RVoid();
 }

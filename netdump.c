@@ -55,6 +55,7 @@ int main(int argc, char ** argv) {
 
     a2d_comm_startup();
     d2c_comm_startup();
+    c2a_comm_mem_block_management_init();
 
     fflush(trace_G_log);
 

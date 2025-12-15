@@ -155,6 +155,21 @@ int c2a_comm_startup(void);
 void c2a_comm_ending(void);
 
 /**
+ * @brief initialization mem_block_management
+ */
+void c2a_comm_mem_block_management_init(void);
+
+/**
+ * @brief block0 used for initializing the parsing process
+ */
+int c2a_comm_block_0_init(void);
+
+/**
+ * @brief Blocks 1 and 2 used to initialize the capture process
+ */
+int c2a_comm_block_1_block_2_init(void);
+
+/**
  * @brief
  *  Load the mapped memory into the memory page
  */
