@@ -127,26 +127,145 @@ void c2a_comm_mem_block_management_init(void) {
     RVoid();
 }
 
+/** Used to detect whether the file size has been modified when initializing a memory block. */
+NETDUMP_SHARED off_t memory_mmaped_file_size = 0;
+
 /**
  * @brief block0 used for initializing the parsing process
+ * @return return file descriptor
  */
 int c2a_comm_block_0_init(void) {
 
     TC("Called { %s()", __func__);
 
-    RVoid();
+    if (access(C2A_COMM_SHM_STORE_ABSOLUTE_FN, F_OK) != 0) {
+        printf("\n\n\tThe BLOCK 0 mapping file does not exist.\n\n");
+        TE("The BLOCK 0 mapping file does not exist.");
+        abort();
+    }
+
+    int fd = -1;
+    if (unlikely((fd = open(C2A_COMM_SHM_STORE_ABSOLUTE_FN, O_RDWR, 0666)) < 0)) {
+        printf("\n\n\tFailed to open the mapped file;\n\terrmsg: %s\n\n", strerror(errno));
+        TE("Failed to open the mapped file;errmsg: %s", strerror(errno));
+        abort();
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) != 0) {
+        printf("\n\n\tFailed to retrieve file information;\n\terrmsg: %s\n\n", strerror(errno));
+        TE("Failed to retrieve file information;errmsg: %s", strerror(errno));
+        close(fd);
+        abort();
+    }
+
+    if (st.st_size != memory_mmaped_file_size) {
+        printf("\n\n\tThe memory-mapped file was tampered with.\n\n");
+        TE("The memory-mapped file was tampered with.");
+        close(fd);
+        abort();
+    }
+
+    void *p = mmap(C2A_COMM_MEM_BLOCK_0_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+
+    if (unlikely((p == MAP_FAILED)) || unlikely((!p))) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        close(fd);
+        abort();
+    }
+
+    if (p != C2A_COMM_MEM_BLOCK_0_BASE_ADDR) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        close(fd);
+        abort();
+    }
+
+    memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+
+    RInt(fd);
 }
 
 /**
  * @brief Blocks 1 and 2 used to initialize the capture process
+ * @return return file descriptor
  */
 int c2a_comm_block_1_block_2_init(void) {
 
     TC("Called { %s()", __func__);
 
+    if (access(C2A_COMM_SHM_STORE_ABSOLUTE_FN, F_OK) != 0)
+    {
+        printf("\n\nThe BLOCK 1 or BLOCK 2 mapping file does not exist.\n\n");
+        TE("The BLOCK 1 or BLOCK 2 mapping file does not exist.");
+        abort();
+    }
 
+    int fd = -1;
+    if (unlikely((fd = open(C2A_COMM_SHM_STORE_ABSOLUTE_FN, O_RDWR, 0666)) < 0)) {
+        printf("\n\n\tFailed to open the mapped file;\n\terrmsg: %s\n\n", strerror(errno));
+        TE("Failed to open the mapped file;errmsg: %s", strerror(errno));
+        abort();
+    }
 
-    RVoid();
+    struct stat st;
+    if (fstat(fd, &st) != 0) {
+        printf("\n\n\tFailed to retrieve file information;\n\terrmsg: %s\n\n", strerror(errno));
+        TE("Failed to retrieve file information;errmsg: %s", strerror(errno));
+        close(fd);
+        abort();
+    }
+
+    if (st.st_size != memory_mmaped_file_size) {
+        printf("\n\n\tThe memory-mapped file was tampered with.\n\n");
+        TE("The memory-mapped file was tampered with.");
+        close(fd);
+        abort();
+    }
+
+    void *p1 = mmap(C2A_COMM_MEM_BLOCK_1_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
+                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+
+    if (unlikely((p1 == MAP_FAILED)) || unlikely((!p1))) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        close(fd);
+        abort();
+    }
+
+    if (p1 != C2A_COMM_MEM_BLOCK_1_BASE_ADDR) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        close(fd);
+        abort();
+    }
+
+    memset((char *)p1, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+
+    void *p2 = mmap(C2A_COMM_MEM_BLOCK_2_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
+            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+
+    if (unlikely((p2 == MAP_FAILED)) || unlikely((!p2))) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        munmap(C2A_COMM_MEM_BLOCK_1_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+        close(fd);
+        abort();
+    }
+
+    if (p2 != C2A_COMM_MEM_BLOCK_2_BASE_ADDR) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        munmap(C2A_COMM_MEM_BLOCK_1_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+        close(fd);
+        abort();
+    }
+
+    memset((char *)p2, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+
+    RInt(fd);
 }
 
 
@@ -260,6 +379,8 @@ int c2a_check_fs_vfs_sparse(void) {
         TE("errmsg: The created file is not a sparse file.");
         RInt(ND_ERR);
     }
+
+    memory_mmaped_file_size = size;
 
     RInt(ND_OK);
 }

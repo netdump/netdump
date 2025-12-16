@@ -93,7 +93,7 @@ extern void *c2a_shm_read_addr;
 /**
  * @brief ctoa shared memory starting base address
  */
-#define C2A_COMM_SHM_BASEADDR                   ((void *)(0x6EEE00000000))
+#define C2A_COMM_SHM_BASEADDR                   ((void *)(0x6EEA00000000))
 
 /*********************************************************************************/
 
@@ -138,6 +138,25 @@ extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_management_t c2a_mem_block_man
 #define C2A_COMM_SHM_STORE_FILE_MIN_SIZE            (16)
 #define C2A_COMM_SHM_STORE_FILE_MAX_SIZE            (256)
 
+// The number of array elements is obtained by calculating how many 64-byte network frames can be stored on 256MB.
+#define C2A_COMM_MEM_BLOCK_ELEMENT_NUMS             (1 << 22) // (4 * 1024 * 1024)  
+#define C2A_COMM_MEM_BLOCK_DATA_ZONE_SZ             (((1<< 4) - 1) << 24) // (256MB - 16MB)
+#define C2A_COMM_MEM_BLOCK_ZONE_SIZE                (1 << 28) // 256MB
+
+/**
+ * @memberof per_frame_offset
+ *  the offset of each frame relative to the starting position
+ * @memberof per_frame_data
+ *  store each frame sequentially
+ */
+typedef struct c2a_comm_mem_block {
+    int per_frame_offset[C2A_COMM_MEM_BLOCK_ELEMENT_NUMS];
+    char per_frame_data[C2A_COMM_MEM_BLOCK_DATA_ZONE_SZ];
+} c2a_comm_mem_block_t;
+
+#define C2A_COMM_MEM_BLOCK_0_BASE_ADDR          ((void *)(0x700000000000))
+#define C2A_COMM_MEM_BLOCK_1_BASE_ADDR          ((void *)(0x700040000000))
+#define C2A_COMM_MEM_BLOCK_2_BASE_ADDR          ((void *)(0x700080000000))
 
 /**
  * @brief
