@@ -193,11 +193,17 @@
 typedef struct {
 
     ALIGN_CACHELINE uint32_t d2c_run_flag_val;             // _runflag_;
+    char pad0[CACHELINE - sizeof(uint32_t)];
     ALIGN_CACHELINE uint32_t c2d_run_flag_val;             // _runflag_c2d;
+    char pad1[CACHELINE - sizeof(uint32_t)];
     ALIGN_CACHELINE uint64_t bytes;
+    char pad2[CACHELINE - sizeof(uint64_t)];
     ALIGN_CACHELINE uint64_t packages;
+    char pad3[CACHELINE - sizeof(uint64_t)];
 
 } d2c_flag_statistical_t;
+
+_Static_assert(sizeof(d2c_flag_statistical_t) == 4 * CACHELINE, "size mismatch");
 
 extern NETDUMP_SHARED ALIGN_PAGE d2c_flag_statistical_t d2c_flag_statistical;
 
