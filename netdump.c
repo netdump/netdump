@@ -67,10 +67,10 @@ int main(int argc, char ** argv) {
     #if 0
     if (unlikely(c2a_comm_block_1_block_2_init()) == ND_ERR) {
         TE("Mem block mmap failed");
-        goto label3;
+        goto label4;
     }
     #endif
-    
+
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
         TE("Fork Capture failed");
         kill(childpid[GCOREID_AA], SIGTERM);
