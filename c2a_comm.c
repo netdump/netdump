@@ -128,7 +128,7 @@ void c2a_comm_mem_block_management_init(void) {
 }
 
 /** Used to detect whether the file size has been modified when initializing a memory block. */
-NETDUMP_SHARED off_t memory_mmaped_file_size = 0;
+static off_t memory_mmaped_file_size = 0;
 
 /** The file descriptor (fd) after the memory mapping process is resolved. */
 static int block_0_fd = -1;
