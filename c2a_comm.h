@@ -109,24 +109,23 @@ extern void *c2a_shm_read_addr;
  * as well as the start and end indices of the network frames stored in the current block.
  * @memberof offset
  *  the offset of the current block relative to the start of the file
+ * @memberof start_addr
+ *  the virtual address at the beginning of the block memory.
  * @memberof start_idx
  *  the start indices of the network frames stored in the current block
  * @memberof end_idx
  *  the end indices of the network frames stored in the current block
- * @memberof seq
- *  sequence counter
  * @note
- *  The significance of this structure may not be very high at present. 
- *  We'll keep it for now. Later, when a fast search function is needed, 
+ *  The significance of this structure may not be very high at present.
+ *  We'll keep it for now. Later, when a fast search function is needed,
  *  this structure will prove valuable.
  */
 typedef struct ALIGN_CACHELINE {
     uint64_t offset;
+    uint64_t start_addr;
     uint64_t start_idx;
     uint64_t end_idx;
-    void * used_fixed_addr;
-    uint32_t isfull;
-    char pad[CACHELINE - 3 * sizeof(uint64_t) - sizeof(uint32_t) - sizeof(void *)];
+    char pad[CACHELINE - 4 * sizeof(uint64_t)];
 } c2a_memory_block_meta_t;
 
 _Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
@@ -171,10 +170,9 @@ typedef struct c2a_comm_ctrl {
     uint64_t pkts_start_sn;
     uint64_t pkts_end_sn;
     uint64_t offset;
-    void * used_fixed_addr;
+    uint64_t start_addr;
     uint32_t block_meta_idx;
-    uint32_t isfull;
-    char pad[CACHELINE - 4 * sizeof(uint32_t) - 3 * sizeof(uint64_t) - sizeof(void *)];
+    char pad[CACHELINE - 3 * sizeof(uint32_t) - 4 * sizeof(uint64_t)];
 } ALIGN_CACHELINE c2a_comm_ctrl_t;
 
 _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
@@ -199,9 +197,7 @@ _Static_assert(
         C2A_COMM_MEM_BLOCK_ZONE_SIZE, "block size mismatch"
     );
 
-#define C2A_COMM_MEM_BLOCK_0_BASE_ADDR          ((void *)(0x700000000000))
-#define C2A_COMM_MEM_BLOCK_1_BASE_ADDR          ((void *)(0x700040000000))
-#define C2A_COMM_MEM_BLOCK_2_BASE_ADDR          ((void *)(0x700080000000))
+#define C2A_COMM_MEM_BLOCK_BASE_ADDR          ((void *)(0x700000000000))
 
 /**
  * @brief
