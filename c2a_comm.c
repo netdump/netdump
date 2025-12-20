@@ -110,7 +110,10 @@ void c2a_comm_ending (void)
     RVoid();
 }
 
+/** Used to detect whether the file size has been modified when initializing a memory block. */
+static off_t memory_mmaped_file_size = 0;
 
+#if 0
 /**
  * @brief initialization mem_block_management
  */
@@ -126,9 +129,6 @@ void c2a_comm_mem_block_management_init(void) {
 
     RVoid();
 }
-
-/** Used to detect whether the file size has been modified when initializing a memory block. */
-static off_t memory_mmaped_file_size = 0;
 
 /** The file descriptor (fd) after the memory mapping process is resolved. */
 static int block_0_fd = -1;
@@ -194,7 +194,7 @@ int c2a_comm_block_0_init(void) {
         abort();
     }
 
-    //memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+    memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
 
     block_0_fd = fd;
     block_0_next_stride++;
@@ -351,7 +351,7 @@ void c2a_comm_block_1_block_2_update_mmap(void *addr, uint32_t block_meta_idx)
 
     RVoid();
 }
-
+#endif
 /**
  * @brief
  *  Load the mapped memory into the memory page
