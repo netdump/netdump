@@ -55,7 +55,6 @@ int main(int argc, char ** argv) {
 
     a2d_comm_startup();
     d2c_comm_startup();
-    c2a_comm_mem_block_management_init();
 
     fflush(trace_G_log);
 
@@ -63,13 +62,6 @@ int main(int argc, char ** argv) {
         TE("Fork Analysis failed");
         goto label3;
     }
-
-    #if 0
-    if (unlikely(c2a_comm_block_1_block_2_init()) == ND_ERR) {
-        TE("Mem block mmap failed");
-        goto label4;
-    }
-    #endif
 
     if (unlikely((netdump_fork(GCOREID_CP, "capture", capture_main)) == ND_ERR)) {
         TE("Fork Capture failed");
