@@ -161,8 +161,6 @@ extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_managemen
  *  Offset relative to the start of the file
  * @memberof block_meta_idx
  *  Index in array c2a_mem_block_management
- * @memberof isfull
- *  Is the data block full? 1 is full
  */
 typedef struct c2a_comm_ctrl {
     uint32_t remain_zone;
