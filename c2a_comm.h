@@ -130,7 +130,7 @@ typedef struct ALIGN_CACHELINE {
 
 _Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
 
-#define C2A_MAX_BLOCK_NUMS      256
+#define C2A_MAX_BLOCK_NUMS      1024
 extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_MAX_BLOCK_NUMS];
 
 #define C2A_COMM_SHM_STORE_FILE_PATH                "/var/lib/netdump"
@@ -211,21 +211,6 @@ int c2a_comm_startup(void);
  *  Inter-process communication resource destruction operation
  */
 void c2a_comm_ending(void);
-
-/**
- * @brief initialization mem_block_management
- */
-void c2a_comm_mem_block_management_init(void);
-
-/**
- * @brief block0 used for initializing the parsing process
- */
-int c2a_comm_block_0_init(void);
-
-/**
- * @brief Blocks 1 and 2 used to initialize the capture process
- */
-int c2a_comm_block_1_block_2_init(void);
 
 /**
  * @brief

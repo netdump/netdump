@@ -70,7 +70,6 @@ int c2a_comm_init_c2a_comm (void)
     RInt(ND_OK);
 }
 
-
 /**
  * @brief
  *  Inter-process communication resource initialization operation
@@ -80,7 +79,6 @@ int c2a_comm_init_c2a_comm (void)
  */
 int c2a_comm_startup (void) 
 {
-
     TC("Called { %s(void)", __func__);
 
     if (unlikely((c2a_comm_init_c2a_comm() == ND_ERR)))
@@ -468,3 +466,50 @@ int c2a_check_fs_vfs_sparse(void) {
     RInt(ND_OK);
 }
 
+/**
+ * @brief initialization mem_block_management
+ */
+void c2a_comm_mem_block_management_init(void)
+{
+
+    TC("Called { %s()", __func__);
+
+    TI("sizeof(c2a_mem_block_management): %ld", sizeof(c2a_mem_block_management));
+
+    memset(c2a_mem_block_management, 0, sizeof(c2a_mem_block_management));
+
+    comm_lock_object_pages(c2a_mem_block_management, sizeof(c2a_mem_block_management));
+
+    
+
+    RVoid();
+}
+
+/**
+ * @brief
+ *  Inter-process communication resource initialization operation
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int c2a_comm_startup_replace(void)
+{
+    TC("Called { %s()", __func__);
+
+
+
+    RInt(ND_OK);
+}
+
+/**
+ * @brief
+ *  Inter-process communication resource destruction operation
+ */
+void c2a_comm_ending_replace(void)
+{
+    TC("Called { %s()", __func__);
+
+
+
+    RInt(ND_OK);
+}
