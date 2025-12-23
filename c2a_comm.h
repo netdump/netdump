@@ -130,8 +130,7 @@ typedef struct ALIGN_CACHELINE {
 
 _Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
 
-#define C2A_MAX_BLOCK_NUMS      1024
-extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_MAX_BLOCK_NUMS];
+
 
 #define C2A_COMM_SHM_STORE_FILE_PATH                "/var/lib/netdump"
 
@@ -140,14 +139,22 @@ extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_managemen
 #define C2A_COMM_SHM_STORE_ABSOLUTE_FN              "/var/lib/netdump/.netdump_store"
 
 #define GiB_SHIFT                                   (30)
+#define MiB_SHIFT                                   (20)
 
 #define C2A_COMM_SHM_STORE_FILE_MIN_SIZE            (16)
-#define C2A_COMM_SHM_STORE_FILE_MAX_SIZE            (256)
+/*============================================================================================*/
+//when modifying macro definitions located within the separator line, extra care should be taken.
+#define C2A_COMM_SHM_STORE_FILE_MAX_SIZE            (256ULL)
+#define C2A_COMM_SHM_BLOCK_ZONE_SIZE                (128ULL) 
+#define C2A_COMM_SHM_MIN_FRAME_SIZE                 (64)
+/*============================================================================================*/
 
-// The number of array elements is obtained by calculating how many 64-byte network frames can be stored on 256MB.
-#define C2A_COMM_MEM_BLOCK_ELEMENT_NUMS             (1 << 22) // (4 * 1024 * 1024)  
-#define C2A_COMM_MEM_BLOCK_DATA_ZONE_SZ             (((1<< 4) - 1) << 24) // (256MB - 16MB)
-#define C2A_COMM_MEM_BLOCK_ZONE_SIZE                (1 << 28) // 256MB
+#define C2A_COMM_MEM_BLOCK_ZONE_SIZE                        (C2A_COMM_SHM_BLOCK_ZONE_SIZE << MiB_SHIFT)
+// The number of array elements is obtained by calculating how many 64-byte network frames can be stored on 128MB.
+#define C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS              (C2A_COMM_MEM_BLOCK_ZONE_SIZE / (C2A_COMM_SHM_MIN_FRAME_SIZE))
+
+#define C2A_COMM_MEM_CRTL_ELEMENT_NUMS                      ((C2A_COMM_SHM_STORE_FILE_MAX_SIZE << GiB_SHIFT) / (C2A_COMM_SHM_BLOCK_ZONE_SIZE << MiB_SHIFT))
+extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_COMM_MEM_CRTL_ELEMENT_NUMS];
 
 /**
  * @memberof remain_zone remaining space in the current block
@@ -176,7 +183,7 @@ typedef struct c2a_comm_ctrl {
 _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
 
 #define CTRL_SIZE               sizeof(c2a_comm_ctrl_t)
-#define OFFSET_TABLE_SIZE       (sizeof(int) * C2A_COMM_MEM_BLOCK_ELEMENT_NUMS)
+#define OFFSET_TABLE_SIZE       (sizeof(int) * C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS)
 
 /**
  * @memberof per_frame_offset
@@ -186,7 +193,7 @@ _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
  */
 typedef struct c2a_comm_mem_block {
     c2a_comm_ctrl_t crtl;
-    int per_frame_offset[C2A_COMM_MEM_BLOCK_ELEMENT_NUMS];
+    int per_frame_offset[C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS];
     char per_frame_data[C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE - CTRL_SIZE];
 } c2a_comm_mem_block_t;
 

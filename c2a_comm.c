@@ -16,8 +16,8 @@
 
 NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
 
-// If each block is 512MB, then the maximum size of the corresponding mapped file is 128GB.
-NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_MAX_BLOCK_NUMS];
+// If each block is 128MB, then the maximum size of the corresponding mapped file is 256GB.
+NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_COMM_MEM_CRTL_ELEMENT_NUMS];
 
 /**
  * @brief 
@@ -110,6 +110,7 @@ void c2a_comm_ending (void)
 
 /** Used to detect whether the file size has been modified when initializing a memory block. */
 static off_t memory_mmaped_file_size = 0;
+static int valid_block_nums = 0;
 
 #if 0
 /**
@@ -350,11 +351,11 @@ void c2a_comm_block_1_block_2_update_mmap(void *addr, uint32_t block_meta_idx)
     RVoid();
 }
 #endif
-/**
- * @brief
- *  Load the mapped memory into the memory page
- */
-void c2a_comm_memory_load(void) 
+    /**
+     * @brief
+     *  Load the mapped memory into the memory page
+     */
+    void c2a_comm_memory_load(void) 
 {
     TC("Called { %s()", __func__);
 
@@ -462,6 +463,7 @@ int c2a_check_fs_vfs_sparse(void) {
     }
 
     memory_mmaped_file_size = size;
+    valid_block_nums = memory_mmaped_file_size / (C2A_COMM_MEM_BLOCK_ZONE_SIZE);
 
     RInt(ND_OK);
 }
@@ -511,5 +513,5 @@ void c2a_comm_ending_replace(void)
 
 
 
-    RInt(ND_OK);
+    RVoid();
 }
