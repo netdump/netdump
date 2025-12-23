@@ -170,14 +170,14 @@ extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_managemen
  *  Index in array c2a_mem_block_management
  */
 typedef struct c2a_comm_ctrl {
-    uint32_t remain_zone;
+    //uint32_t remain_zone;
     uint32_t next_idx;
+    uint32_t block_meta_idx;
     uint64_t pkts_start_sn;
     uint64_t pkts_end_sn;
-    uint64_t offset;
-    uint64_t start_addr;
-    uint32_t block_meta_idx;
-    char pad[CACHELINE - 3 * sizeof(uint32_t) - 4 * sizeof(uint64_t)];
+    //uint64_t offset;
+    //uint64_t start_addr;
+    char pad[CACHELINE - 2 * sizeof(uint32_t) - 2 * sizeof(uint64_t)];
 } ALIGN_CACHELINE c2a_comm_ctrl_t;
 
 _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
@@ -203,6 +203,21 @@ _Static_assert(
     );
 
 #define C2A_COMM_MEM_BLOCK_BASE_ADDR          ((void *)(0x700000000000))
+
+/**
+ * @brief
+ *  Inter-process communication resource initialization operation
+ * @return
+ *  If successful, it returns ND_OK;
+ *  if failed, it returns ND_ERR
+ */
+int c2a_comm_startup_replace(void);
+
+/**
+ * @brief
+ *  Inter-process communication resource destruction operation
+ */
+void c2a_comm_ending_replace(void);
 
 /**
  * @brief

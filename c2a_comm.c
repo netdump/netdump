@@ -88,6 +88,8 @@ int c2a_comm_startup (void)
 
     TI("__alignof__(struct datastore_s): %lu", __alignof__(struct datastore_s));
 
+    c2a_comm_startup_replace();
+
     RInt(ND_OK);
 }
 
@@ -105,6 +107,8 @@ void c2a_comm_ending (void)
 
     shm_unlink(C2A_COMM_SHM_FILENAME);
 
+    c2a_comm_ending_replace();
+
     RVoid();
 }
 
@@ -112,250 +116,11 @@ void c2a_comm_ending (void)
 static off_t memory_mmaped_file_size = 0;
 static int valid_block_nums = 0;
 
-#if 0
 /**
- * @brief initialization mem_block_management
+ * @brief
+ *  Load the mapped memory into the memory page
  */
-void c2a_comm_mem_block_management_init(void) {
-
-    TC("Called { %s()", __func__);
-
-    TI("sizeof(c2a_mem_block_management): %ld", sizeof(c2a_mem_block_management));
-
-    memset(c2a_mem_block_management, 0, sizeof(c2a_mem_block_management));
-
-    comm_lock_object_pages(c2a_mem_block_management, sizeof(c2a_mem_block_management));
-
-    RVoid();
-}
-
-/** The file descriptor (fd) after the memory mapping process is resolved. */
-static int block_0_fd = -1;
-/** The file descriptor (fd) of the captured process after memory mapping. */
-static int block_1_2_fd = -1;
-/** storage resolution process memory mapping offset step */
-static int block_0_next_stride = 0;
-/** storage capture process memory mapping offset step */
-static int block_1_2_next_stride = 0;
-
-/**
- * @brief block0 used for initializing the parsing process
- * @return return file descriptor
- */
-int c2a_comm_block_0_init(void) {
-
-    TC("Called { %s()", __func__);
-
-    if (access(C2A_COMM_SHM_STORE_ABSOLUTE_FN, F_OK) != 0) {
-        printf("\n\n\tThe BLOCK 0 mapping file does not exist.\n\n");
-        TE("The BLOCK 0 mapping file does not exist.");
-        abort();
-    }
-
-    int fd = -1;
-    if (unlikely((fd = open(C2A_COMM_SHM_STORE_ABSOLUTE_FN, O_RDWR, 0666)) < 0)) {
-        printf("\n\n\tFailed to open the mapped file;\n\terrmsg: %s\n\n", strerror(errno));
-        TE("Failed to open the mapped file;errmsg: %s", strerror(errno));
-        abort();
-    }
-
-    struct stat st;
-    if (fstat(fd, &st) != 0) {
-        printf("\n\n\tFailed to retrieve file information;\n\terrmsg: %s\n\n", strerror(errno));
-        TE("Failed to retrieve file information;errmsg: %s", strerror(errno));
-        close(fd);
-        abort();
-    }
-
-    if (st.st_size != memory_mmaped_file_size) {
-        printf("\n\n\tThe memory-mapped file was tampered with.\n\n");
-        TE("The memory-mapped file was tampered with.");
-        close(fd);
-        abort();
-    }
-
-    void *p = mmap(C2A_COMM_MEM_BLOCK_0_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
-                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd,
-                   block_0_next_stride * C2A_COMM_MEM_BLOCK_ZONE_SIZE
-                );
-
-    if (unlikely((p == MAP_FAILED)) || unlikely((!p))) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        close(fd);
-        abort();
-    }
-
-    if (p != C2A_COMM_MEM_BLOCK_0_BASE_ADDR) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        close(fd);
-        abort();
-    }
-
-    memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
-
-    block_0_fd = fd;
-    block_0_next_stride++;
-
-    RInt(fd);
-}
-
-/**
- * @brief Blocks 1 and 2 used to initialize the capture process
- * @return return file descriptor
- */
-int c2a_comm_block_1_block_2_init(void) {
-
-    TC("Called { %s()", __func__);
-
-    if (access(C2A_COMM_SHM_STORE_ABSOLUTE_FN, F_OK) != 0)
-    {
-        printf("\n\nThe BLOCK 1 or BLOCK 2 mapping file does not exist.\n\n");
-        TE("The BLOCK 1 or BLOCK 2 mapping file does not exist.");
-        RInt(ND_ERR);
-    }
-
-    int fd = -1;
-    if (unlikely((fd = open(C2A_COMM_SHM_STORE_ABSOLUTE_FN, O_RDWR, 0666)) < 0)) {
-        printf("\n\n\tFailed to open the mapped file;\n\terrmsg: %s\n\n", strerror(errno));
-        TE("Failed to open the mapped file;errmsg: %s", strerror(errno));
-        RInt(ND_ERR);
-    }
-
-    struct stat st;
-    if (fstat(fd, &st) != 0) {
-        printf("\n\n\tFailed to retrieve file information;\n\terrmsg: %s\n\n", strerror(errno));
-        TE("Failed to retrieve file information;errmsg: %s", strerror(errno));
-        close(fd);
-        RInt(ND_ERR);
-    }
-
-    if (st.st_size != memory_mmaped_file_size) {
-        printf("\n\n\tThe memory-mapped file was tampered with.\n\n");
-        TE("The memory-mapped file was tampered with.");
-        close(fd);
-        RInt(ND_ERR);
-    }
-
-    void *p1 = mmap(C2A_COMM_MEM_BLOCK_1_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
-                   PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 
-                   block_1_2_next_stride * C2A_COMM_MEM_BLOCK_ZONE_SIZE
-                );
-
-    if (unlikely((p1 == MAP_FAILED)) || unlikely((!p1))) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        close(fd);
-        RInt(ND_ERR);
-    }
-
-    if (p1 != C2A_COMM_MEM_BLOCK_1_BASE_ADDR) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        close(fd);
-        RInt(ND_ERR);
-    }
-
-    memset((char *)p1, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
-
-    c2a_comm_mem_block_t *block1 = (c2a_comm_mem_block_t *)p1;
-
-    block1->crtl.next_idx = 0;
-    block1->crtl.remain_zone = C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE - CTRL_SIZE;
-    block1->crtl.block_meta_idx = 0;
-    block1->crtl.offset = block_1_2_next_stride *C2A_COMM_MEM_BLOCK_ZONE_SIZE;
-    __atomic_store_n(&(block1->crtl.isfull), 0x0, __ATOMIC_SEQ_CST);
-
-    block_1_2_next_stride++;
-
-    void *p2 = mmap(C2A_COMM_MEM_BLOCK_2_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
-            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 
-            block_1_2_next_stride * C2A_COMM_MEM_BLOCK_ZONE_SIZE
-        );
-
-    if (unlikely((p2 == MAP_FAILED)) || unlikely((!p2))) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        munmap(C2A_COMM_MEM_BLOCK_1_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
-        close(fd);
-        RInt(ND_ERR);
-    }
-
-    if (p2 != C2A_COMM_MEM_BLOCK_2_BASE_ADDR) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        munmap(C2A_COMM_MEM_BLOCK_1_BASE_ADDR, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
-        close(fd);
-        RInt(ND_ERR);
-    }
-
-    memset((char *)p2, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
-
-    c2a_comm_mem_block_t *block2 = (c2a_comm_mem_block_t *)p2;
-
-    block2->crtl.next_idx = 0;
-    block2->crtl.remain_zone = C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE - CTRL_SIZE;
-    block2->crtl.block_meta_idx = 1;
-    block2->crtl.offset = block_1_2_next_stride * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
-    __atomic_store_n(&(block2->crtl.isfull), 0x0, __ATOMIC_SEQ_CST);
-
-    block_1_2_fd = fd;
-    block_1_2_next_stride++;
-
-    RInt(fd);
-}
-
-void c2a_comm_block_1_block_2_update_mmap(void *addr, uint32_t block_meta_idx)
-{
-    TC("Called { %s()", __func__);
-
-    if (munmap(addr, C2A_COMM_MEM_BLOCK_ZONE_SIZE)) {
-        printf("\n\n\tFile munmapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File munmapping failed; errmsg: %s", strerror(errno));
-        close(block_1_2_fd);
-        abort();
-    }
-
-    void *p = mmap(addr, C2A_COMM_MEM_BLOCK_ZONE_SIZE,
-            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, block_1_2_fd, 
-            block_1_2_next_stride * C2A_COMM_MEM_BLOCK_ZONE_SIZE
-        );
-
-    if (unlikely((p == MAP_FAILED)) || unlikely((!p))) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        close(block_1_2_fd);
-        abort();
-    }
-
-    if (p != addr) {
-        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
-        TE("File mapping failed; errmsg: %s", strerror(errno));
-        close(block_1_2_fd);
-        abort();
-    }
-
-    memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
-
-    c2a_comm_mem_block_t *block = (c2a_comm_mem_block_t *)p;
-
-    block->crtl.next_idx = 0;
-    block->crtl.remain_zone = C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE - CTRL_SIZE;
-    block->crtl.block_meta_idx = block_meta_idx + 2;
-    block->crtl.offset = block_1_2_next_stride * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
-    __atomic_store_n(&(block->crtl.isfull), 0x0, __ATOMIC_SEQ_CST);
-
-    block_1_2_next_stride++;
-
-    RVoid();
-}
-#endif
-    /**
-     * @brief
-     *  Load the mapped memory into the memory page
-     */
-    void c2a_comm_memory_load(void) 
+void c2a_comm_memory_load(void) 
 {
     TC("Called { %s()", __func__);
 
@@ -482,9 +247,78 @@ void c2a_comm_mem_block_management_init(void)
 
     comm_lock_object_pages(c2a_mem_block_management, sizeof(c2a_mem_block_management));
 
-    
+    int i = 0;
+    int limit = C2A_COMM_MEM_CRTL_ELEMENT_NUMS;
+    for (i = 0; i < limit; i++) {
+        c2a_mem_block_management[i].offset = i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
+        c2a_mem_block_management[i].start_addr = (uint64_t)(C2A_COMM_MEM_BLOCK_BASE_ADDR) + i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
+    }
 
     RVoid();
+}
+
+/**
+ * @brief memory block initialization, only the first memory block is set.
+ */
+int c2a_comm_mem_block_init(void) {
+
+    TC("Called { %s()", __func__);
+
+    if (access(C2A_COMM_SHM_STORE_ABSOLUTE_FN, F_OK) != 0) {
+        printf("\n\nThe mapping file does not exist.\n\n");
+        TE("The mapping file does not exist.");
+        RInt(ND_ERR);
+    }
+
+    int fd = -1;
+    if (unlikely((fd = open(C2A_COMM_SHM_STORE_ABSOLUTE_FN, O_RDWR, 0666)) < 0)) {
+        printf("\n\n\tFailed to open the mapped file;\n\terrmsg: %s\n\n", strerror(errno));
+        TE("Failed to open the mapped file;errmsg: %s", strerror(errno));
+        RInt(ND_ERR);
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) != 0) {
+        printf("\n\n\tFailed to retrieve file information;\n\terrmsg: %s\n\n", strerror(errno));
+        TE("Failed to retrieve file information;errmsg: %s", strerror(errno));
+        close(fd);
+        RInt(ND_ERR);
+    }
+
+    if (st.st_size != memory_mmaped_file_size) {
+        printf("\n\n\tThe memory-mapped file was tampered with.\n\n");
+        TE("The memory-mapped file was tampered with.");
+        close(fd);
+        RInt(ND_ERR);
+    }
+
+    void *p = mmap(C2A_COMM_MEM_BLOCK_BASE_ADDR, memory_mmaped_file_size,
+                    PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+
+    if (unlikely((p == MAP_FAILED)) || unlikely((!p))) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        close(fd);
+        RInt(ND_ERR);
+    }
+
+    if (p != C2A_COMM_MEM_BLOCK_BASE_ADDR) {
+        printf("\n\n\tFile mapping failed; errmsg: %s\n\n", strerror(errno));
+        TE("File mapping failed; errmsg: %s", strerror(errno));
+        munmap(p, memory_mmaped_file_size);
+        close(fd);
+        RInt(ND_ERR);
+    }
+
+    memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+    c2a_comm_mem_block_t *block = (c2a_comm_mem_block_t *)p;
+
+    block->crtl.block_meta_idx = 0;
+    block->crtl.next_idx = 0;
+    block->crtl.pkts_end_sn = 0;
+    block->crtl.pkts_start_sn = 0;
+
+    RInt(ND_OK);
 }
 
 /**
@@ -498,7 +332,9 @@ int c2a_comm_startup_replace(void)
 {
     TC("Called { %s()", __func__);
 
+    c2a_comm_mem_block_management_init();
 
+    c2a_comm_mem_block_init();
 
     RInt(ND_OK);
 }
@@ -511,7 +347,9 @@ void c2a_comm_ending_replace(void)
 {
     TC("Called { %s()", __func__);
 
+    munmap(C2A_COMM_MEM_BLOCK_BASE_ADDR, memory_mmaped_file_size);
 
+    unlink(C2A_COMM_SHM_STORE_ABSOLUTE_FN);
 
     RVoid();
 }
