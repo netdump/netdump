@@ -192,13 +192,13 @@ _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
  *  store each frame sequentially
  */
 typedef struct c2a_comm_mem_block {
-    c2a_comm_ctrl_t crtl;
+    //c2a_comm_ctrl_t crtl;
     int per_frame_offset[C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS];
-    char per_frame_data[C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE - CTRL_SIZE];
+    char per_frame_data[C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE/* - CTRL_SIZE*/];
 } c2a_comm_mem_block_t;
 
 _Static_assert(
-    CTRL_SIZE + OFFSET_TABLE_SIZE + sizeof(((c2a_comm_mem_block_t *)0)->per_frame_data) ==
+    /*CTRL_SIZE + */OFFSET_TABLE_SIZE + sizeof(((c2a_comm_mem_block_t *)0)->per_frame_data) ==
         C2A_COMM_MEM_BLOCK_ZONE_SIZE, "block size mismatch"
     );
 

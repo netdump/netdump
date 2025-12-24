@@ -311,12 +311,15 @@ int c2a_comm_mem_block_init(void) {
     }
 
     memset((char *)p, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+
+    #if 0
     c2a_comm_mem_block_t *block = (c2a_comm_mem_block_t *)p;
 
     block->crtl.block_meta_idx = 0;
     block->crtl.next_idx = 0;
     block->crtl.pkts_end_sn = 0;
     block->crtl.pkts_start_sn = 0;
+    #endif
 
     RInt(ND_OK);
 }
