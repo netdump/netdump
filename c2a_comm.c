@@ -252,6 +252,7 @@ void c2a_comm_mem_block_management_init(void)
     for (i = 0; i < limit; i++) {
         c2a_mem_block_management[i].offset = i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
         c2a_mem_block_management[i].start_addr = (uint64_t)(C2A_COMM_MEM_BLOCK_BASE_ADDR) + i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
+        c2a_mem_block_management[i].data_start_addr = c2a_mem_block_management[i].start_addr + OFFSET_TABLE_SIZE;
     }
 
     RVoid();

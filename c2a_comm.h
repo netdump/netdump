@@ -125,7 +125,8 @@ typedef struct ALIGN_CACHELINE {
     uint64_t start_addr;
     uint64_t start_idx;
     uint64_t end_idx;
-    char pad[CACHELINE - 4 * sizeof(uint64_t)];
+    uint64_t data_start_addr;
+    char pad[CACHELINE - 5 * sizeof(uint64_t)];
 } c2a_memory_block_meta_t;
 
 _Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
