@@ -19,6 +19,8 @@ NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
 // If each block is 128MB, then the maximum size of the corresponding mapped file is 256GB.
 NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_COMM_MEM_CRTL_ELEMENT_NUMS];
 
+NETDUMP_SHARED ALIGN_CACHELINE c2a_comm_cur_block_idx_t cur_block_idx;
+
 /**
  * @brief 
  *  Global ctoa shared memory pointer variable
@@ -252,7 +254,6 @@ void c2a_comm_mem_block_management_init(void)
     for (i = 0; i < limit; i++) {
         c2a_mem_block_management[i].offset = i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
         c2a_mem_block_management[i].start_addr = (uint64_t)(C2A_COMM_MEM_BLOCK_BASE_ADDR) + i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
-        c2a_mem_block_management[i].data_start_addr = c2a_mem_block_management[i].start_addr + OFFSET_TABLE_SIZE;
     }
 
     RVoid();
@@ -339,6 +340,9 @@ int c2a_comm_startup_replace(void)
     c2a_comm_mem_block_management_init();
 
     c2a_comm_mem_block_init();
+
+    cur_block_idx.capture_cur_block_idx = 0;
+    cur_block_idx.analysis_cur_block_idx = 0;
 
     RInt(ND_OK);
 }

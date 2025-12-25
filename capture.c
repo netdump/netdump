@@ -1127,6 +1127,25 @@ static char * capture_find_interface_by_number(const char *url, long devnum)
     RVoidPtr((void *)device);
 }
 
+#if 1
+
+typedef struct ALIGN_CACHELINE state_value {
+    uint32_t bm_idx;
+    uint32_t cur_idx;
+    uint32_t remain_size;
+    uint32_t temp_r_sz;
+    uint64_t cur_pkts_sn;
+    uint64_t start_addr;
+    uint64_t write_addr;
+    uint64_t offset_addr;
+    char pad[CACHELINE - 4 * sizeof(uint32_t) - 4 * sizeof(uint64_t)];
+} state_value_t;
+
+_Static_assert(sizeof(state_value_t) == CACHELINE, "state value size error");
+
+state_value_t state_value;
+
+#endif
 
 int transmit_pause_status = 0;
 
@@ -1150,15 +1169,12 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     if (transmit_pause_status)
         return;
 
-    if (h->caplen == 0)
-    {
+    if (h->caplen == 0) {
         invalid_header = 1;
         TI("[Invalid header: caplen==0");
     }
-    if (h->len == 0)
-    {
-        if (!invalid_header)
-        {
+    if (h->len == 0) {
+        if (!invalid_header) {
             invalid_header = 1;
             TI("[Invalid header:");
         }
@@ -1167,10 +1183,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         }
         TI(" len==0");
     }
-    else if (h->len < h->caplen)
-    {
-        if (!invalid_header)
-        {
+    else if (h->len < h->caplen) {
+        if (!invalid_header) {
             invalid_header = 1;
             TI("[Invalid header:");
         }
@@ -1179,10 +1193,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         }
         TI(" len(%u) < caplen(%u)", h->len, h->caplen);
     }
-    if (h->caplen > MAXIMUM_SNAPLEN)
-    {
-        if (!invalid_header)
-        {
+    if (h->caplen > MAXIMUM_SNAPLEN) {
+        if (!invalid_header) {
             invalid_header = 1;
             TI("[Invalid header:");
         }
@@ -1191,10 +1203,8 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         }
         TI(" caplen(%u) > %u", h->caplen, MAXIMUM_SNAPLEN);
     }
-    if (h->len > MAXIMUM_SNAPLEN)
-    {
-        if (!invalid_header)
-        {
+    if (h->len > MAXIMUM_SNAPLEN) {
+        if (!invalid_header) {
             invalid_header = 1;
             TI("[Invalid header:");
         }
@@ -1203,16 +1213,47 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         }
         TI(" len(%u) > %u", h->len, MAXIMUM_SNAPLEN);
     }
-    if (invalid_header)
-    {
+    if (invalid_header) {
         TI("]\n");
         return ;
     }
 
-    if (h->len != h->caplen)
-    {
+    if (h->len != h->caplen) {
         TE("h->len: %d != h->caplen: %d", h->len, h->caplen);
     }
+
+#if 1
+
+    if (h->caplen > state_value.temp_r_sz) {
+        c2a_mem_block_management[state_value.bm_idx].end_sn = state_value.cur_pkts_sn;
+        state_value.bm_idx++;
+        state_value.cur_idx = 0;
+        state_value.temp_r_sz = state_value.remain_size;
+        state_value.start_addr = c2a_mem_block_management[state_value.bm_idx].start_addr;
+        c2a_mem_block_management[state_value.bm_idx].start_sn = state_value.cur_pkts_sn + 1;
+        c2a_comm_mem_block_t *bm_tmp = (c2a_comm_mem_block_t *)state_value.start_addr;
+        state_value.offset_addr = (uint64_t)(bm_tmp->per_frame_offset);
+        state_value.write_addr = (uint64_t)(bm_tmp->per_frame_data);
+        __atomic_store_n(&(cur_block_idx.capture_cur_block_idx), state_value.bm_idx, __ATOMIC_RELAXED);
+    }
+
+    datastore_t * data_store = (datastore_t *)(state_value.write_addr);
+    data_store->pkthdr = *h;
+    memcpy(data_store->data, sp, h->caplen);
+
+    state_value.write_addr += (sizeof(struct pcap_pkthdr) + h->caplen);
+    state_value.write_addr = C2A_COMM_ADDR_ALIGN_16(state_value.write_addr);
+
+    state_value.cur_idx++;
+    state_value.temp_r_sz -= state_value.write_addr - state_value.start_addr;
+    state_value.cur_pkts_sn++;
+    ((uint32_t *)(state_value.offset_addr))[state_value.cur_idx] = state_value.write_addr - state_value.start_addr;
+
+    __atomic_store_n(&(d2c_flag_statistical.packages), state_value.cur_pkts_sn, __ATOMIC_RELAXED);
+
+    __builtin_prefetch((void *)state_value.write_addr, 1, 3);
+
+#else
 
     c2a_shm_write_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_write_addr);
 
@@ -1228,8 +1269,10 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     msgcomm_increase_data_value(&(d2c_flag_statistical.packages), 1);
     //msgcomm_increase_data_value(&(d2c_flag_statistical.bytes), h->caplen);
-    
-    return ;
+
+#endif
+
+        return;
 }
 
 
@@ -1724,6 +1767,19 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     
     pcap_set_immediate_mode(pd, 1);
     pcap_setnonblock(pd, 1, NULL);
+
+    #if 1
+    memset(&state_value, 0, sizeof(state_value_t));
+    state_value.bm_idx = cur_block_idx.capture_cur_block_idx;
+    state_value.cur_idx = 0;
+    state_value.remain_size = C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE;
+    state_value.temp_r_sz = state_value.remain_size;
+    state_value.cur_pkts_sn = 0;
+    state_value.start_addr = c2a_mem_block_management[state_value.bm_idx].start_addr;
+    c2a_comm_mem_block_t *bm_tmp = (c2a_comm_mem_block_t *)state_value.start_addr;
+    state_value.offset_addr = (uint64_t)(bm_tmp->per_frame_offset);
+    state_value.write_addr = (uint64_t)(bm_tmp->per_frame_data);
+#endif
 
     while (1)
     {

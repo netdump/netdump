@@ -101,7 +101,8 @@ extern void *c2a_shm_read_addr;
  * @brief
  *  Make memory address 8-byte aligned
  */
-#define C2A_COMM_ADDR_ALIGN(address)            (((uintptr_t)(address) + 7) & ~(7))
+#define C2A_COMM_ADDR_ALIGN(address)                (((uintptr_t)(address) + 7) & ~(7))
+#define C2A_COMM_ADDR_ALIGN_16(address)             (((uintptr_t)(address) + 15) & ~(15))
 
 /**
  * @brief
@@ -111,10 +112,10 @@ extern void *c2a_shm_read_addr;
  *  the offset of the current block relative to the start of the file
  * @memberof start_addr
  *  the virtual address at the beginning of the block memory.
- * @memberof start_idx
- *  the start indices of the network frames stored in the current block
- * @memberof end_idx
- *  the end indices of the network frames stored in the current block
+ * @memberof start_sn
+ *  the start sn of the network frames stored in the current block
+ * @memberof end_sn
+ *  the end sn of the network frames stored in the current block
  * @note
  *  The significance of this structure may not be very high at present.
  *  We'll keep it for now. Later, when a fast search function is needed,
@@ -123,10 +124,9 @@ extern void *c2a_shm_read_addr;
 typedef struct ALIGN_CACHELINE {
     uint64_t offset;
     uint64_t start_addr;
-    uint64_t start_idx;
-    uint64_t end_idx;
-    uint64_t data_start_addr;
-    char pad[CACHELINE - 5 * sizeof(uint64_t)];
+    uint64_t start_sn;
+    uint64_t end_sn;
+    char pad[CACHELINE - 4 * sizeof(uint64_t)];
 } c2a_memory_block_meta_t;
 
 _Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
@@ -184,7 +184,7 @@ typedef struct c2a_comm_ctrl {
 _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
 
 #define CTRL_SIZE               sizeof(c2a_comm_ctrl_t)
-#define OFFSET_TABLE_SIZE       (sizeof(int) * C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS)
+#define OFFSET_TABLE_SIZE       (sizeof(uint32_t) * C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS)
 
 /**
  * @memberof per_frame_offset
@@ -194,7 +194,7 @@ _Static_assert(sizeof(c2a_comm_ctrl_t) == CACHELINE, "ctrl size error");
  */
 typedef struct c2a_comm_mem_block {
     //c2a_comm_ctrl_t crtl;
-    int per_frame_offset[C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS];
+    uint32_t per_frame_offset[C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS];
     char per_frame_data[C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE/* - CTRL_SIZE*/];
 } c2a_comm_mem_block_t;
 
@@ -204,6 +204,21 @@ _Static_assert(
     );
 
 #define C2A_COMM_MEM_BLOCK_BASE_ADDR          ((void *)(0x700000000000))
+
+/**
+ * 
+ */
+typedef struct ALIGN_CACHELINE c2a_comm_cur_block_idx {
+
+    int32_t capture_cur_block_idx;
+    char pad0[CACHELINE - sizeof(int32_t)];
+
+    int32_t analysis_cur_block_idx;
+    char pad1[CACHELINE - sizeof(int32_t)];
+    
+} c2a_comm_cur_block_idx_t;
+
+extern NETDUMP_SHARED ALIGN_CACHELINE c2a_comm_cur_block_idx_t cur_block_idx;
 
 /**
  * @brief
