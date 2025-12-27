@@ -1225,7 +1225,6 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 #if 1
 
     if (h->caplen > state_value.temp_r_sz) {
-        c2a_mem_block_management[state_value.bm_idx].end_sn = state_value.cur_pkts_sn;
         state_value.bm_idx++;
         state_value.cur_idx = 0;
         state_value.temp_r_sz = state_value.remain_size;
@@ -1247,6 +1246,11 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
     state_value.cur_idx++;
     state_value.temp_r_sz -= state_value.write_addr - state_value.start_addr;
     state_value.cur_pkts_sn++;
+    if (!(c2a_mem_block_management[state_value.bm_idx].start_sn)) {
+        c2a_mem_block_management[state_value.bm_idx].start_sn = state_value.cur_pkts_sn;
+    }
+    c2a_mem_block_management[state_value.bm_idx].end_sn = state_value.cur_pkts_sn;
+
     ((uint32_t *)(state_value.offset_addr))[state_value.cur_idx] = state_value.write_addr - state_value.start_addr;
 
     __atomic_store_n(&(d2c_flag_statistical.packages), state_value.cur_pkts_sn, __ATOMIC_RELAXED);
@@ -1779,7 +1783,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     c2a_comm_mem_block_t *bm_tmp = (c2a_comm_mem_block_t *)state_value.start_addr;
     state_value.offset_addr = (uint64_t)(bm_tmp->per_frame_offset);
     state_value.write_addr = (uint64_t)(bm_tmp->per_frame_data);
-#endif
+    #endif
 
     while (1)
     {
