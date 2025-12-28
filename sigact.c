@@ -155,7 +155,7 @@ static void sigact_Generate_stack_trace (int signum) {
 
 	TC("Called { %s ()", __func__);
 
-	void *array[10];
+	void *array[32];
     size_t size;
 
 	if ((access(SIGACT_STACK_INFO, F_OK) == 0)) {
