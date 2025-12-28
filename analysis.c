@@ -49,7 +49,9 @@ int analysis_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
+    #if 0
     __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr), 0, 3);
+    #endif
 
     TC("a2d_info.w3_displayed_max_lines: %d", a2d_info.w3_displayed_max_lines);
 
@@ -79,10 +81,150 @@ label1:
  * @brief
  *  Store captured network frame pointers in order
  */
+#if 0
 #define ARRAY_LENGTH        1048576
 datastore_t * strore_frame_addr_array[ARRAY_LENGTH] = {NULL};
+#endif
 static unsigned long strore_frame_addr_array_index = 0;
 
+#if 1
+
+typedef struct ALIGN_CACHELINE read_value {
+    uint32_t bm_idx;
+    uint32_t cur_idx;
+    uint64_t start_sn;
+    uint64_t end_sn;
+    c2a_comm_mem_block_t * start_addr;
+    char * restrict read_addr;
+    uint32_t *restrict offset_addr;
+    char pad[CACHELINE - 6 * sizeof(uint64_t)];
+} read_value_t;
+
+_Static_assert(sizeof(read_value_t) == CACHELINE, "state value size error");
+
+read_value_t read_value;
+
+char * analysis_get_read_addr(uint64_t sn)
+{
+
+    TC("Called { %s(sn: %lu)", __func__, sn);
+
+    if (sn > read_value.end_sn) {
+
+        uint64_t tmp_start_sn = c2a_mem_block_management[(read_value.bm_idx + 1)].start_sn;
+
+        if (!tmp_start_sn) {
+            TC("sn exceeding the current largest serial number");
+            return NULL;
+        }
+
+        if ((tmp_start_sn - read_value.end_sn) > 1) {
+            TC("the data in the previous block has not yet been fully read.");
+            return NULL;
+        }
+
+        read_value.bm_idx++;
+        read_value.start_sn = c2a_mem_block_management[read_value.bm_idx].start_sn;
+        read_value.end_sn = c2a_mem_block_management[read_value.bm_idx].end_sn;
+        read_value.start_addr = c2a_mem_block_management[read_value.bm_idx].start_addr;
+        read_value.offset_addr = (read_value.start_addr->per_frame_offset);
+        read_value.read_addr = (read_value.start_addr->per_frame_data);
+        __atomic_store_n(&(cur_block_idx.analysis_cur_block_idx), read_value.bm_idx, __ATOMIC_RELEASE);
+
+        if (sn < read_value.start_sn || sn > read_value.end_sn) {
+            TC("the input sequence numbers are not consecutive and have a large range.");
+            return NULL;
+        }
+
+        return (read_value.read_addr + ((read_value.offset_addr))[sn - read_value.start_sn]);
+    }
+    else if (sn < read_value.start_sn) {
+
+        if (!(read_value.bm_idx)) {
+            TC("it is currently at the smallest memory management unit.");
+            return NULL;
+        }
+
+        read_value.bm_idx --;
+        read_value.start_sn = c2a_mem_block_management[read_value.bm_idx].start_sn;
+        read_value.end_sn = c2a_mem_block_management[read_value.bm_idx].end_sn;
+        read_value.start_addr = c2a_mem_block_management[read_value.bm_idx].start_addr;
+        read_value.offset_addr = (read_value.start_addr->per_frame_offset);
+        read_value.read_addr = (read_value.start_addr->per_frame_data);
+        __atomic_store_n(&(cur_block_idx.analysis_cur_block_idx), read_value.bm_idx, __ATOMIC_RELEASE);
+
+        if (sn < read_value.start_sn || sn > read_value.end_sn) {
+            TC("the input sequence numbers are not consecutive and have a large range.");
+            return NULL;
+        }
+
+        return (read_value.read_addr + ((read_value.offset_addr))[sn - read_value.start_sn]);
+    }
+    else {
+        return (read_value.read_addr + ((read_value.offset_addr))[sn - read_value.start_sn]);
+    }
+
+    return NULL;
+}
+
+char * analysis_no_manual_get_addr (uint64_t sn) {
+
+    TC("Called { %s(sn: %lu)", __func__, sn);
+
+    if (!(read_value.start_sn)) {
+        read_value.start_sn = c2a_mem_block_management[read_value.bm_idx].start_sn;
+    }
+
+    read_value.end_sn = sn;
+
+    if (read_value.start_sn == 0 || read_value.end_sn == 0) {
+        TC("there is a problem with the logic.");
+        return NULL;
+    }
+
+    uint32_t max_idx = read_value.end_sn - read_value.start_sn;
+
+    if (read_value.cur_idx > max_idx && (c2a_mem_block_management[(read_value.bm_idx + 1)].start_sn)) {
+        read_value.bm_idx++;
+        read_value.cur_idx = 0;
+        read_value.start_sn = c2a_mem_block_management[read_value.bm_idx].start_sn;
+        read_value.end_sn = c2a_mem_block_management[read_value.bm_idx].end_sn;
+        read_value.start_addr = c2a_mem_block_management[read_value.bm_idx].start_addr;
+        read_value.offset_addr = (read_value.start_addr->per_frame_offset);
+        read_value.read_addr = (read_value.start_addr->per_frame_data);
+        __atomic_store_n(&(cur_block_idx.analysis_cur_block_idx), read_value.bm_idx, __ATOMIC_RELEASE);
+    }
+
+    if (read_value.cur_idx > max_idx) {
+        return NULL;
+    }
+
+    char * addr = read_value.read_addr + ((read_value.offset_addr))[read_value.cur_idx];
+    read_value.cur_idx++;
+
+    return addr;
+}
+
+void analysis_init_read_value (void) {
+
+    TC("Called { %s(void)", __func__);
+
+    read_value.bm_idx = 0;
+    __atomic_store_n(&(cur_block_idx.analysis_cur_block_idx), read_value.bm_idx, __ATOMIC_RELEASE);
+
+    read_value.cur_idx = 0;
+
+    read_value.start_sn = 0;
+    read_value.end_sn = 0;
+
+    read_value.start_addr = c2a_mem_block_management[read_value.bm_idx].start_addr;
+    read_value.offset_addr = (read_value.start_addr->per_frame_offset);
+    read_value.read_addr = (read_value.start_addr->per_frame_data);
+
+    RVoid();
+}
+
+#endif
 
 /**
  * @brief 
@@ -96,6 +238,8 @@ int analysis_loop (void) {
     TC("Called { %s(void)", __func__);
 
     unsigned int flag = 0;
+
+    analysis_init_read_value();
 
     for (;;) 
     {
@@ -111,11 +255,15 @@ int analysis_loop (void) {
         {
             if (strore_frame_addr_array_index)
             {
+                #if 1
+                analysis_init_read_value();
+                #else
                 memset(strore_frame_addr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
+                c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
+                #endif
                 unsigned short tmp_nlines = a2d_info.w3_displayed_max_lines;
                 a2d_info.w3_displayed_max_lines = tmp_nlines;
                 a2d_comm_startup();
-                c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
                 strore_frame_addr_array_index = 0;
             }
             nd_delay_microsecond(0, 1000);
@@ -138,15 +286,17 @@ void analysis_no_manual_mode (void)
     {
         if (strore_frame_addr_array_index > tmp)
         {
+            #if 0
             memset(strore_frame_addr_array, 0, (ARRAY_LENGTH * sizeof(void *)));
+            c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
+            #endif
             unsigned short tmp_nlines = a2d_info.w3_displayed_max_lines;
             a2d_info.w3_displayed_max_lines = tmp_nlines;
             a2d_comm_startup();
-            c2a_shm_read_addr = C2A_COMM_SHM_BASEADDR;
             strore_frame_addr_array_index = 0;
         }
         else {
-            nd_delay_microsecond(0, 1000000);
+            nd_delay_microsecond(0, 1000);
         }
         return ;
     }
@@ -162,6 +312,13 @@ void analysis_no_manual_mode (void)
             &(infonode->l1head), &(infonode->l1tail)
         );
 
+        #if 1
+
+        datastore_t *ds = (datastore_t *)analysis_no_manual_get_addr(tmp);
+        infonode->g_store_index = strore_frame_addr_array_index;
+        analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
+
+        #else
         c2a_shm_read_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr);
 
         datastore_t *ds = (datastore_t *)c2a_shm_read_addr;
@@ -173,6 +330,7 @@ void analysis_no_manual_mode (void)
         analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
 
         c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+        #endif
 
         strore_frame_addr_array_index++;
 
@@ -223,18 +381,21 @@ void analysis_manual_mode (void)
                     &(a2d_info.l1l2_node_idle_list), &(infonode->l1l2head), &(infonode->l1l2tail),
                     &(infonode->l1head), &(infonode->l1tail)
                 );
-
+                #if 1
+                char * tmp_addr = analysis_no_manual_get_addr(tmp);
+                datastore_t *ds = (datastore_t *)tmp_addr;
+                #else
                 c2a_shm_read_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr);
 
                 datastore_t *ds = (datastore_t *)c2a_shm_read_addr;
 
                 strore_frame_addr_array[strore_frame_addr_array_index] = ds;
 
+                c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+                #endif
                 infonode->g_store_index = strore_frame_addr_array_index;
 
                 analysis_network_frames((void *)infonode, &(ds->pkthdr), ds->data);
-
-                c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
 
                 strore_frame_addr_array_index++;
 
@@ -283,8 +444,11 @@ void analysis_manual_mode (void)
         }
 
         index = (infonode->g_store_index - 1);
+        #if 1
+        ds = (datastore_t *)analysis_get_read_addr((index + 1));
+        #else
         ds = strore_frame_addr_array[index];
-
+        #endif
         a2d_info.analysis_status_flag = A2D_ANALYSISING;
 
         node = nd_dll_takeout_from_tail(&a2d_info.w3_displayed_list_head, &a2d_info.w3_displayed_list_tail);
@@ -327,14 +491,21 @@ void analysis_manual_mode (void)
         index = (infonode->g_store_index + 1);
         if (index == strore_frame_addr_array_index) 
         {
+            #if 1
+            read_value.end_sn = c2a_mem_block_management[read_value.bm_idx].end_sn;
+            #else
             c2a_shm_read_addr = (void *)C2A_COMM_ADDR_ALIGN(c2a_shm_read_addr);
             ds = (datastore_t *)c2a_shm_read_addr;
             strore_frame_addr_array[strore_frame_addr_array_index] = ds;
             c2a_shm_read_addr += (sizeof(struct pcap_pkthdr) + ds->pkthdr.len);
+            #endif
             strore_frame_addr_array_index++;
         }
-        
+        #if 1
+        ds = (datastore_t *)analysis_get_read_addr((index + 1));
+        #else
         ds = strore_frame_addr_array[index];
+        #endif
         if (ds == NULL) 
         {
             TE("A fatal error occurred");

@@ -198,9 +198,9 @@ int capture_loop (void) {
     TC("Called { %s(void)", __func__);
 
     while (1) {
-
+        #if 0
         c2a_shm_write_addr = C2A_COMM_SHM_BASEADDR;
-
+        #endif
         desc_comm_msg_t message;
         if (unlikely((capture_cmd_from_display (&message)) == ND_ERR)) {
             T(erromsg, "capture cmd from display failed");
@@ -1135,15 +1135,33 @@ typedef struct ALIGN_CACHELINE state_value {
     uint32_t remain_size;
     uint32_t temp_r_sz;
     uint64_t cur_pkts_sn;
-    uint64_t start_addr;
-    uint64_t write_addr;
-    uint64_t offset_addr;
-    char pad[CACHELINE - 4 * sizeof(uint32_t) - 4 * sizeof(uint64_t)];
+    uint64_t last_tick;
+    c2a_comm_mem_block_t * restrict start_addr;
+    char *restrict write_addr;
+    char * write_base_addr;
+    uint32_t *restrict offset_addr;
 } state_value_t;
 
 _Static_assert(sizeof(state_value_t) == CACHELINE, "state value size error");
 
 state_value_t state_value;
+
+static inline uint64_t rdtsc(void)
+{
+    unsigned int lo, hi;
+    asm volatile("rdtsc" : "=a"(lo), "=d"(hi));
+    return ((uint64_t)hi << 32) | lo;
+}
+
+static inline uint64_t rdtscp(void)
+{
+    unsigned int lo, hi;
+    asm volatile("rdtscp" : "=a"(lo), "=d"(hi)::"rcx");
+    asm volatile("mfence");
+    return ((uint64_t)hi << 32) | lo;
+}
+
+#define TICK_MAX_THRESHOLD      (536870912)
 
 #endif
 
@@ -1229,31 +1247,29 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
         state_value.cur_idx = 0;
         state_value.temp_r_sz = state_value.remain_size;
         state_value.start_addr = c2a_mem_block_management[state_value.bm_idx].start_addr;
-        c2a_mem_block_management[state_value.bm_idx].start_sn = state_value.cur_pkts_sn + 1;
-        c2a_comm_mem_block_t *bm_tmp = (c2a_comm_mem_block_t *)state_value.start_addr;
-        state_value.offset_addr = (uint64_t)(bm_tmp->per_frame_offset);
-        state_value.write_addr = (uint64_t)(bm_tmp->per_frame_data);
-        __atomic_store_n(&(cur_block_idx.capture_cur_block_idx), state_value.bm_idx, __ATOMIC_RELAXED);
+        state_value.start_addr->per_frame_offset[0] = 0;
+        state_value.offset_addr = state_value.start_addr->per_frame_offset;
+        state_value.write_addr = state_value.start_addr->per_frame_data;
+        state_value.write_base_addr = state_value.start_addr->per_frame_data;
+        __atomic_store_n(&(cur_block_idx.capture_cur_block_idx), state_value.bm_idx, __ATOMIC_RELEASE);
     }
 
     datastore_t * data_store = (datastore_t *)(state_value.write_addr);
     data_store->pkthdr = *h;
     memcpy(data_store->data, sp, h->caplen);
 
-    state_value.write_addr += (sizeof(struct pcap_pkthdr) + h->caplen);
-    state_value.write_addr = C2A_COMM_ADDR_ALIGN_16(state_value.write_addr);
+    state_value.write_addr += (sizeof(datastore_t) + h->caplen);
+    state_value.write_addr = (char*)C2A_COMM_ADDR_ALIGN_16(state_value.write_addr);
 
     state_value.cur_idx++;
-    state_value.temp_r_sz -= state_value.write_addr - state_value.start_addr;
+    state_value.temp_r_sz = state_value.remain_size - (state_value.write_addr - state_value.write_base_addr);
     state_value.cur_pkts_sn++;
     if (!(c2a_mem_block_management[state_value.bm_idx].start_sn)) {
         c2a_mem_block_management[state_value.bm_idx].start_sn = state_value.cur_pkts_sn;
     }
     c2a_mem_block_management[state_value.bm_idx].end_sn = state_value.cur_pkts_sn;
 
-    ((uint32_t *)(state_value.offset_addr))[state_value.cur_idx] = state_value.write_addr - state_value.start_addr;
-
-    __atomic_store_n(&(d2c_flag_statistical.packages), state_value.cur_pkts_sn, __ATOMIC_RELAXED);
+    ((state_value.offset_addr))[state_value.cur_idx] = state_value.write_addr - state_value.write_base_addr;
 
     __builtin_prefetch((void *)state_value.write_addr, 1, 3);
 
@@ -1263,11 +1279,13 @@ static void capture_copy_packet(unsigned char *user, const struct pcap_pkthdr *h
 
     datastore_t * ds = (datastore_t *)(c2a_shm_write_addr);
 
+    TC("sizeof(datastore_t): %ld", sizeof(datastore_t));
+
     ds->pkthdr = *h;
     
     memcpy(ds->data, sp, h->caplen);
-    
-    c2a_shm_write_addr += (sizeof(struct pcap_pkthdr) + h->caplen);
+
+    c2a_shm_write_addr += (sizeof(datastore_t) + h->caplen);
 
     __builtin_prefetch((void *)C2A_COMM_ADDR_ALIGN(c2a_shm_write_addr), 1, 3);
 
@@ -1780,9 +1798,11 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     state_value.temp_r_sz = state_value.remain_size;
     state_value.cur_pkts_sn = 0;
     state_value.start_addr = c2a_mem_block_management[state_value.bm_idx].start_addr;
-    c2a_comm_mem_block_t *bm_tmp = (c2a_comm_mem_block_t *)state_value.start_addr;
-    state_value.offset_addr = (uint64_t)(bm_tmp->per_frame_offset);
-    state_value.write_addr = (uint64_t)(bm_tmp->per_frame_data);
+    state_value.start_addr->per_frame_offset[0] = 0;
+    state_value.offset_addr = (state_value.start_addr->per_frame_offset);
+    state_value.write_addr = (state_value.start_addr->per_frame_data);
+    state_value.write_base_addr = (state_value.start_addr->per_frame_data);
+    state_value.last_tick = rdtsc();
     #endif
 
     while (1)
@@ -1827,7 +1847,12 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             msgcomm_transfer_status_change(&(d2c_comm.c2d_msg_complate_flag), C2D_RUN_FLAG_PCAP_DISPATCH_ERR);
             break;
         }
-        
+
+        uint64_t now_tick = rdtsc();
+        if ((now_tick - state_value.last_tick) > TICK_MAX_THRESHOLD) {
+            __atomic_store_n(&(d2c_flag_statistical.packages), state_value.cur_pkts_sn, __ATOMIC_RELEASE);
+            state_value.last_tick = now_tick;
+        }
     }
 
     pcap_close(pd);

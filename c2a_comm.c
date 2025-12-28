@@ -21,6 +21,7 @@ NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_C
 
 NETDUMP_SHARED ALIGN_CACHELINE c2a_comm_cur_block_idx_t cur_block_idx;
 
+#if 0
 /**
  * @brief 
  *  Global ctoa shared memory pointer variable
@@ -41,7 +42,9 @@ void * c2a_shm_write_addr = NULL;
  */
 void * c2a_shm_read_addr = NULL;
 
+#endif
 
+#if 0
 /**
  * @brief 
  *  Allocate ctoa shared memory
@@ -71,6 +74,7 @@ int c2a_comm_init_c2a_comm (void)
 
     RInt(ND_OK);
 }
+#endif
 
 /**
  * @brief
@@ -83,12 +87,14 @@ int c2a_comm_startup (void)
 {
     TC("Called { %s(void)", __func__);
 
+    #if 0
     if (unlikely((c2a_comm_init_c2a_comm() == ND_ERR)))
     {
         RInt(ND_ERR);
     }
 
     TI("__alignof__(struct datastore_s): %lu", __alignof__(struct datastore_s));
+    #endif
 
     c2a_comm_startup_replace();
 
@@ -104,11 +110,11 @@ void c2a_comm_ending (void)
 {
 
     TC("Called { %s()", __func__);
-
+    #if 0
     munmap(C2A_COMM_SHM_BASEADDR, C2A_COMM_SHM_FILESIZE);
 
     shm_unlink(C2A_COMM_SHM_FILENAME);
-
+    #endif
     c2a_comm_ending_replace();
 
     RVoid();
@@ -125,9 +131,9 @@ static int valid_block_nums = 0;
 void c2a_comm_memory_load(void) 
 {
     TC("Called { %s()", __func__);
-
+    #if 0
     memset(C2A_COMM_SHM_BASEADDR, 0, C2A_COMM_SHM_FILESIZE);
-
+    #endif
     RVoid();
 }
 
@@ -253,7 +259,7 @@ void c2a_comm_mem_block_management_init(void)
     int limit = C2A_COMM_MEM_CRTL_ELEMENT_NUMS;
     for (i = 0; i < limit; i++) {
         c2a_mem_block_management[i].offset = i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
-        c2a_mem_block_management[i].start_addr = (uint64_t)(C2A_COMM_MEM_BLOCK_BASE_ADDR) + i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
+        c2a_mem_block_management[i].start_addr = (C2A_COMM_MEM_BLOCK_BASE_ADDR) + i * C2A_COMM_MEM_BLOCK_ZONE_SIZE;
     }
 
     RVoid();

@@ -40,13 +40,14 @@
 typedef struct datastore_s 
 {
     struct pcap_pkthdr pkthdr;
+    char pading[8];
     unsigned char data[0];
 } datastore_t;
 
 extern NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
 
 /*********************************************************************************/
-
+#if 0
 /* 分割线中的内容在修改完后会删除 */
 
 /**
@@ -94,6 +95,7 @@ extern void *c2a_shm_read_addr;
  * @brief ctoa shared memory starting base address
  */
 #define C2A_COMM_SHM_BASEADDR                   ((void *)(0x6EEA00000000))
+#endif
 
 /*********************************************************************************/
 
@@ -103,34 +105,6 @@ extern void *c2a_shm_read_addr;
  */
 #define C2A_COMM_ADDR_ALIGN(address)                (((uintptr_t)(address) + 7) & ~(7))
 #define C2A_COMM_ADDR_ALIGN_16(address)             (((uintptr_t)(address) + 15) & ~(15))
-
-/**
- * @brief
- * this structure stores the offset of the current block relative to the start of the file after mmap memory mapping,
- * as well as the start and end indices of the network frames stored in the current block.
- * @memberof offset
- *  the offset of the current block relative to the start of the file
- * @memberof start_addr
- *  the virtual address at the beginning of the block memory.
- * @memberof start_sn
- *  the start sn of the network frames stored in the current block
- * @memberof end_sn
- *  the end sn of the network frames stored in the current block
- * @note
- *  The significance of this structure may not be very high at present.
- *  We'll keep it for now. Later, when a fast search function is needed,
- *  this structure will prove valuable.
- */
-typedef struct ALIGN_CACHELINE {
-    uint64_t offset;
-    uint64_t start_addr;
-    uint64_t start_sn;
-    uint64_t end_sn;
-    char pad[CACHELINE - 4 * sizeof(uint64_t)];
-} c2a_memory_block_meta_t;
-
-_Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
-
 
 
 #define C2A_COMM_SHM_STORE_FILE_PATH                "/var/lib/netdump"
@@ -155,7 +129,6 @@ _Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be
 #define C2A_COMM_MEM_BLOCK_OFFSET_ELEMENT_NUMS              (C2A_COMM_MEM_BLOCK_ZONE_SIZE / (C2A_COMM_SHM_MIN_FRAME_SIZE))
 
 #define C2A_COMM_MEM_CRTL_ELEMENT_NUMS                      ((C2A_COMM_SHM_STORE_FILE_MAX_SIZE << GiB_SHIFT) / (C2A_COMM_SHM_BLOCK_ZONE_SIZE << MiB_SHIFT))
-extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_COMM_MEM_CRTL_ELEMENT_NUMS];
 
 /**
  * @memberof remain_zone remaining space in the current block
@@ -202,6 +175,35 @@ _Static_assert(
     /*CTRL_SIZE + */OFFSET_TABLE_SIZE + sizeof(((c2a_comm_mem_block_t *)0)->per_frame_data) ==
         C2A_COMM_MEM_BLOCK_ZONE_SIZE, "block size mismatch"
     );
+
+/**
+ * @brief
+ * this structure stores the offset of the current block relative to the start of the file after mmap memory mapping,
+ * as well as the start and end indices of the network frames stored in the current block.
+ * @memberof offset
+ *  the offset of the current block relative to the start of the file
+ * @memberof start_addr
+ *  the virtual address at the beginning of the block memory.
+ * @memberof start_sn
+ *  the start sn of the network frames stored in the current block
+ * @memberof end_sn
+ *  the end sn of the network frames stored in the current block
+ * @note
+ *  The significance of this structure may not be very high at present.
+ *  We'll keep it for now. Later, when a fast search function is needed,
+ *  this structure will prove valuable.
+ */
+typedef struct ALIGN_CACHELINE {
+    uint64_t offset;
+    c2a_comm_mem_block_t *start_addr;
+    uint64_t start_sn;
+    uint64_t end_sn;
+    char pad[CACHELINE - 4 * sizeof(uint64_t)];
+} c2a_memory_block_meta_t;
+
+_Static_assert(sizeof(c2a_memory_block_meta_t) == CACHELINE, "meta block must be cacheline sized");
+
+extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_management[C2A_COMM_MEM_CRTL_ELEMENT_NUMS];
 
 #define C2A_COMM_MEM_BLOCK_BASE_ADDR          ((void *)(0x700000000000))
 
