@@ -1490,6 +1490,25 @@ void * capture_initialize_shared_ndo(void) {
     RVoidPtr((void *)(&(d2c_comm.d2c_ndo)));
 }
 
+void capture_initialize_state_value (void) {
+
+    TC("Called { %s(void)", __func__);
+
+    memset(&state_value, 0, sizeof(state_value_t));
+    state_value.bm_idx = cur_block_idx.capture_cur_block_idx;
+    state_value.cur_idx = 0;
+    state_value.remain_size = C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE;
+    state_value.temp_r_sz = state_value.remain_size;
+    state_value.cur_pkts_sn = 0;
+    state_value.start_addr = c2a_mem_block_management[state_value.bm_idx].start_addr;
+    state_value.start_addr->per_frame_offset[0] = 0;
+    state_value.offset_addr = (state_value.start_addr->per_frame_offset);
+    state_value.write_addr = (state_value.start_addr->per_frame_data);
+    state_value.write_base_addr = (state_value.start_addr->per_frame_data);
+    state_value.last_tick = rdtsc();
+
+    RVoid();
+}
 
 /**
  * @brief
@@ -1790,20 +1809,7 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     pcap_set_immediate_mode(pd, 1);
     pcap_setnonblock(pd, 1, NULL);
 
-    #if 1
-    memset(&state_value, 0, sizeof(state_value_t));
-    state_value.bm_idx = cur_block_idx.capture_cur_block_idx;
-    state_value.cur_idx = 0;
-    state_value.remain_size = C2A_COMM_MEM_BLOCK_ZONE_SIZE - OFFSET_TABLE_SIZE;
-    state_value.temp_r_sz = state_value.remain_size;
-    state_value.cur_pkts_sn = 0;
-    state_value.start_addr = c2a_mem_block_management[state_value.bm_idx].start_addr;
-    state_value.start_addr->per_frame_offset[0] = 0;
-    state_value.offset_addr = (state_value.start_addr->per_frame_offset);
-    state_value.write_addr = (state_value.start_addr->per_frame_data);
-    state_value.write_base_addr = (state_value.start_addr->per_frame_data);
-    state_value.last_tick = rdtsc();
-    #endif
+    capture_initialize_state_value();
 
     while (1)
     {
