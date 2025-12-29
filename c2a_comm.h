@@ -213,10 +213,13 @@ extern NETDUMP_SHARED ALIGN_PAGE c2a_memory_block_meta_t c2a_mem_block_managemen
 typedef struct ALIGN_CACHELINE c2a_comm_cur_block_idx {
 
     int32_t capture_cur_block_idx;
-    char pad0[CACHELINE - sizeof(int32_t)];
+    int32_t capture_nxt_block_idx;
+    char pad0[CACHELINE - 2 * sizeof(int32_t)];
 
+    int32_t analysis_pre_block_idx;
     int32_t analysis_cur_block_idx;
-    char pad1[CACHELINE - sizeof(int32_t)];
+    int32_t analysis_nxt_block_idx;
+    char pad1[CACHELINE - 3 * sizeof(int32_t)];
     
 } c2a_comm_cur_block_idx_t;
 
