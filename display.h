@@ -29,6 +29,7 @@
 
 #include "trace.h"
 #include "d2c_comm.h"
+#include "c2a_comm.h"
 #include "infonode.h"
 
 
