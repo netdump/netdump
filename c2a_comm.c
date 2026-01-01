@@ -348,10 +348,9 @@ int c2a_comm_startup_replace(void)
     c2a_comm_mem_block_init();
 
     cur_block_idx.capture_cur_block_idx = 0;
-    cur_block_idx.analysis_nxt_block_idx = 1;
-    cur_block_idx.analysis_pre_block_idx = 0;
+    cur_block_idx.capture_last_seen_block_idx = 0;
     cur_block_idx.analysis_cur_block_idx = 0;
-    cur_block_idx.analysis_nxt_block_idx = 1;
+    cur_block_idx.analysis_last_seen_block_idx = 0;
 
     RInt(ND_OK);
 }
