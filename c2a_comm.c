@@ -14,6 +14,8 @@
 #include "c2a_comm.h"
 #include "trace.h"
 
+// 需要重新设计了
+
 NETDUMP_SHARED ALIGN_CACHELINE unsigned int capture_notify_analysis;
 
 // If each block is 128MB, then the maximum size of the corresponding mapped file is 256GB.
