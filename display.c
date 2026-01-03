@@ -619,6 +619,39 @@ void display_check_term_size(void)
 	RVoid();
 }
 
+static int clear_flag = 0;
+void display_mem_block_manage (void) {
+
+	TC("Called { %s(void)", __func__);
+
+	int32_t capture_cur_block_idx = __atomic_load_n(&(cur_block_idx.capture_cur_block_idx), __ATOMIC_ACQUIRE);
+
+	if (!clear_flag) {
+		memset((void *)c2a_mem_block_management[capture_cur_block_idx + 1].start_addr, 0, C2A_COMM_MEM_BLOCK_ZONE_SIZE);
+		clear_flag = 1;
+	}
+
+	if (capture_cur_block_idx != cur_block_idx.capture_last_seen_block_idx) {
+		clear_flag = 0;
+		cur_block_idx.capture_last_seen_block_idx = capture_cur_block_idx;
+	}
+
+	RVoid();
+}
+
+void display_mem_block_manage_clear(void) {
+
+	TC("Called { %s(void)", __func__);
+
+	int32_t i = 0;
+	int32_t capture_cur_block_idx = __atomic_load_n(&(cur_block_idx.capture_cur_block_idx), __ATOMIC_ACQUIRE);
+	for (i = 2; i <= capture_cur_block_idx; i++) {
+		madvise((void *)c2a_mem_block_management[i].start_addr, C2A_COMM_MEM_BLOCK_ZONE_SIZE, MADV_DONTNEED);
+	}
+
+	RVoid();
+}
+
 
 static int display_resource_second_cur_win = 0;
 
@@ -651,11 +684,12 @@ void display_second_tui_exec_logic (void) {
 	msgcomm_zero_variable(&(d2c_flag_statistical.packages));
 	msgcomm_zero_variable(&(d2c_flag_statistical.d2c_run_flag_val));
 	msgcomm_zero_variable(&(d2c_flag_statistical.c2d_run_flag_val));
-#endif
+	#endif
 
 	while (1)
 	{
 		flushinp();
+		display_mem_block_manage();
 		ch = getch();
 		if (display_sigwinch_flag)
 		{
@@ -753,6 +787,7 @@ void display_second_tui_exec_logic (void) {
 		//display_draw_cpinfo_win();
 	}
 
+	display_mem_block_manage_clear();
 	display_clear_content_line();
 	display_hide_wins_3_4_5();
 	display_start_or_close_timeout(0);

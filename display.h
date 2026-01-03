@@ -23,6 +23,8 @@
 #include <assert.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#define _GNU_SOURCE
+#include <sys/mman.h>
 
 #include "panel.h"
 #include "ncurses.h"
