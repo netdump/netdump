@@ -19,14 +19,21 @@ PCAP_TAR = $(PCAP_DIR).tar.xz
 NCURSESW_PATH = $(THIRD_PATH)/ncursesw
 PCAP_PATH = $(THIRD_PATH)/pcap
 
-
+# Debugging and use
 #CFLAGS = -O0 -g
 CFLAGS = -O3
+
 CFLAGS += -Wall
+
+# Debugging and use
 #CFLAGS += -fPIE
+
 CFLAGS += -Wno-unused-function
+
+# Debugging and use
 #CFLAGS += -fsanitize=address -g
 
+# Debugging and use
 # -DTRACE -DTOPTRACE 
 # the log switch needs to be turned on or off simultaneously.
 # -DTRACE -DTOPTRACE 全部打开可以开启记录日志的功能
@@ -58,8 +65,10 @@ DYNAMIC = -Wl,-Bdynamic
 DYNAMIC_LIB = -lrt
 
 LDFLAGS =
+# Debugging and use
 #LDFLAGS += -no-pie
 #LDFLAGS += -fsanitize=address
+# 
 LDFLAGS += $(STATIC) $(STATIC_LIB_PATH) $(STATIC_LIB) $(DYNAMIC) $(DYNAMIC_LIB)
 
 LINK_SCRIPT := link.ld
