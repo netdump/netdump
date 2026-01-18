@@ -14,6 +14,8 @@
 #include "capture.h"
 #include "d2c_comm.h"
 
+#include "funcscope.h"
+
 /**
  * @brief rfmon (monitor) mode
  */
@@ -171,6 +173,8 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
         goto label1;
     }
 
+    funcscope_caller_initialize(1, FS_LITE);
+
     if (unlikely((capture_loop()) == ND_ERR)) {
         TE("Analysis loop startup failed");
         goto label1;
@@ -179,6 +183,8 @@ int capture_main (unsigned int COREID, const char * pname, void * param) {
 label1:
 
     capture_resource_release();
+
+    funcscope_caller_cleanup();
 
     TRACE_DESTRUCTION();
 
@@ -212,6 +218,8 @@ int capture_loop (void) {
         TI("message.msgtype: %u", message.msgtype);
         TI("message.length: %u", message.length);
         TI("message.content: %s", message.content);
+
+        funcscope_server_poll_and_send_fd();
 
         capture_parsing_cmd_and_exec_capture((char *)(message.content));
     }
@@ -1814,6 +1822,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
     while (1)
     {
 
+        FUNCSCOPE_ENTER(0);
+
         unsigned int tmp = 0;
         msgcomm_receive_status_value(&(d2c_flag_statistical.d2c_run_flag_val), tmp);
 
@@ -1859,6 +1869,8 @@ int capture_parsing_cmd_and_exec_capture(char * command)
             __atomic_store_n(&(d2c_flag_statistical.packages), state_value.cur_pkts_sn, __ATOMIC_RELEASE);
             state_value.last_tick = now_tick;
         }
+
+        FUNCSCOPE_EXIT(0);
     }
 
     pcap_close(pd);
