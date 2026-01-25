@@ -181,8 +181,6 @@ label1:
 
     capture_resource_release();
 
-    funcscope_caller_cleanup();
-
     TRACE_DESTRUCTION();
 
     RInt(ND_OK);
