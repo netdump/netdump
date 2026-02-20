@@ -168,7 +168,9 @@ static void sigact_Generate_stack_trace (int signum) {
 
 	char space[64] = {0};
 	snprintf(space, 64, "lCOREID: %d; PID: %d; SIGNUM: %d\n", lcore_id(), getpid(), signum);
-	write(fd, space, strlen(space));
+	if (write(fd, space, strlen(space)) < 0) {
+		TE("write errmsg: %s", strerror(errno));
+	}
 
 	backtrace_symbols_fd(array, size, fd);
 

@@ -255,10 +255,10 @@ void arp_print(ndo_t *ndo, void *infonode, const u_char *bp, u_int length, u_int
     char sip[32] = {0}, tip[32] = {0};
     char smac[32] = {0}, tmac[32] = {0};
 
-    snprintf(sip, 32, ipaddr_string(ndo, SPA(ap)));
-    snprintf(tip, 32, ipaddr_string(ndo, TPA(ap)));
-    snprintf(smac, 32, etheraddr_string(ndo, SHA(ap)));
-    snprintf(tmac, 32, etheraddr_string(ndo, THA(ap)));
+    snprintf(sip, 32, "%s", ipaddr_string(ndo, SPA(ap)));
+    snprintf(tip, 32, "%s", ipaddr_string(ndo, TPA(ap)));
+    snprintf(smac, 32, "%s", etheraddr_string(ndo, SHA(ap)));
+    snprintf(tmac, 32, "%s", etheraddr_string(ndo, THA(ap)));
 
     switch (op) 
     {

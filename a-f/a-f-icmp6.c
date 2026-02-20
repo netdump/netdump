@@ -685,6 +685,7 @@ static const struct tok icmp6_type_values[] = {
     { 0,	NULL }
 };
 
+#if 0
 static const struct tok icmp6_dst_unreach_code_values[] = {
     { ICMP6_DST_UNREACH_NOROUTE, "unreachable route" },
     { ICMP6_DST_UNREACH_ADMIN, " unreachable prohibited"},
@@ -693,14 +694,18 @@ static const struct tok icmp6_dst_unreach_code_values[] = {
     { ICMP6_DST_UNREACH_NOPORT, "unreachable port"},
     { 0,	NULL }
 };
+#endif
 
+#if 0
 static const struct tok icmp6_opt_pi_flag_values[] = {
     { ND_OPT_PI_FLAG_ONLINK, "onlink" },
     { ND_OPT_PI_FLAG_AUTO, "auto" },
     { ND_OPT_PI_FLAG_ROUTER, "router" },
     { 0,	NULL }
 };
+#endif
 
+#if 0
 static const struct tok icmp6_opt_ra_flag_values[] = {
     { ND_RA_FLAG_MANAGED, "managed" },
     { ND_RA_FLAG_OTHER, "other stateful"},
@@ -708,14 +713,18 @@ static const struct tok icmp6_opt_ra_flag_values[] = {
     { ND_RA_FLAG_IPV6ONLY, "ipv6 only"},
     { 0,	NULL }
 };
+#endif
 
+#if 0
 static const struct tok icmp6_nd_na_flag_values[] = {
     { ND_NA_FLAG_ROUTER, "router" },
     { ND_NA_FLAG_SOLICITED, "solicited" },
     { ND_NA_FLAG_OVERRIDE, "override" },
     { 0,	NULL }
 };
+#endif
 
+#if 0
 static const struct tok icmp6_opt_values[] = {
    { ND_OPT_SOURCE_LINKADDR, "source link-address"},
    { ND_OPT_TARGET_LINKADDR, "destination link-address"},
@@ -729,8 +738,10 @@ static const struct tok icmp6_opt_values[] = {
    { ND_OPT_ROUTE_INFO, "route info"},
    { 0,	NULL }
 };
+#endif
 
 /* mldv2 report types */
+#if 0
 static const struct tok mldv2report2str[] = {
 	{ 1,	"is_in" },
 	{ 2,	"is_ex" },
@@ -740,6 +751,7 @@ static const struct tok mldv2report2str[] = {
 	{ 6,	"block" },
 	{ 0,	NULL }
 };
+#endif
 
 
 #define LAYER_4_ICMPV6_CONTENT                      "Internet Control Message Protocol V6:"
@@ -761,6 +773,13 @@ void icmp6_print(ndo_t *ndo, void *infonode, const u_char *bp,
     uint16_t dport;
     const u_char *ep;
     u_int prot;
+    (void)icmp6_code;
+    (void)ip;
+    (void)oip;
+    (void)ouh;
+    (void)dport;
+    (void)ep;
+    (void)prot;
 
     infonode_t *ifn = (infonode_t *)infonode;
     l1l2_node_t *su = NULL;

@@ -824,7 +824,10 @@ int comm_zone_startup(void) {
         RInt(ND_ERR);
     }
 
-    ftruncate(fd, NETDUMP_ZONESIZE);
+    if (ftruncate(fd, NETDUMP_ZONESIZE) < 0) {
+        TE("ftruncate errmsg: %s", strerror(errno));
+        RInt(ND_ERR);
+    }
 
     unsigned long size = __netdump_shared_end - __netdump_shared_start;
 

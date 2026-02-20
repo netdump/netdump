@@ -129,7 +129,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         TW("[length %u < caplen %u]((invalid))", length, caplen);
         snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "[length %u < caplen %u]((invalid))", 
             length, caplen);
-        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%.7u", (unsigned int)length % 10000000);
         snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
         return length;
     }
@@ -217,14 +217,14 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         int ret = macsec_print(ndo, &p, infonode, su, &length, &caplen, &hdrlen);
         if (ret == 0) {
             /* Payload is encrypted; print it as raw data. */
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%.7u", (unsigned int)length % 10000000);
             snprintf(ifn->srcaddr, INFONODE_ADDR_LENGTH, "%s", get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost));
             snprintf(ifn->dstaddr, INFONODE_ADDR_LENGTH, "%s", get_etheraddr_string(ndo, (const uint8_t *)ehp->ether_dhost));
             RUInt(hdrlen);
         }
         else if (ret > 0) {
             /* Problem printing the header; just quit. */
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%.7u", (unsigned int)length % 10000000);
             RInt(ret);
         }
         else {
@@ -233,7 +233,7 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
              */
             if (caplen < 2 || length < 2) 
             {
-                snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
+        snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%.7u", (unsigned int)length % 10000000);
                 #if 0
                 memset(buffer, 0, L1L2NODE_CONTENT_LENGTH);
                 fill_etheraddr_string(ndo, (const uint8_t *)ehp->ether_shost, buffer);
@@ -271,16 +271,16 @@ ether_common_print(ndo_t *ndo, void * infonode, const u_char *p,
         if (caplen < 4)
         {
             ndo->ndo_protocol = "vlan";
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
-            snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, ndo->ndo_protocol);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%.7u", (unsigned int)length % 10000000);
+            snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "remaining caplen < 4 ((invalid))");
             return hdrlen + caplen;
         }
         if (length < 4)
         {
             ndo->ndo_protocol = "vlan";
-            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%u", length);
-            snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, ndo->ndo_protocol);
+            snprintf(ifn->length, INFONODE_LENGTH_LENGTH, "%.7u", (unsigned int)length % 10000000);
+            snprintf(ifn->protocol, INFONODE_PROTOCOL_LENGTH, "%s", ndo->ndo_protocol);
             snprintf(ifn->brief, INFONODE_BRIEF_LENGTH, "remaining length < 4 ((invalid))");
             return hdrlen + length;
         }
